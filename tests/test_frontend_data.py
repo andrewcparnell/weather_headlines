@@ -145,6 +145,50 @@ def test_dom_ids_and_module_paths_match_index_html():
         "assets/gazetteer.json",
         "data/manifest.json",
         "data/headlines.json",
+        "favicon.svg",
+        "favicon.ico",
+        "favicon-32x32.png",
+        "apple-touch-icon.png",
+        "icon-192.png",
+        "icon-512.png",
+        "site.webmanifest",
     ):
         assert (SITE_DIR / rel).exists(), f"Missing static asset {rel}"
+
+
+def test_app_icons_and_web_manifest():
+    html = (SITE_DIR / "index.html").read_text()
+    for href in ("/favicon.svg", "/favicon.ico", "/favicon-32x32.png", "/apple-touch-icon.png", "/site.webmanifest"):
+        assert href in html, f"Missing icon/manifest link {href} in index.html <head>"
+
+    svg_txt = (SITE_DIR / "favicon.svg").read_text()
+    assert "<svg" in svg_txt and 'viewBox="0 0 512 512"' in svg_txt
+
+    with Image.open(SITE_DIR / "apple-touch-icon.png") as img:
+        assert img.size == (180, 180)
+        assert img.mode == "RGB", "apple-touch-icon.png must have an opaque background (RGB, no alpha)"
+        # Ensure corners are opaque navy rather than pre-rounded white/transparent
+        tl = img.getpixel((0, 0))
+        br = img.getpixel((179, 179))
+        assert max(tl) < 40 and max(br) < 40
+
+    with Image.open(SITE_DIR / "icon-192.png") as img192:
+        assert img192.size == (192, 192)
+    with Image.open(SITE_DIR / "icon-512.png") as img512:
+        assert img512.size == (512, 512)
+    with Image.open(SITE_DIR / "favicon-32x32.png") as img32:
+        assert img32.size == (32, 32)
+    with Image.open(SITE_DIR / "favicon.ico") as ico:
+        assert ico.format == "ICO"
+
+    manifest = json.loads((SITE_DIR / "site.webmanifest").read_text())
+    assert manifest["name"] == "Weather Headlines · Aimsir"
+    assert manifest["short_name"] == "Headlines"
+    assert manifest["start_url"] == "/"
+    assert manifest["display"] == "standalone"
+    icon_srcs = {i["src"] for i in manifest["icons"]}
+    assert {"/favicon.svg", "/icon-192.png", "/icon-512.png"}.issubset(icon_srcs)
+    for icon_entry in manifest["icons"]:
+        rel_path = icon_entry["src"].lstrip("/")
+        assert (SITE_DIR / rel_path).exists(), f"Manifest icon missing on disk: {rel_path}"
 
