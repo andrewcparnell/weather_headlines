@@ -1,0 +1,420 @@
+{
+  "version": 1,
+  "generated_utc": "2026-11-26T10:42:00Z",
+  "model_run_utc": "2026-11-26T00:00:00Z",
+  "valid_time_utc": "2026-11-26T12:00:00Z",
+  "edition_title": "World Weather Headlines",
+  "generator": "ecmwf-era5-curated",
+  "stories": [
+    {
+      "id": "2026-11-26-eurasian-steppe-heat-dome",
+      "rank": 1,
+      "kicker": "EXTRAORDINARY AUTUMN WARMTH · CENTRAL ASIA TO SIBERIA",
+      "headline": "A giant Eurasian heat dome drives temperatures up to 19 °C above late-November norms",
+      "region": "Kazakhstan and Central Siberia",
+      "country": "Kazakhstan",
+      "hazard": "heat",
+      "primary_layer": "anomaly",
+      "centre": {
+        "lat": 52.0,
+        "lon": 84.0
+      },
+      "stats": {
+        "headline_metric": "+16.4 °C to +19.8 °C",
+        "metric_label": "Above 1991-2020 normal",
+        "era5_rank": "#1 in steppe, #4 in Siberia since 1940",
+        "persistence": "28 of last 28 days anomalously warm"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 44.5,
+          "lon": 71.0,
+          "distance": 2.15
+        },
+        {
+          "lat": 52.0,
+          "lon": 84.0,
+          "distance": 1.92
+        },
+        {
+          "lat": 61.5,
+          "lon": 95.0,
+          "distance": 1.95
+        },
+        {
+          "lat": 70.5,
+          "lon": 102.0,
+          "distance": 2.12
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Spring-Like Air Where Deep Winter Should Stand",
+          "layer": "temperature",
+          "text": "Across southeastern Kazakhstan, afternoon temperatures have climbed to 14.0 °C at a time of year when the steppe normally sits near freezing. Further north across central Siberia, air that is typically locked near -25 °C has surged almost 20 °C above seasonal averages."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "Locked in Place for Four Straight Weeks",
+          "layer": "anomaly",
+          "text": "This is no brief warm front. Daily tracking over the past month shows all 28 of the last 28 days in southeastern Kazakhstan and 24 of 28 days in northern Siberia running far warmer than normal beneath a stubborn, continent-spanning high-pressure ridge."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Record-Setting in 87 Years of ERA5 Data",
+          "layer": "anomaly",
+          "text": "Comparing today's warmth against every late-November record since 1940 in the Copernicus ERA5 archive, the Kazakh steppe anomaly ranks #1 in 87 years (99.4th percentile), while the northern Siberian surge stands 4th warmest on record (96th percentile)."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Arctic Amplification Reshaping Autumn",
+          "layer": "anomaly",
+          "text": "Northern Siberia has warmed by +2.4 °C in late November since 1940-1979, doubling the frequency of top-decile warm extremes between the mid-20th century and the post-1986 era as retreating snow and sea ice amplify continental heating."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "The Guardian",
+          "title": "Weather Tracker: Global temperature extremes and blocked autumn patterns",
+          "url": "https://www.theguardian.com/environment/series/weather-tracker"
+        },
+        {
+          "source": "Copernicus C3S",
+          "title": "Monthly climate bulletins tracking Eurasian and Arctic surface anomalies",
+          "url": "https://climate.copernicus.eu/climate-bulletins"
+        },
+        {
+          "source": "World Weather Attribution",
+          "title": "How human-induced climate change amplifies continental heat anomalies",
+          "url": "https://www.worldweatherattribution.org/"
+        }
+      ]
+    },
+    {
+      "id": "2026-11-26-adriatic-balkans-deluge",
+      "rank": 2,
+      "kicker": "RELENTLESS FLOODING RAIN · ADRIATIC & WESTERN BALKANS",
+      "headline": "Another 137 mm deluge batters the Adriatic coast after two weeks of soaking storms",
+      "region": "Montenegro, Southern Croatia and Bosnia",
+      "country": "Montenegro",
+      "hazard": "rain",
+      "primary_layer": "rain",
+      "centre": {
+        "lat": 42.5,
+        "lon": 18.5
+      },
+      "stats": {
+        "headline_metric": "137 mm / 24 h",
+        "metric_label": "Fresh 24-hour downpour",
+        "era5_rank": "#4 wettest since 1940 (96th pct)",
+        "persistence": "676 mm fallen over past 14 days"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 39.5,
+          "lon": 14.5,
+          "distance": 1.85
+        },
+        {
+          "lat": 41.8,
+          "lon": 17.5,
+          "distance": 1.66
+        },
+        {
+          "lat": 43.2,
+          "lon": 18.8,
+          "distance": 1.64
+        },
+        {
+          "lat": 44.8,
+          "lon": 16.2,
+          "distance": 1.78
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Warm Mediterranean Moisture Slams Coastal Mountains",
+          "layer": "rain",
+          "text": "Southerly gales gusting to 25 m/s are driving a rich plume of Mediterranean moisture straight into the steep Dinaric Alps, squeezing out 137 mm of fresh rain in 24 hours along the coasts of Montenegro and southern Croatia."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "Nearly 700 mm in a Single Fortnight",
+          "layer": "rain",
+          "text": "This storm arrives on ground that cannot absorb another drop: 10 of the past 14 days have brought heavy rain here, piling up an astonishing 676 mm over two weeks as successive Mediterranean depressions stall against Balkan high ground."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Top 4% of Late-November Rainstorms Since 1940",
+          "layer": "pressure",
+          "text": "Across 87 years of ERA5 records back to 1940, today's regional rainfall intensity ranks 4th highest for late November (96th percentile), following a string of destructive autumn lows across southern Europe."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "A Warmer Mediterranean Fuels Heavier Downpours",
+          "layer": "anomaly",
+          "text": "Late-November air temperatures along the Adriatic have risen +1.4 °C since 1940-1979, allowing the atmosphere to hold roughly 10% more water vapour; 90th-percentile autumn rain days here have tripled from 2 to 6 per 40-year era."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "The Guardian",
+          "title": "Extreme weather in Southern Europe as autumn storms bring flooding",
+          "url": "https://www.theguardian.com/world/extreme-weather"
+        },
+        {
+          "source": "GDACS",
+          "title": "European hydrological anomaly and alert report",
+          "url": "https://www.gdacs.org/report.aspx?eventid=1018332&episodeid=28&eventtype=DR"
+        },
+        {
+          "source": "Reuters",
+          "title": "Global climate and severe weather impacts coverage",
+          "url": "https://www.reuters.com/business/environment/"
+        }
+      ]
+    },
+    {
+      "id": "2026-11-26-kamchatka-bering-bomb-cyclone",
+      "rank": 3,
+      "kicker": "HURRICANE-FORCE CYCLONE · KAMCHATKA & BERING SEA",
+      "headline": "Fierce 973 hPa North Pacific cyclone lashes Kamchatka with 147 km/h gusts",
+      "region": "Kamchatka Peninsula, Russian Far East",
+      "country": "Russia",
+      "hazard": "cyclone",
+      "primary_layer": "wind",
+      "centre": {
+        "lat": 58.0,
+        "lon": 161.0
+      },
+      "stats": {
+        "headline_metric": "40.9 m/s (147 km/h)",
+        "metric_label": "Peak coastal wind gusts",
+        "era5_rank": "#1 gust intensity since 1940",
+        "persistence": "973 hPa core · 42 mm snow-equiv"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 51.5,
+          "lon": 154.0,
+          "distance": 1.98
+        },
+        {
+          "lat": 55.8,
+          "lon": 159.5,
+          "distance": 1.74
+        },
+        {
+          "lat": 59.2,
+          "lon": 163.5,
+          "distance": 1.72
+        },
+        {
+          "lat": 62.0,
+          "lon": 170.0,
+          "distance": 1.92
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Sub-Zero Blizzard Winds Scream Across Volcanic Peaks",
+          "layer": "wind",
+          "text": "An intense 973 hPa North Pacific cyclone is wrapping violent 40.9 m/s (147 km/h) wind gusts into the rugged coast of Kamchatka at -11 °C, generating treacherous coastal seas and whiteout conditions across the peninsula."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "Sharpened by the Siberian Temperature Contrast",
+          "layer": "pressure",
+          "text": "Over the past two weeks, four separate gale events and more than six times the usual precipitation have struck eastern Kamchatka, energised by the sharp clash between bitter continental air and relatively mild Pacific waters."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Top of the Late-November Gust Record",
+          "layer": "wind",
+          "text": "Normal late-November peak gusts in this sector sit near 13 m/s; at over 40 m/s, this storm's wind core stands at the very top (#1 in 87 years, 99.4th percentile) of ERA5 late-November snapshots since 1940."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Stronger Moisture Fuel for Subpolar Storms",
+          "layer": "anomaly",
+          "text": "Regional late-autumn temperatures around the northwest Pacific rim have warmed by +0.9 °C since 1940-1979, supplying extra latent heat from condensation that can help explosive mid-latitude cyclones tighten their inner wind cores."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "WMO",
+          "title": "World Meteorological Organization severe weather and marine hazards updates",
+          "url": "https://wmo.int/media/news"
+        },
+        {
+          "source": "BBC Weather",
+          "title": "International weather warnings and Pacific storm tracking",
+          "url": "https://www.bbc.com/weather"
+        }
+      ]
+    },
+    {
+      "id": "2026-11-26-us-atlantic-thanksgiving-storm",
+      "rank": 4,
+      "kicker": "THANKSGIVING COASTAL STORM · EASTERN UNITED STATES",
+      "headline": "Subtropical plume dumps 139 mm of rain along the US Atlantic seaboard",
+      "region": "North Carolina Outer Banks and Mid-Atlantic Coast",
+      "country": "United States",
+      "hazard": "rain",
+      "primary_layer": "rain",
+      "centre": {
+        "lat": 35.0,
+        "lon": -76.0
+      },
+      "stats": {
+        "headline_metric": "139 mm / 24 h",
+        "metric_label": "With 25 m/s coastal gusts",
+        "era5_rank": "99th percentile for late Nov",
+        "persistence": "+7.3 °C warm marine surge"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 30.5,
+          "lon": -80.5,
+          "distance": 1.92
+        },
+        {
+          "lat": 34.5,
+          "lon": -76.5,
+          "distance": 1.68
+        },
+        {
+          "lat": 37.8,
+          "lon": -74.5,
+          "distance": 1.72
+        },
+        {
+          "lat": 41.2,
+          "lon": -71.0,
+          "distance": 1.86
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Holiday Travel Meets a Turbocharged Coastal Low",
+          "layer": "rain",
+          "text": "Just as millions travel for Thanksgiving, a deepening 1001 hPa coastal low off Cape Hatteras is sweeping 139 mm of heavy rain and 25 m/s (90 km/h) gusts up the Mid-Atlantic seaboard, raising coastal surge and localized flooding risks."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "Rapid Shift After a Dry Fortnight",
+          "layer": "wind",
+          "text": "Unlike a multi-week stall, this system marks an abrupt pattern flip: only 21 mm of rain fell here across the preceding two weeks before a surge of +7.3 °C warmer-than-normal Gulf Stream air collided with an advancing trough."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Unusual Tropical-Like Rainfall Rates for November",
+          "layer": "rain",
+          "text": "Delivering nearly three weeks' worth of typical late-autumn rain in a single day, the offshore rainband's synoptic intensity ranks at the 99th percentile (#1 in 87 years) of late-November ERA5 dates back to 1940."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Rapidly Warming Gulf Stream Waters",
+          "layer": "anomaly",
+          "text": "In local ERA5 records, late-November air over the western Atlantic Gulf Stream boundary has warmed by a remarkable +3.0 °C since 1940-1979, doubling 90th-percentile heavy-rain occurrences from 3 to 6 per 40-year period."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "The Guardian",
+          "title": "Heavy US rainstorms and coastal systems threaten Thanksgiving travel",
+          "url": "https://www.theguardian.com/world/extreme-weather"
+        },
+        {
+          "source": "Al Jazeera",
+          "title": "Global extreme weather and North American storm coverage",
+          "url": "https://www.aljazeera.com/tag/weather/"
+        }
+      ]
+    },
+    {
+      "id": "2026-11-26-north-atlantic-iceland-cyclone",
+      "rank": 5,
+      "kicker": "NORTH ATLANTIC STORM TRACK · ICELAND TO NORTHWEST EUROPE",
+      "headline": "Deep 975 hPa North Atlantic storm drives 133 km/h gales into southern Iceland",
+      "region": "Southern Iceland and the North Atlantic",
+      "country": "Iceland",
+      "hazard": "cyclone",
+      "primary_layer": "wind",
+      "centre": {
+        "lat": 63.5,
+        "lon": -19.5
+      },
+      "stats": {
+        "headline_metric": "36.9 m/s (133 km/h)",
+        "metric_label": "975 hPa central pressure",
+        "era5_rank": "99th percentile gusts since 1940",
+        "persistence": "9 gale days in past 2 weeks"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 56.5,
+          "lon": -29.0,
+          "distance": 1.96
+        },
+        {
+          "lat": 61.5,
+          "lon": -22.5,
+          "distance": 1.70
+        },
+        {
+          "lat": 64.2,
+          "lon": -17.5,
+          "distance": 1.66
+        },
+        {
+          "lat": 58.0,
+          "lon": -9.0,
+          "distance": 1.84
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Subtropical Warm Conveyor Slams Into High Latitudes",
+          "layer": "wind",
+          "text": "A vigorous 975 hPa North Atlantic depression is lashing southern Iceland's coast and ice caps with 36.9 m/s (133 km/h) gusts alongside 28 mm of mild, wind-driven rain at +6.5 °C, while sending brisk frontal bands towards Ireland and Scotland."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "A Relentless Conveyor of Autumn Storms",
+          "layer": "pressure",
+          "text": "An energetic North Atlantic jet stream has aimed storm after storm along this corridor: southern Iceland has recorded 9 gale days over the past two weeks and 229 mm of precipitation across the last 28 days."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "More Than Double Normal Late-November Gusts",
+          "layer": "wind",
+          "text": "Peak gusts near 37 m/s are more than twice the 1991-2020 seasonal average of 16.8 m/s for this date, placing today's landfalling wind core in the top 1% of late-November storms in the 1940-2026 ERA5 record."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Rain Replacing Snow on Subarctic Glaciers",
+          "layer": "anomaly",
+          "text": "Southern Iceland has warmed by +1.6 °C in late November since 1940-1979, and today's storm carries a +4.5 °C warm anomaly, meaning moisture that historically fell as early-winter snow increasingly falls as heavy rain onto coastal glaciers."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "The Irish Times",
+          "title": "North Atlantic weather events and storm impacts across Northwest Europe",
+          "url": "https://www.irishtimes.com/tags/weather-events/"
+        },
+        {
+          "source": "BBC Weather",
+          "title": "North Atlantic pressure charts and European gale outlooks",
+          "url": "https://www.bbc.com/weather"
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+[project]
+name = "weather-headlines"
+version = "0.1.0"
+description = "Live 3D weather globe and 6-hourly AI broadcast tour of the world's top 5 weather headlines, powered by ECMWF Open Data, ERA5 climatology, and Claude."
+readme = "README.md"
+license = { text = "MIT" }
+requires-python = ">=3.12,<3.14"
+dependencies = [
+    "anthropic>=0.49.0",
+    "eccodes>=2.38.0",
+    "eccodeslib>=2.38.0",
+    "numcodecs>=0.13.0",
+    "numpy>=1.26.0",
+    "pillow>=10.4.0",
+    "truststore>=0.10.0",
+]
+
+[dependency-groups]
+dev = [
+    "pytest>=8.0.0",
+]
+
+[tool.pytest.ini_options]
+pythonpath = ["."]
+

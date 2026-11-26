@@ -1,0 +1,69 @@
+name: Refresh Weather & Deploy Pages
+
+on:
+  schedule:
+    # Runs every 6 hours shortly after ECMWF 00z, 06z, 12z, and 18z Open Data runs publish
+    - cron: "25 1,7,13,19 * * *"
+  workflow_dispatch:
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages-weather-headlines
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up uv and Python 3.12
+        uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.12"
+
+      - name: Restore ERA5 climatology cache
+        uses: actions/cache@v4
+        with:
+          path: pipeline_cache/climatology
+          key: era5-climo-v1-${{ github.run_id }}
+          restore-keys: |
+            era5-climo-v1-
+
+      - name: Install dependencies
+        run: uv sync --frozen
+
+      - name: Fetch live ECMWF weather, ERA5 rankings, and generate 5-story bulletin
+        env:
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: |
+          uv run --frozen python -m pipeline.build --keep-existing-headlines-if-no-key
+          if [ -z "${ANTHROPIC_API_KEY}" ]; then
+            echo "::notice::ANTHROPIC_API_KEY secret is not set yet. Live ECMWF weather layers were refreshed; add ANTHROPIC_API_KEY under Settings -> Secrets and variables -> Actions to enable 6-hourly Claude + web-search headline updates."
+          fi
+
+      - name: Run pipeline and data integrity tests
+        run: uv run --frozen pytest -v
+
+      - name: Upload static site artifact for GitHub Pages
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4
