@@ -21,22 +21,22 @@ function formatUtcStamp(dt) {
 }
 
 function nextScheduledReportUtc(createdDt) {
-  // Matches `.github/workflows/refresh.yml` 6-hourly cron (`25 1,7,13,19 * * *` -> live ~:30 UTC)
-  const refMs = Math.max(createdDt.getTime() + 20 * 60_000, Date.now());
-  const ref = new Date(refMs);
-  const y = ref.getUTCFullYear();
-  const m = ref.getUTCMonth();
-  const d = ref.getUTCDate();
+  // Next 6-hourly cron slot (`25 1,7,13,19 * * *` -> live ~:30 UTC) strictly after `createdDt`
+  const afterMs = createdDt.getTime() + 20 * 60_000;
+  const base = new Date(afterMs);
+  const y = base.getUTCFullYear();
+  const m = base.getUTCMonth();
+  const d = base.getUTCDate();
 
   for (const dayOffset of [0, 1, 2]) {
     for (const hr of [1, 7, 13, 19]) {
       const slotMs = Date.UTC(y, m, d + dayOffset, hr, 30, 0);
-      if (slotMs > refMs) {
+      if (slotMs > afterMs) {
         return new Date(slotMs);
       }
     }
   }
-  return new Date(refMs + 6 * 3600_000);
+  return new Date(afterMs + 6 * 3600_000);
 }
 
 function updateReportScheduleUi(isoString) {
@@ -47,13 +47,19 @@ function updateReportScheduleUi(isoString) {
   const createdDt = new Date(reportCreatedIso);
   if (Number.isNaN(createdDt.getTime())) return;
 
+  $('liveTimestamp').textContent = `Report created: ${formatUtcStamp(createdDt)}`;
+
   const nextDt = nextScheduledReportUtc(createdDt);
-  const minsLeft = Math.max(1, Math.round((nextDt.getTime() - Date.now()) / 60_000));
+  const diffMs = nextDt.getTime() - Date.now();
+  if (diffMs <= 0) {
+    $('nextReportTimestamp').textContent = 'Next report: Updating shortly...';
+    return;
+  }
+
+  const minsLeft = Math.max(1, Math.round(diffMs / 60_000));
   const hrs = Math.floor(minsLeft / 60);
   const mins = minsLeft % 60;
   const rel = hrs > 0 ? `in ${hrs}h ${String(mins).padStart(2, '0')}m` : `in ${mins}m`;
-
-  $('liveTimestamp').textContent = `Report created: ${formatUtcStamp(createdDt)}`;
   $('nextReportTimestamp').textContent = `Next report: ${formatUtcStamp(nextDt)} (${rel})`;
 }
 
@@ -207,20 +213,33 @@ async function init() {
   void search.load();
   void globe.loadBasemap();
 
-  // Load headlines independently of WebP textures so the Play button is ready immediately!
-  fetch(`data/headlines.json?t=${Date.now()}`, { cache: 'no-store' })
-    .then(r => (r.ok ? r.json() : null))
-    .then(bulletin => {
+  const fetchLatestBulletin = async (isPoll = false) => {
+    try {
+      const r = await fetch(`data/headlines.json?t=${Date.now()}`, { cache: 'no-store' });
+      if (!r.ok) return;
+      const bulletin = await r.json();
       if (!bulletin) return;
-      tour.setBulletin(bulletin);
-      globe.setStoryPins(bulletin.stories, -1);
-      if (bulletin.generated_utc) {
-        updateReportScheduleUi(bulletin.generated_utc);
+      const changed = Boolean(bulletin.generated_utc && bulletin.generated_utc !== reportCreatedIso);
+      if (!isPoll || changed) {
+        tour.setBulletin(bulletin);
+        globe.setStoryPins(bulletin.stories, tour.active ? tour.storyIndex : -1);
+        if (bulletin.generated_utc) {
+          updateReportScheduleUi(bulletin.generated_utc);
+        }
+        if (isPoll && changed) {
+          const manifest = await globe.loadWeatherManifest('data/manifest.json');
+          manifestData = manifest;
+          updateLegend(globe.currentLayer);
+        }
       }
-    })
-    .catch(err => console.error('Failed loading headlines:', err));
+    } catch (err) {
+      console.error('Failed loading headlines:', err);
+    }
+  };
 
-  setInterval(() => updateReportScheduleUi(), 60_000);
+  void fetchLatestBulletin(false);
+  setInterval(() => updateReportScheduleUi(), 30_000);
+  setInterval(() => void fetchLatestBulletin(true), 90_000);
 
   try {
     const manifest = await globe.loadWeatherManifest('data/manifest.json');
