@@ -125,16 +125,21 @@
 
   <!-- BBC News / Sky News Lower-Third Broadcast Banner (Active when Play is clicked) -->
   <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines Broadcast">
-    <!-- Large, unmistakable Previous / Next / Close controls -->
+    <!-- Large, unmistakable Previous / Next / Sound / Close controls -->
     <div class="chyron-nav-row">
       <button id="tourPrev" class="nav-big-btn" type="button" aria-label="Previous weather story">
         <span class="nav-arrow" aria-hidden="true">◀</span>
         <span>Previous Story</span>
       </button>
 
-      <button id="tourExit" class="nav-exit-btn" type="button" aria-label="Stop bulletin and return to globe">
-        <span>■ Back to Globe</span>
-      </button>
+      <div class="chyron-centre-btns">
+        <button id="tourMuteBtn" class="nav-exit-btn" type="button" aria-pressed="false" aria-label="Mute or unmute newsreader">
+          <span id="tourMuteLabel">🔊 Presenter On</span>
+        </button>
+        <button id="tourExit" class="nav-exit-btn" type="button" aria-label="Stop bulletin and return to globe">
+          <span>■ Back to Globe</span>
+        </button>
+      </div>
 
       <button id="tourNext" class="nav-big-btn nav-big-next" type="button" aria-label="Next weather story">
         <span>Next Story</span>

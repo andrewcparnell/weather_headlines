@@ -41,6 +41,7 @@ Each story MUST include:
 - `id`: short lowercase slug, e.g. `"2026-11-us-east-coast-storm"`
 - `kicker`: short uppercase Sky/BBC strap, e.g. `"BREAKING WEATHER · EASTERN UNITED STATES"`
 - `headline`: big, bold BBC/Sky broadcast headline (45 to 85 characters, punchy, no em dashes)
+- `voice_script`: an 80 to 110 word spoken television script written specifically to be read aloud by a British female BBC News / Sky News anchor with natural broadcast intonation. Write out numbers and units naturally for the ear (for example '139 millimetres of rain', '90 kilometres an hour', 'number one on record since 1940'), use natural spoken transitions between what is happening now, how long it has lasted, its historical rank, and the climate change connection, and include no markdown symbols or abbreviations.
 - `ticker`: a continuous scrolling news ticker script (~95 to 140 words) combining why this event is dramatic right now, how long it has persisted (days or weeks), where it ranks in the 1940-present ERA5 archive for this time of year, and how climate change has shifted the odds. Wrap 6 to 10 key phrases, numbers, durations, and rankings in `**double asterisks**` (for example `**139 mm of rain in 24 hours**`, `**ongoing for four weeks**`, `**#1 in 87 years since 1940**`, `**doubled in frequency**`) so the television ticker highlights them visually. Separate sections with ` /// `.
 - `region`: readable region name, e.g. `"New York, New Jersey and Mid-Atlantic Coast"`
 - `country`: primary country name, e.g. `"United States"`

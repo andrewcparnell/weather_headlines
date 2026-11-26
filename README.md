@@ -21,7 +21,7 @@ Inspired by Neil Gordon's [Weather Explorer](https://github.com/tehoro/weather-e
     2. *Persistence:* Whether the pattern has been building or stalling for days or weeks (14-day and 28-day ERA5 tracking).
     3. *Historical Rank:* Exact rank and percentile among annual seasonal windows back to **1940** in ERA5 (~87 years).
     4. *Climate Link:* How local background warming (comparing 1940-1979 with 1986-2025 in ERA5, alongside attribution science) has shifted the odds or intensity of the event.
-  - **International News Links & Optional Voiceover:** Direct links to international news coverage (BBC, The Guardian, Reuters, AP, Al Jazeera, and official disaster reports) plus an optional Web Speech presenter voice toggle.
+  - **Direct Event News Links & Neural Female Newsreader Audio:** Direct links to international news articles specifically reporting on each weather event, paired with pre-generated British female newsreader MP3 narration (`en-GB-SoniaNeural` via `edge-tts`) synced to the scrolling ticker and moving camera.
 
 ## How the 6-Hourly Pipeline Works
 

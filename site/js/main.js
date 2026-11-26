@@ -109,6 +109,8 @@ async function init() {
       tourHud: $('tourHud'),
       prevBtn: $('tourPrev'),
       nextBtn: $('tourNext'),
+      muteBtn: $('tourMuteBtn'),
+      muteLabel: $('tourMuteLabel'),
       exitBtn: $('tourExit'),
       counter: $('tourCounter'),
       kicker: $('tourKicker'),

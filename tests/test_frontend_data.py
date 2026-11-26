@@ -48,8 +48,10 @@ def test_generated_headlines_bulletin_is_valid_and_style_compliant():
     cleaned, errors = validate_and_clean_bulletin(payload)
     assert errors == []
     assert len(cleaned["stories"]) == 5
-    for st in cleaned["stories"]:
+    for idx, st in enumerate(cleaned["stories"], start=1):
         assert "**" in st["ticker"], f"Story {st['id']} ticker missing **keyword** highlights"
+        mp3_path = SITE_DIR / f"data/audio/story-{idx}.mp3"
+        assert mp3_path.exists() and mp3_path.stat().st_size > 15_000, f"Missing or empty MP3 {mp3_path}"
 
 
 def test_no_em_dashes_in_frontend_or_readme():

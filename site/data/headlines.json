@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "generated_utc": "2026-11-26T12:28:00Z",
+  "generated_utc": "2026-11-26T12:40:00Z",
   "model_run_utc": "2026-11-26T00:00:00Z",
   "valid_time_utc": "2026-11-26T12:00:00Z",
   "edition_title": "World Weather Headlines",
@@ -11,6 +11,7 @@
       "rank": 1,
       "kicker": "EASTERN UNITED STATES",
       "headline": "Fierce East Coast storm dumps 139 mm of rain and disrupts Thanksgiving travel for millions",
+      "voice_script": "In the eastern United States, a powerful coastal storm is sweeping one hundred and thirty-nine millimetres of heavy rain, and gusts of ninety kilometres an hour, right up the Atlantic seaboard. States of emergency are in force across New York and New Jersey, and for the first time in a century, New York's Thanksgiving Day Parade has had to be postponed. Rather than a slow multi-week build-up, this storm marks a sudden weather flip after two dry weeks, triggered as unusually warm Gulf Stream air collided with a sharp upper trough. Across eighty-seven years of climate records back to nineteen forty, today's offshore downpour ranks number one for late November. Along this coast, late-autumn air has warmed by three degrees since the mid-twentieth century, doubling the frequency of extreme coastal rainstorms.",
       "ticker": "A deepening coastal storm off Cape Hatteras is sweeping **139 mm of heavy rain** and **90 km/h (25 m/s) wind gusts** up the US Atlantic seaboard, triggering **states of emergency** across New York and New Jersey and forcing officials to postpone New York's Thanksgiving parade for the **first time in 100 years**  ///  HOW LONG IT HAS LASTED: Rather than a multi-week stall, this storm marks an abrupt pattern flip after just **21 mm of rain in two weeks**, ignited as a plume of **+7.3 °C warmer-than-normal** Gulf Stream air collided with a sharp upper trough  ///  WHERE IT RANKS: Delivering nearly three weeks of typical late-November rain in a single day, the offshore rainband sits at the **99th percentile (#1 in 87 years)** of late-November ERA5 records back to 1940  ///  CLIMATE CHANGE LINK: Late-November air over the western Atlantic Gulf Stream boundary has warmed by **+3.0 °C since 1940-1979**, **doubling heavy-rain extremes** from 3 to 6 per 40-year era as warmer ocean waters feed extra moisture into coastal storms",
       "region": "North Carolina to New York and New England",
       "country": "United States",
@@ -45,7 +46,7 @@
         {
           "lat": 42.8,
           "lon": -70.5,
-          "distance": 1.80
+          "distance": 1.8
         }
       ],
       "beats": [
@@ -90,13 +91,15 @@
           "title": "Maps show where Thanksgiving storms impact holiday festivities and travel",
           "url": "https://www.cbsnews.com/news/maps-thanksgiving-storms-disrupt-holiday-festivities-travel/"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-1.mp3"
     },
     {
       "id": "2026-11-26-ecuador-peru-el-nino-floods",
       "rank": 2,
       "kicker": "ECUADOR & NORTHERN PERU",
       "headline": "El Nino downpours bring another 184 mm deluge after rivers burst their banks in Ecuador",
+      "voice_script": "In South America, torrential Pacific moisture banking against the western Andes is pouring another one hundred and eighty-four millimetres of rain onto coastal Ecuador and northern Peru. Eight rivers have already burst their banks in western Ecuador, flooding neighbourhoods up to two metres deep and forcing local states of emergency. Crucially, this crisis has been building all month: twenty-five of the past twenty-eight days have brought heavy rain, piling up over seven hundred millimetres in just a fortnight. In eighty-seven years of records since nineteen forty, this rainfall rate is completely unprecedented, ranking number one for late November. Alongside a strengthening El Nino, coastal air here has warmed by one point four degrees since the mid-twentieth century, doubling the odds of extreme November downpours.",
       "ticker": "Torrential Pacific moisture banking against the western Andes is pouring **184 mm of rain in 24 hours** onto coastal Ecuador and northern Peru, where **eight overflowing rivers** in Los Rios and flash floods in Tumbes have already forced **local states of emergency** and swamped neighbourhoods up to **two metres deep**  ///  GOING ON FOR WEEKS: This emergency has been building relentlessly all month, with **25 of the past 28 days** bringing heavy rain and an extraordinary **718 mm accumulated in the last two weeks** (**1,142 mm in 28 days**)  ///  UNPRECEDENTED FOR NOVEMBER: Across **87 years of ERA5 records since 1940**, this week's rainfall intensity ranks **#1 on record (99.4th percentile)** for late November, a month that normally averages under 15 mm per fortnight here  ///  CLIMATE CHANGE LINK: Coupled with a **strengthening 2026 El Nino**, local coastal air has warmed **+1.4 °C since 1940-1979**, **doubling extreme late-November downpours** from 3 to 6 occurrences per 40-year period",
       "region": "Western Ecuador and Northern Peru",
       "country": "Ecuador",
@@ -131,7 +134,7 @@
         {
           "lat": -6.5,
           "lon": -78.2,
-          "distance": 1.80
+          "distance": 1.8
         }
       ],
       "beats": [
@@ -171,13 +174,15 @@
           "title": "Flash floods across northern Peru and Ecuador border linked to El Nino rains",
           "url": "https://reliefweb.int/report/peru/pluvialflash-flood-11-2026-flood-fenomeno-el-nino-2026-11-03"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-2.mp3"
     },
     {
       "id": "2026-11-26-southern-europe-adriatic-storms",
       "rank": 3,
       "kicker": "ITALY, CROATIA & MONTENEGRO",
       "headline": "Fresh 137 mm Adriatic storm hits flood-weary Italy and the Balkans after weeks of rain",
+      "voice_script": "Across southern Europe, southerly gales of ninety kilometres an hour are driving warm Mediterranean air straight into the Adriatic coast, unleashing another one hundred and thirty-seven millimetres of rain across Croatia and Montenegro. It arrives just days after Storm Charles forced river evacuations in northern Italy and flooded historic seafronts along the Dalmatian coast. The ground here can hold no more water: ten of the last fourteen days have brought heavy storms, totalling nearly seven hundred millimetres in two weeks. Looking back to nineteen forty, today ranks fourth wettest on record for late November. As the Mediterranean has warmed by one point four degrees since the mid-twentieth century, severe late-autumn downpours along this coast have tripled.",
       "ticker": "Southerly gales gusting to **90 km/h (25 m/s)** are driving warm Mediterranean moisture straight into the Adriatic coast and Dinaric Alps, unleashing **137 mm of rain in 24 hours** across Montenegro and Croatia days after **Storm Charles** triggered **river overflows and evacuations** in Italy and submerged coastal promenades in Split  ///  GOING ON FOR WEEKS: Ground across the central Mediterranean is completely saturated after **10 heavy-rain days in two weeks** and a staggering **676 mm of rainfall over the past fortnight**  ///  WHERE IT RANKS: Today's downpour ranks **4th wettest for late November since 1940 (96th percentile)** across **87 years** of Copernicus ERA5 reanalysis  ///  CLIMATE CHANGE LINK: Late-autumn air over the Adriatic has warmed **+1.4 °C since 1940-1979**, allowing storms to carry roughly **10% more water vapour** and **tripling extreme autumn rain days** from 2 to 6 per 40-year era",
       "region": "Italy, Croatia and Montenegro",
       "country": "Montenegro",
@@ -257,13 +262,15 @@
           "title": "Intense jet stream pattern targets Europe with rapid Atlantic storms and heavy rain",
           "url": "https://www.severe-weather.eu/global-weather/intense-zonal-flow-jet-stream-atlantic-storms-heavy-rain-europe-november-2026-mk/"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-3.mp3"
     },
     {
       "id": "2026-11-26-kazakhstan-siberia-heat-anomaly",
       "rank": 4,
       "kicker": "KAZAKHSTAN & CENTRAL SIBERIA",
       "headline": "Giant Eurasian heat dome pushes late-November temperatures up to 19 °C above normal",
+      "voice_script": "Turning to Eurasia, an extraordinary dome of warm air stretching from Kazakhstan into central Siberia has turned deep winter upside down. Afternoon temperatures in southeastern Kazakhstan have reached fourteen degrees, more than sixteen degrees above normal, while northern Siberia sits nearly twenty degrees warmer than the late-November average. Remarkably, this blocking high has held firm for four straight weeks, with all twenty-eight of the past twenty-eight days in southeastern Kazakhstan running warmer than normal. Across eighty-seven years of records since nineteen forty, this steppe warmth stands at number one on record. Northern Siberia has warmed by two point four degrees in late November since the mid-twentieth century, doubling the likelihood of extreme autumn thaws as snow cover retreats.",
       "ticker": "Subtropical air funnelled north from Iran and the Arabian Peninsula has lifted afternoon temperatures in southeastern Kazakhstan to **+14.0 °C (+16.4 °C above normal)** while central Siberia sits **+19.8 °C warmer than seasonal averages** where deep winter cold of -25 °C should already be established  ///  LOCKED IN FOR FOUR WEEKS: Every single day of the past month (**28 out of 28 days** in southeastern Kazakhstan and **24 of 28 days** in northern Siberia) has run anomalously warm beneath an immovable continental blocking high  ///  UNPRECEDENTED RANKING: In **87 years of ERA5 records since 1940**, today's Kazakh steppe warmth is **unprecedented (#1 on record, 99.4th percentile)** while northern Siberia ranks **4th warmest since 1940 (96th percentile)**  ///  CLIMATE CHANGE LINK: Following Central Asia's record-shattering 2026 summer, northern Siberia has warmed **+2.4 °C in late November since 1940-1979**, **doubling extreme warm spells** as snow and sea-ice loss accelerate regional heating",
       "region": "Kazakhstan and Central Siberia",
       "country": "Kazakhstan",
@@ -338,13 +345,15 @@
           "title": "Climatologists assess Central Asian warming and 2026 temperature records",
           "url": "https://www.azernews.az/region/262394.html"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-4.mp3"
     },
     {
       "id": "2026-11-26-north-atlantic-iceland-ireland-storms",
       "rank": 5,
       "kicker": "ICELAND, IRELAND & UNITED KINGDOM",
       "headline": "Powerful 975 hPa North Atlantic storm blasts Iceland with 133 km/h gales and sweeps rain into Ireland",
+      "voice_script": "Finally, in the North Atlantic, a deep storm system is battering southern Iceland with violent gusts of one hundred and thirty-three kilometres an hour, while sweeping bands of heavy wind and rain across Ireland and western Britain. Eight Irish counties have been placed under weather warnings by Met Eireann, alongside flood alerts in south-west England. An energetic jet stream has aimed storm after storm along this corridor, bringing nine gale days in the past fortnight and over two hundred millimetres of rain in four weeks. Peak gusts near Iceland are more than double the late-November average, ranking in the top one percent of storms since nineteen forty. And with regional temperatures one point six degrees warmer than in the mid-twentieth century, moisture that once fell as early-winter snow increasingly falls as heavy, flood-producing rain.",
       "ticker": "A deep **975 hPa North Atlantic cyclone** is battering southern Iceland with **133 km/h (36.9 m/s) gusts** while sweeping bands of heavy wind and rain across **eight Irish counties** and south-west England under active **Met Eireann and Met Office weather warnings**  ///  MULTI-WEEK STORM TRAIN: An energetic jet stream has fired back-to-back depressions along this corridor, bringing **9 gale days in the past fortnight** and **229 mm of precipitation in 28 days** across southern Iceland  ///  HISTORICAL RANK: Peak gusts near **37 m/s** are more than **double the 1991-2020 average** of 16.8 m/s for this date, placing the storm core in the **top 1% of late-November wind events since 1940**  ///  CLIMATE CHANGE LINK: Carrying a **+4.5 °C warm moisture plume** in a region that has warmed **+1.6 °C since 1940-1979**, precipitation that once fell as early-winter snow on subarctic glaciers increasingly falls as **flood-inducing heavy rain**",
       "region": "Iceland, Ireland and Western Britain",
       "country": "Ireland",
@@ -419,7 +428,9 @@
           "title": "Rapid North Atlantic storms bring heavy rainfall and strong winds into Europe",
           "url": "https://www.severe-weather.eu/global-weather/intense-zonal-flow-jet-stream-atlantic-storms-heavy-rain-europe-november-2026-mk/"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-5.mp3"
     }
-  ]
+  ],
+  "voice": "en-GB-SoniaNeural"
 }

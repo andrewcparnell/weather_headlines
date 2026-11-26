@@ -1,8 +1,8 @@
 import * as THREE from 'three';
 import { latLonToVec3, vec3ToLatLon } from './globe.js';
 
-const FLIGHT_MS = 2500;
-const TICKER_PX_PER_SEC = 92; // Comfortable BBC / Sky News broadcast ticker speed
+const FLIGHT_MS = 2400;
+const FALLBACK_STORY_SEC = 38; // Used only when muted or if an audio file is unavailable
 
 const LAYER_LABELS = {
   temperature: '2 M TEMPERATURE',
@@ -45,7 +45,6 @@ function escapeHtml(str) {
 }
 
 export function formatTickerHtml(rawTicker) {
-  // Escape HTML first, then convert **highlighted phrases** and /// separators into broadcast markup
   const escaped = escapeHtml(rawTicker);
   const withHighlights = escaped.replace(/\*\*(.+?)\*\*/g, '<mark class="ticker-kw">$1</mark>');
   return withHighlights.replace(/\s*\/\/\/\s*/g, '<span class="ticker-sep" aria-hidden="true">◆</span>');
@@ -58,17 +57,33 @@ export class BroadcastTour {
     this.onLayerSync = onLayerSync;
 
     this.stories = [];
+    this.bulletinStamp = '';
     this.active = false;
+    this.muted = false;
     this.storyIndex = 0;
     this.beatIndex = 0;
 
     this.phase = 'idle'; // 'flight' | 'glide'
     this.phaseElapsed = 0;
+    this.fallbackProgress = 0;
+    this.audioEndedAt = null;
 
-    // Pixel-accurate smooth horizontal ticker state
+    // Single reusable HTML5 Audio element so Safari/macOS gesture unlock persists across all 5 stories
+    this.audio = new Audio();
+    this.audio.preload = 'auto';
+    this.audioAvailable = false;
+
+    this.audio.addEventListener('ended', () => {
+      if (this.active) {
+        this.audioEndedAt = performance.now();
+      }
+    });
+    this.audio.addEventListener('error', () => {
+      this.audioAvailable = false;
+    });
+
     this.tickerCopyWidth = 2400;
     this.tickerStartX = 0;
-    this.tickerCurrentX = 0;
     this.tickerTotalTravel = 2400;
 
     this.flightState = null;
@@ -83,10 +98,15 @@ export class BroadcastTour {
 
   setBulletin(bulletin) {
     this.stories = bulletin?.stories || [];
+    this.bulletinStamp = encodeURIComponent(bulletin?.generated_utc || Date.now());
   }
 
   start(startIndex = 0) {
     if (!this.stories.length) return;
+    // Cancel any leftover browser speechSynthesis from older sessions just in case
+    if ('speechSynthesis' in window) {
+      window.speechSynthesis.cancel();
+    }
     this.active = true;
     document.body.classList.add('tour-active');
     this.dom.playLauncher.hidden = true;
@@ -98,6 +118,8 @@ export class BroadcastTour {
   stop() {
     if (!this.active) return;
     this.active = false;
+    this.audio.pause();
+    this.audio.removeAttribute('src');
     document.body.classList.remove('tour-active');
     this.dom.tourHud.hidden = true;
     this.dom.playLauncher.hidden = false;
@@ -105,13 +127,32 @@ export class BroadcastTour {
     this.globe.highlightStoryPin(-1);
   }
 
+  toggleMute() {
+    this.muted = !this.muted;
+    this.audio.muted = this.muted;
+    this.dom.muteBtn.setAttribute('aria-pressed', String(this.muted));
+    this.dom.muteLabel.textContent = this.muted ? '🔇 Muted' : '🔊 Presenter On';
+  }
+
   goToStory(index) {
     if (!this.stories.length) return;
     this.storyIndex = ((index % this.stories.length) + this.stories.length) % this.stories.length;
     this.beatIndex = 0;
+    this.fallbackProgress = 0;
+    this.audioEndedAt = null;
 
     const story = this.stories[this.storyIndex];
     this.globe.highlightStoryPin(this.storyIndex);
+
+    // Start neural British female newsreader MP3 immediately
+    const audioUrl = story.audio_url || `data/audio/story-${this.storyIndex + 1}.mp3`;
+    this.audio.pause();
+    this.audio.src = `${audioUrl}?v=${this.bulletinStamp}`;
+    this.audio.muted = this.muted;
+    this.audioAvailable = true;
+    this.audio.play().catch(() => {
+      this.audioAvailable = false;
+    });
 
     const wps = story.camera_waypoints || [];
     this.waypointVecs = wps.map(w => latLonToVec3(w.lat, w.lon, 1).normalize());
@@ -153,27 +194,21 @@ export class BroadcastTour {
     this.dom.headline.textContent = story.headline;
     this.dom.progressBar.style.width = '0%';
 
-    // Build scrolling ticker with two copies so there is never empty dead space
-    const rawTicker =
-      story.ticker ||
-      (story.beats || []).map(b => b.text).join('  ///  ');
+    const rawTicker = story.ticker || (story.beats || []).map(b => b.text).join('  ///  ');
     const htmlCopy = formatTickerHtml(rawTicker);
     this.dom.tickerTrack.innerHTML =
       `<div class="ticker-copy">${htmlCopy}</div>` +
       `<div class="ticker-copy" aria-hidden="true">${htmlCopy}</div>`;
 
-    // Start ticker immediately visible near the left side of the viewport so reading begins right away
     requestAnimationFrame(() => {
       const firstCopy = this.dom.tickerTrack.querySelector('.ticker-copy');
       const viewportW = this.dom.tickerViewport.clientWidth || window.innerWidth;
       this.tickerCopyWidth = Math.max(900, firstCopy ? firstCopy.offsetWidth : 2400);
-      this.tickerStartX = Math.round(Math.min(260, viewportW * 0.22));
-      this.tickerCurrentX = this.tickerStartX;
+      this.tickerStartX = Math.round(Math.min(240, viewportW * 0.2));
       this.tickerTotalTravel = this.tickerCopyWidth + this.tickerStartX;
-      this.dom.tickerTrack.style.transform = `translate3d(${this.tickerCurrentX}px, 0, 0)`;
+      this.dom.tickerTrack.style.transform = `translate3d(${this.tickerStartX}px, 0, 0)`;
     });
 
-    // Render direct, event-specific news links
     this.dom.newsLinks.replaceChildren();
     (story.news_links || []).forEach(link => {
       const a = document.createElement('a');
@@ -193,6 +228,7 @@ export class BroadcastTour {
     this.dom.playTourBtn.onclick = () => this.start(0);
     this.dom.prevBtn.onclick = () => this.goToStory(this.storyIndex - 1);
     this.dom.nextBtn.onclick = () => this.goToStory(this.storyIndex + 1);
+    this.dom.muteBtn.onclick = () => this.toggleMute();
     this.dom.exitBtn.onclick = () => this.stop();
 
     document.addEventListener('keydown', e => {
@@ -203,8 +239,30 @@ export class BroadcastTour {
         this.goToStory(this.storyIndex + 1);
       } else if (e.key === 'ArrowLeft') {
         this.goToStory(this.storyIndex - 1);
+      } else if (e.key.toLowerCase() === 'm') {
+        this.toggleMute();
       }
     });
+  }
+
+  _computeStoryProgress(now, dtSec) {
+    const hasValidAudio =
+      this.audioAvailable &&
+      Number.isFinite(this.audio.duration) &&
+      this.audio.duration > 3 &&
+      !this.audio.paused;
+
+    if (hasValidAudio) {
+      this.fallbackProgress = Math.min(1, this.audio.currentTime / this.audio.duration);
+      return this.fallbackProgress;
+    }
+
+    if (this.audioEndedAt !== null) {
+      return 1;
+    }
+
+    this.fallbackProgress = Math.min(1, this.fallbackProgress + dtSec / FALLBACK_STORY_SEC);
+    return this.fallbackProgress;
   }
 
   _tick(now) {
@@ -216,18 +274,12 @@ export class BroadcastTour {
     if (!this.active || !this.stories.length) return;
 
     const story = this.stories[this.storyIndex];
+    const storyProgress = this._computeStoryProgress(now, dtSec);
 
-    // Scroll ticker continuously even during the opening 2s swoop so it feels like live television
-    this.tickerCurrentX -= TICKER_PX_PER_SEC * dtSec;
-    const travelled = this.tickerStartX - this.tickerCurrentX;
-    // Wrap seamlessly if needed
-    const displayX =
-      this.tickerCurrentX <= -this.tickerCopyWidth
-        ? this.tickerCurrentX + this.tickerCopyWidth
-        : this.tickerCurrentX;
+    // Sync scrolling ticker smoothly with newsreader progress
+    const rawX = this.tickerStartX - storyProgress * this.tickerTotalTravel;
+    const displayX = rawX <= -this.tickerCopyWidth ? rawX + this.tickerCopyWidth : rawX;
     this.dom.tickerTrack.style.transform = `translate3d(${displayX.toFixed(1)}px, 0, 0)`;
-
-    const storyProgress = Math.max(0, Math.min(1, travelled / Math.max(1, this.tickerTotalTravel)));
     this.dom.progressBar.style.width = `${(storyProgress * 100).toFixed(1)}%`;
 
     if (this.phase === 'flight' && this.flightState) {
@@ -250,7 +302,7 @@ export class BroadcastTour {
       return;
     }
 
-    // Switch weather layers smoothly at each quarter of the story as the ticker scrolls
+    // Switch weather layers smoothly at each quarter of the spoken bulletin
     const beats = story.beats || [];
     if (beats.length) {
       const targetBeat = Math.min(beats.length - 1, Math.floor(storyProgress * beats.length));
@@ -261,8 +313,13 @@ export class BroadcastTour {
       }
     }
 
-    // Once the entire event ticker has scrolled past, advance smoothly to the next global headline
-    if (storyProgress >= 1) {
+    // Advance cleanly after a brief 850 ms studio breath pause when the newsreader finishes
+    if (this.audioEndedAt !== null) {
+      if (now - this.audioEndedAt >= 850) {
+        this.goToStory(this.storyIndex + 1);
+        return;
+      }
+    } else if (!this.audioAvailable && storyProgress >= 1) {
       this.goToStory(this.storyIndex + 1);
       return;
     }

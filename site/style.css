@@ -530,6 +530,12 @@ body.tour-active .story-pin {
   font-size: 15px;
 }
 
+.chyron-centre-btns {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
 .nav-exit-btn {
   min-height: 46px;
   padding: 0 20px;

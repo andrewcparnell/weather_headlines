@@ -211,6 +211,8 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
 
         raw_ticker = sanitise_prose(str(st.get("ticker") or ""))
         ticker = auto_highlight_keywords(raw_ticker) if len(raw_ticker) >= 60 else build_ticker_from_beats(cleaned_beats)
+        voice_script = sanitise_prose(str(st.get("voice_script") or ""))
+        audio_url = str(st.get("audio_url") or "").strip()
 
         cleaned_links: list[dict] = []
         for link in st.get("news_links") or []:
@@ -248,6 +250,8 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 "kicker": sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper(),
                 "headline": headline,
                 "ticker": ticker,
+                "voice_script": voice_script,
+                **({"audio_url": audio_url} if audio_url else {}),
                 "region": sanitise_prose(str(st.get("region") or "")),
                 "country": sanitise_prose(str(st.get("country") or "")),
                 "hazard": hazard,

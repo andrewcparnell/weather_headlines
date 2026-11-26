@@ -8,6 +8,7 @@ import numpy as np
 from pipeline.opendata import LiveWeatherFields, to_half_degree
 from pipeline.pack_globe import dequantise_u8, quantise_u8
 from pipeline.scanner import detect_global_candidates, extract_pressure_features, haversine_km
+from pipeline.tts import normalise_for_newsreader
 from pipeline.validator import (
     ensure_dynamic_waypoints,
     is_specific_event_url,
@@ -160,4 +161,17 @@ def test_generic_hub_urls_rejected_and_specific_articles_accepted():
         "https://www.theguardian.com/us-news/2026/nov/25/heavy-rain-high-winds-thanksgiving-east-coast"
     )
     assert is_specific_event_url("https://www.gdacs.org/report.aspx?eventid=1018332&episodeid=28&eventtype=DR")
+
+
+def test_newsreader_speech_normalisation():
+    raw = "Met Eireann warns of **139 mm / 24 h** and +16.4 °C (#1 in 1940-1979) during El Nino."
+    spoken = normalise_for_newsreader(raw)
+    assert "**" not in spoken
+    assert "Met Air-uhn" in spoken
+    assert "El Neen-yo" in spoken
+    assert "139 millimetres in 24 hours" in spoken
+    assert "16.4 degrees Celsius" in spoken
+    assert "number 1" in spoken
+    assert "1940 to 1979" in spoken
+
 

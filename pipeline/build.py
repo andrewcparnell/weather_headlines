@@ -13,6 +13,7 @@ from .news_agent import build_deterministic_bulletin, generate_headlines_with_cl
 from .opendata import fetch_live_weather
 from .pack_globe import package_globe_layers
 from .scanner import detect_global_candidates
+from .tts import build_bulletin_audio
 from .warnings_feed import fetch_global_warnings
 
 
@@ -73,13 +74,19 @@ def run_pipeline(
             "[build] ANTHROPIC_API_KEY not set; keeping existing headlines.json while updating live globe layers.",
             file=sys.stderr,
         )
-        return 0
+        bulletin = previous_bulletin
     else:
         print(
             "[build] ANTHROPIC_API_KEY not set; building ERA5-grounded fallback bulletin.",
             file=sys.stderr,
         )
         bulletin = build_deterministic_bulletin(weather, enriched, warnings)
+
+    # 6. Synthesise neural British female newsreader MP3s for all stories
+    try:
+        bulletin = build_bulletin_audio(bulletin, out_dir)
+    except Exception as exc:
+        print(f"[build] Warning: neural TTS audio synthesis failed ({exc}); keeping text bulletin.", file=sys.stderr)
 
     tmp = headlines_path.with_suffix(".tmp.json")
     tmp.write_text(json.dumps(bulletin, indent=2, ensure_ascii=False))
