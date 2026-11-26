@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126m';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126n';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -146,7 +146,8 @@ export class BroadcastTour {
     this.active = false;
     this._pendingStartIndex = null;
 
-    // Presenter voice is switched OFF by default
+    // Defaults: on-map script text ON, presenter voice OFF
+    this.textEnabled = true;
     this.voiceEnabled = false;
     this.linksHovered = false;
     this.storyIndex = 0;
@@ -202,14 +203,24 @@ export class BroadcastTour {
   }
 
   _syncVoiceButtonUi() {
+    if (this.dom.textBtn && this.dom.textLabel) {
+      this.dom.textBtn.setAttribute('aria-pressed', String(this.textEnabled));
+      this.dom.textBtn.classList.toggle('voice-on', this.textEnabled);
+      this.dom.textLabel.textContent = this.textEnabled ? '📝 Text On' : '📝 Text Off';
+    }
     if (this.dom.muteBtn && this.dom.muteLabel) {
       this.dom.muteBtn.setAttribute('aria-pressed', String(this.voiceEnabled));
       this.dom.muteBtn.classList.toggle('voice-on', this.voiceEnabled);
       this.dom.muteLabel.textContent = this.voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
     }
     if (this.dom.scriptOverlay) {
-      this.dom.scriptOverlay.hidden = !(this.active && !this.voiceEnabled && this.phase === 'cues');
+      this.dom.scriptOverlay.hidden = !(this.active && this.textEnabled && this.phase === 'cues');
     }
+  }
+
+  toggleText() {
+    this.textEnabled = !this.textEnabled;
+    this._syncVoiceButtonUi();
   }
 
   _playSoftSting() {
@@ -550,6 +561,7 @@ export class BroadcastTour {
     this.dom.nextBtn?.addEventListener('click', () =>
       this.goToStory(this.storyIndex + 1, { playSting: true })
     );
+    this.dom.textBtn?.addEventListener('click', () => this.toggleText());
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
     this.dom.exitBtn?.addEventListener('click', () => this.stop());
 
@@ -570,6 +582,8 @@ export class BroadcastTour {
         this.goToStory(this.storyIndex - 1, { playSting: true });
       } else if (e.key.toLowerCase() === 'm') {
         this.toggleMute();
+      } else if (e.key.toLowerCase() === 't') {
+        this.toggleText();
       }
     });
   }

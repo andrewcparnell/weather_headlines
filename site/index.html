@@ -6,7 +6,7 @@
   <title>Weather Headlines · Live Global Weather</title>
   <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
-  <link rel="stylesheet" href="style.css?v=20261126m">
+  <link rel="stylesheet" href="style.css?v=20261126n">
   <script type="importmap">
     {
       "imports": {
@@ -146,6 +146,9 @@
         <div class="chyron-actions">
           <button id="tourPrev" class="chyron-btn" type="button" aria-label="Previous story">◀ Prev</button>
           <button id="tourNext" class="chyron-btn chyron-btn-next" type="button" aria-label="Next story">Next ▶</button>
+          <button id="tourTextBtn" class="chyron-btn chyron-btn-voice voice-on" type="button" aria-pressed="true" aria-label="Toggle on-map script text">
+            <span id="tourTextLabel">📝 Text On</span>
+          </button>
           <button id="tourMuteBtn" class="chyron-btn chyron-btn-voice" type="button" aria-pressed="false" aria-label="Toggle presenter voice">
             <span id="tourMuteLabel">🔇 Voice Off</span>
           </button>
@@ -185,6 +188,6 @@
     <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=20261126m"></script>
+  <script type="module" src="js/main.js?v=20261126n"></script>
 </body>
 </html>

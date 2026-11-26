@@ -1,6 +1,6 @@
-import { WeatherGlobe } from './globe.js?v=20261126m';
-import { LocationSearch } from './search.js?v=20261126m';
-import { BroadcastTour } from './tour.js?v=20261126m';
+import { WeatherGlobe } from './globe.js?v=20261126n';
+import { LocationSearch } from './search.js?v=20261126n';
+import { BroadcastTour } from './tour.js?v=20261126n';
 
 const $ = id => document.getElementById(id);
 
@@ -109,6 +109,8 @@ async function init() {
       tourHud: $('tourHud'),
       prevBtn: $('tourPrev'),
       nextBtn: $('tourNext'),
+      textBtn: $('tourTextBtn'),
+      textLabel: $('tourTextLabel'),
       muteBtn: $('tourMuteBtn'),
       muteLabel: $('tourMuteLabel'),
       exitBtn: $('tourExit'),
