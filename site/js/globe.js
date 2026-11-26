@@ -3,6 +3,8 @@ import { OrbitControls } from '../vendor/OrbitControls.js';
 
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
+const HOME_LAT = 26;
+const HOME_LON = -12;
 
 const LAYER_MODE_INDEX = {
   temperature: 0,
@@ -145,7 +147,7 @@ export class WeatherGlobe {
     this.scene = new THREE.Scene();
     const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
     this.camera = new THREE.PerspectiveCamera(vp.fov, vp.aspect, 0.05, 50);
-    latLonToVec3(26, -12, vp.initialDist, this.camera.position);
+    latLonToVec3(HOME_LAT, HOME_LON, vp.initialDist, this.camera.position);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -828,7 +830,41 @@ export class WeatherGlobe {
       toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
       fromDist,
       toDist: adjDistance,
+      fromLook: new THREE.Vector3(0, 0, 0),
+      toLook: new THREE.Vector3(0, 0, 0),
       peakBoost,
+      resumeAutoSpin: false,
+      start: performance.now(),
+      duration: durationMs,
+    };
+  }
+
+  returnToHomeView(durationMs = 1650) {
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    const fromDir = this.camera.position.clone().normalize();
+    const toDir = latLonToVec3(HOME_LAT, HOME_LON, 1).normalize();
+    const fromDist = this.camera.position.length();
+    const angle = fromDir.angleTo(toDir);
+
+    // Preserve exact optical axis on frame 1 so transitioning out of oblique tour view has zero jump
+    const fwd = this.camera.getWorldDirection(new THREE.Vector3());
+    const fromLook = this.camera.position.clone().addScaledVector(fwd, fromDist);
+
+    this.tourControlled = false;
+    this.controls.enabled = true;
+    this.autoSpin = false;
+    this.setTourFocusCallout(null);
+    this.controls.target.set(0, 0, 0);
+
+    this.flight = {
+      fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromDir),
+      toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
+      fromDist,
+      toDist: vp.initialDist,
+      fromLook,
+      toLook: new THREE.Vector3(0, 0, 0),
+      peakBoost: Math.min(0.35, angle * 0.16),
+      resumeAutoSpin: true,
       start: performance.now(),
       duration: durationMs,
     };
@@ -841,10 +877,7 @@ export class WeatherGlobe {
       this.autoSpin = false;
       this.flight = null;
     } else {
-      this.setTourFocusCallout(null);
-      this.controls.target.set(0, 0, 0);
-      this.camera.up.set(0, 1, 0);
-      this.controls.update();
+      this.returnToHomeView(1650);
     }
   }
 
@@ -1167,8 +1200,18 @@ export class WeatherGlobe {
       const arc = Math.sin(rawT * Math.PI) * this.flight.peakBoost;
       const dist = THREE.MathUtils.lerp(this.flight.fromDist, this.flight.toDist, ease) + arc;
       this.camera.position.copy(dir.multiplyScalar(dist));
-      this.camera.lookAt(0, 0, 0);
-      if (rawT >= 1) this.flight = null;
+      this.camera.up.set(0, 1, 0);
+      const lookPt = new THREE.Vector3().lerpVectors(this.flight.fromLook, this.flight.toLook, ease);
+      this.camera.lookAt(lookPt);
+      if (rawT >= 1) {
+        const shouldSpin = this.flight.resumeAutoSpin;
+        this.flight = null;
+        this.controls.target.set(0, 0, 0);
+        this.controls.update();
+        if (shouldSpin) {
+          this.autoSpin = true;
+        }
+      }
     } else if (!this.tourControlled) {
       if (this.autoSpin) {
         // Negative camera rotation around +Y makes Earth spin West-to-East (anticlockwise from above North Pole)

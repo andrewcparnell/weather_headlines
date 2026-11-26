@@ -202,6 +202,7 @@ def test_mobile_camera_framing_and_responsive_controls():
 
     assert "</script></script>" not in html
     assert "computeViewportCameraParams" in globe_js
+    assert "returnToHomeView" in globe_js
     assert "flex-wrap: wrap;" in css
     assert "overflow-x: auto;" in css
 
