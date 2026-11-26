@@ -92,6 +92,18 @@ function decodeDeltaRing(deltaArr, scale = 100) {
   return pts;
 }
 
+export function computeViewportCameraParams(width, height) {
+  const aspect = Math.max(0.3, width / Math.max(1, height));
+  const fov = aspect < 1.0 ? Math.min(54, 38 + (1.0 - aspect) * 28) : 38;
+  const tanHalfX = aspect * Math.tan(fov * 0.5 * DEG2RAD);
+  const targetWidthFrac = aspect < 1.0 ? 0.84 : 0.70;
+  const ft = Math.max(0.12, targetWidthFrac * tanHalfX);
+  const exactDist = Math.sqrt(1 + ft * ft) / ft;
+  const initialDist = aspect < 1.0 ? Math.max(3.2, Math.min(5.6, exactDist)) : 2.75;
+  const altitudeScale = aspect < 0.9 ? Math.min(2.15, 0.95 / Math.max(0.42, aspect)) : 1.0;
+  return { aspect, fov, initialDist, altitudeScale };
+}
+
 export class WeatherGlobe {
   constructor(stageEl, overlayEl, { onSpotClick, onPinClick, onUserInteract } = {}) {
     this.stageEl = stageEl;
@@ -131,8 +143,9 @@ export class WeatherGlobe {
 
   _initScene() {
     this.scene = new THREE.Scene();
-    this.camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.05, 40);
-    latLonToVec3(26, -12, 2.72, this.camera.position);
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    this.camera = new THREE.PerspectiveCamera(vp.fov, vp.aspect, 0.05, 50);
+    latLonToVec3(26, -12, vp.initialDist, this.camera.position);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -146,7 +159,7 @@ export class WeatherGlobe {
     this.controls.rotateSpeed = 0.55;
     this.controls.zoomSpeed = 0.75;
     this.controls.minDistance = 1.24;
-    this.controls.maxDistance = 4.6;
+    this.controls.maxDistance = 7.2;
 
     // Subtle deep-space starfield
     const starCount = 1400;
@@ -790,9 +803,11 @@ export class WeatherGlobe {
   }
 
   getCurrentCameraGeo() {
-    const dist = this.camera.position.length();
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    const rawDist = this.camera.position.length();
+    const nominalDist = 1.0 + Math.max(0.15, (rawDist - 1.0) / vp.altitudeScale);
     const { lat, lon } = vec3ToLatLon(this.camera.position);
-    return { lat, lon, distance: dist };
+    return { lat, lon, distance: nominalDist };
   }
 
   flyTo(lat, lon, distance = 1.85, durationMs = 1800) {
@@ -805,11 +820,14 @@ export class WeatherGlobe {
     const angle = fromDir.angleTo(toDir);
     const peakBoost = Math.min(0.65, angle * 0.28);
 
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    const adjDistance = 1.0 + Math.max(0.24, distance - 1.0) * vp.altitudeScale;
+
     this.flight = {
       fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromDir),
       toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
       fromDist,
-      toDist: distance,
+      toDist: adjDistance,
       peakBoost,
       start: performance.now(),
       duration: durationMs,
@@ -831,6 +849,10 @@ export class WeatherGlobe {
   }
 
   setTourCameraPose(focusLat, focusLon, distance, bearingDeg = 0, tiltDeg = 18) {
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    const isNarrowMobile = window.innerWidth <= 820;
+    const effDist = 1.0 + Math.max(0.24, distance - 1.0) * vp.altitudeScale;
+
     const vFocus = latLonToVec3(focusLat, focusLon, 1.0);
     const upLocal = vFocus.clone().normalize();
 
@@ -838,7 +860,6 @@ export class WeatherGlobe {
     const east = new THREE.Vector3(-Math.sin(lam), 0, -Math.cos(lam)).normalize();
     const north = new THREE.Vector3().crossVectors(upLocal, east).normalize();
 
-    // Offset camera obliquely south-west / south-east of focus so continents show rich 3D curvature & motion
     const bRad = bearingDeg * DEG2RAD;
     const tiltRad = tiltDeg * DEG2RAD;
     const backDir = north
@@ -853,23 +874,27 @@ export class WeatherGlobe {
       .addScaledVector(backDir, Math.sin(tiltRad))
       .normalize();
 
-    this.camera.position.copy(camDir.multiplyScalar(distance));
+    this.camera.position.copy(camDir.multiplyScalar(effDist));
     this.camera.up.set(0, 1, 0);
 
-    // Frame the weather hotspot slightly right-of-centre and above the bottom bar so the top-left presenter script stays clear of the data
+    // On desktop, nudge slightly right-of-centre to clear top-left script; on mobile, centre horizontally in the open middle window
     const tiltFrac = Math.min(1.0, tiltDeg / 14.5);
-    const span = Math.max(0.15, distance - 1.0);
+    const span = Math.max(0.15, effDist - 1.0);
+    const eastShift = isNarrowMobile ? 0.0 : -0.065 * span * tiltFrac;
+    const northShift = isNarrowMobile ? -0.035 * span * tiltFrac : -0.075 * span * tiltFrac;
     const lookTarget = vFocus
       .clone()
-      .addScaledVector(north, -0.075 * span * tiltFrac)
-      .addScaledVector(east, -0.065 * span * tiltFrac)
+      .addScaledVector(north, northShift)
+      .addScaledVector(east, eastShift)
       .multiplyScalar(1.0 - 0.14 * tiltFrac);
     this.camera.lookAt(lookTarget);
   }
 
   _bindEvents() {
     window.addEventListener('resize', () => {
-      this.camera.aspect = window.innerWidth / window.innerHeight;
+      const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+      this.camera.fov = vp.fov;
+      this.camera.aspect = vp.aspect;
       this.camera.updateProjectionMatrix();
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });

@@ -192,3 +192,40 @@ def test_app_icons_and_web_manifest():
         rel_path = icon_entry["src"].lstrip("/")
         assert (SITE_DIR / rel_path).exists(), f"Manifest icon missing on disk: {rel_path}"
 
+
+def test_mobile_camera_framing_and_responsive_controls():
+    import math
+
+    html = (SITE_DIR / "index.html").read_text()
+    css = (SITE_DIR / "style.css").read_text()
+    globe_js = (SITE_DIR / "js" / "globe.js").read_text()
+
+    assert "</script></script>" not in html
+    assert "computeViewportCameraParams" in globe_js
+    assert "flex-wrap: wrap;" in css
+    assert "overflow-x: auto;" in css
+
+    # Verify the exact camera framing formula across iPhone SE, iPhone 15, Pro Max, iPad, and Desktop
+    viewports = [
+        ("iPhone SE", 375, 667),
+        ("iPhone 15", 390, 844),
+        ("iPhone Pro Max", 430, 932),
+        ("iPad Portrait", 768, 1024),
+        ("Desktop", 1440, 900),
+    ]
+    for label, w, h in viewports:
+        aspect = w / h
+        fov = min(54.0, 38.0 + (1.0 - aspect) * 28.0) if aspect < 1.0 else 38.0
+        tan_half_x = aspect * math.tan(math.radians(fov * 0.5))
+        target_frac = 0.84 if aspect < 1.0 else 0.70
+        ft = max(0.12, target_frac * tan_half_x)
+        exact_dist = math.sqrt(1.0 + ft * ft) / ft
+        init_dist = max(3.2, min(5.6, exact_dist)) if aspect < 1.0 else 2.75
+
+        # Projected horizontal screen fraction occupied by the 3D Earth silhouette: tan(arcsin(1/d)) / tan_half_x
+        alpha = math.asin(1.0 / init_dist)
+        screen_width_fraction = math.tan(alpha) / tan_half_x
+        assert 0.55 <= screen_width_fraction <= 0.90, (
+            f"{label} ({w}x{h}) globe occupies {screen_width_fraction:.2%} of width (expected 55%-90%)"
+        )
+
