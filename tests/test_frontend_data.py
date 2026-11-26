@@ -132,7 +132,8 @@ def test_dom_ids_and_module_paths_match_index_html():
     missing_ids = referenced_ids - html_ids
     assert not missing_ids, f"IDs referenced in main.js missing from index.html: {missing_ids}"
 
-    # Verify importmap and vendor files exist
+    # Verify importmap, custom domain CNAME, and vendor files exist
+    assert (SITE_DIR / "CNAME").read_text().strip() == "headlines.aimsir.org"
     for rel in (
         "vendor/three.module.js",
         "vendor/three.core.min.js",

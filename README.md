@@ -1,46 +1,43 @@
-# Weather Headlines
+# Weather Headlines (`headlines.aimsir.org`)
 
-An interactive 3D global weather explorer paired with a 6-hourly **World Weather Tour** that presents the planet's top five weather stories like an international television weather bulletin.
+Live site: **<https://headlines.aimsir.org>**
 
-Inspired by Neil Gordon's [Weather Explorer](https://github.com/tehoro/weather-explorer-web), redesigned around a clean, single-screen globe and statistically grounded climate context.
+An interactive 3D global weather explorer paired with a 6-hourly **World Weather Headlines** broadcast tour that presents the planet's top five weather stories like an international television news bulletin.
+
+Inspired by Neil Gordon's [Weather Explorer](https://github.com/tehoro/weather-explorer-web), redesigned around a clean, single-screen 3D globe and statistically grounded ERA5 climate context.
 
 ## Features
 
-- **Immediate Live 3D Globe:** Opens straight onto a smooth WebGL / Three.js Earth showing live global **ECMWF Open Data** fields at 0.5° resolution with crisp Natural Earth coastlines and country borders.
+- **Immediate Live 3D Globe:** Opens straight onto a smooth WebGL / Three.js Earth showing live global **ECMWF Open Data** fields at 0.5° resolution with crisp Natural Earth coastlines, country borders, and top-left report timestamps showing when the current bulletin was created and when the next 6-hourly report is due.
 - **Five Instant Weather Layers:** Switch seamlessly down the right-hand side between:
   1. **Temperature** (2 m air temperature)
   2. **Temp Anomaly** (departure from the 1991-2020 Copernicus ERA5 seasonal mean for the exact date and UTC hour)
-  3. **Winds** (10 m wind speed plus 4,000 animated 3D flowing wind streamlines)
-  4. **Rainfall** (24-hour accumulated precipitation)
-  5. **Pressure** (mean sea level pressure with smooth isobars and labelled `H` / `L` centres)
+  3. **Winds** (10 m wind speed plus animated 3D flowing streamlines)
+  4. **Rainfall** (24-hour accumulated precipitation with radar-wave animation)
+  5. **Pressure** (mean sea-level pressure with smooth isobars and labelled `H` / `L` centres)
 - **Country & City Search:** Top-left search bar covers every country on Earth plus major cities and regions (with live Open-Meteo geocoding fallback for smaller towns), flying smoothly across the globe and displaying a live multi-variable weather readout.
-- **Broadcast World Tour (Play Button):** Clicking the Play button at the bottom centre launches a guided tour of **5 global weather highlights**:
-  - **Continuous Camera Choreography:** Sweeps between continents along great-circle arcs and glides continuously across each weather system through 4 surface waypoints while automatically switching weather layers.
-  - **Four Broadcast Chapters per Event:**
-    1. *Live Event:* What is happening right now and why it matters.
-    2. *Persistence:* Whether the pattern has been building or stalling for days or weeks (14-day and 28-day ERA5 tracking).
-    3. *Historical Rank:* Exact rank and percentile among annual seasonal windows back to **1940** in ERA5 (~87 years).
-    4. *Climate Link:* How local background warming (comparing 1940-1979 with 1986-2025 in ERA5, alongside attribution science) has shifted the odds or intensity of the event.
-  - **Direct Event News Links & Neural Female Newsreader Audio:** Direct links to international news articles specifically reporting on each weather event, paired with pre-generated British female newsreader MP3 narration (`en-GB-SoniaNeural` via `edge-tts`) synced to the scrolling ticker and moving camera.
+- **Broadcast World Tour (`Play Headlines`):** Clicking **Play Headlines** at the bottom centre launches a guided tour of **5 global weather highlights**:
+  - **Sentence-Synchronised Globe Choreography:** Each story glides continuously along a smooth 3D Catmull-Rom spline across key locations while automatically switching weather variables (`Rainfall`, `Winds`, `Pressure`, `Temperature`, `Temp Anomaly`) and surface callouts in lockstep with each sentence.
+  - **Independent `Text On/Off` & `Voice On/Off` Controls:** Defaults to **`📝 Text On`** (on-map presenter script cascading cleanly in the upper-left) and **`🔇 Voice Off`**, paired with pre-generated British female newsreader MP3 narration (`en-GB-SoniaNeural` via `edge-tts`) and a soft transition beat when **`🔊 Voice On`** is enabled.
+  - **Dual-Speed Broadcast Banner:** Full-width frosted-glass lower-third banner featuring the main headline, a calm highlighted `STORY` ticker covering duration, **1940-present ERA5 historical rank**, and **climate change warming shift**, plus a slower CNN-style `IN THE NEWS` ticker linking directly to international news articles about that specific event.
 
 ## How the 6-Hourly Pipeline Works
 
-Every 6 hours (via `.github/workflows/refresh.yml`), Python scripts in `pipeline/` run on GitHub Actions and redeploy `site/` to GitHub Pages:
+Every 6 hours (`01:25`, `07:25`, `13:25`, `19:25` UTC via `.github/workflows/refresh.yml`), Python scripts in `pipeline/` run on GitHub Actions and redeploy `site/` to **<https://headlines.aimsir.org>**:
 
-1. **`pipeline/opendata.py`** fetches only the required byte ranges of the latest 0.25° ECMWF IFS Open Data GRIB2 files (`00z`, `06z`, `12z`, `18z`) from AWS S3 / `data.ecmwf.int`.
-2. **`pipeline/climatology.py`** computes the WMO 1991-2020 seasonal 2 m temperature normal from Google's public ARCO-ERA5 Zarr store, and queries 1940-present daily ERA5 series (via Open-Meteo Historical Archive) at candidate hotspots to calculate exact seasonal ranks, multi-week persistence, and 85-year warming shifts.
+1. **`pipeline/opendata.py`** fetches only the required byte ranges of the latest 0.25° ECMWF IFS Open Data GRIB2 files (`00z`, `06z`, `12z`, `18z`).
+2. **`pipeline/climatology.py`** loads the 1940-present ARCO-ERA5 archive and 28-day Open-Meteo series at candidate hotspots to compute exact seasonal ranks since 1940, multi-week persistence, and 1940-1979 vs 1986-2025 warming shifts.
 3. **`pipeline/scanner.py` & `pipeline/pack_globe.py`** detect global hotspots, trace smooth global isobars and `H`/`L` centres, and pack all 5 global layers into ~200 KB total of lossless WebP textures (`site/data/layers/`).
-4. **`pipeline/news_agent.py` & `pipeline/validator.py`** call **Anthropic Claude** with built-in web search to verify active international news coverage, write the 5 four-beat broadcast scripts and moving camera paths, validate every field, and publish `site/data/headlines.json`.
+4. **`pipeline/news_agent.py`, `pipeline/validator.py` & `pipeline/tts.py`** call **Anthropic Claude** with built-in web search to verify direct event news articles, author the 5 sentence-cued broadcast scripts, synthesise `en-GB-SoniaNeural` MP3 audio (`site/data/audio/`), validate every field, and publish `site/data/headlines.json`.
 
-## Setup for Automated 6-Hourly Updates
+## Deployment (`headlines.aimsir.org`)
 
-1. **Enable GitHub Pages:**
-   In your GitHub repository, go to **Settings -> Pages** and set **Build and deployment -> Source** to **GitHub Actions**.
-2. **Add Your Anthropic API Key:**
-   Go to **Settings -> Secrets and variables -> Actions -> New repository secret**, create a secret named `ANTHROPIC_API_KEY`, and paste your Anthropic key.
-   *(Optional: set `ANTHROPIC_MODEL` if you wish to override the default Claude Sonnet 4.5 model.)*
-3. **Trigger a Run Anytime:**
-   Open the **Actions** tab, select **Refresh Weather & Deploy Pages**, and click **Run workflow** (it also runs automatically every 6 hours).
+1. **DNS (`aimsir.org` on GoDaddy):**
+   Add a `CNAME` record with Host/Name `headlines` pointing to `andrewcparnell.github.io` (TTL: 1 Hour). `site/CNAME` is already included in the repository.
+2. **GitHub Pages:**
+   In **Settings -> Pages**, set **Build and deployment -> Source** to **GitHub Actions**, enter `headlines.aimsir.org` under **Custom domain**, and tick **Enforce HTTPS** once the DNS check turns green.
+3. **Anthropic Secret for 6-Hourly Headlines:**
+   In **Settings -> Secrets and variables -> Actions**, add `ANTHROPIC_API_KEY`.
 
 ## Running Locally
 
@@ -49,7 +46,7 @@ Requires Python 3.12 and [uv](https://docs.astral.sh/uv/):
 ```bash
 uv sync
 
-# Refresh live ECMWF weather layers + ERA5 rankings + headlines:
+# Refresh live ECMWF weather layers + ERA5 rankings + headlines + MP3 audio:
 ANTHROPIC_API_KEY=sk-ant-... uv run python -m pipeline.build
 
 # Serve the static 3D globe locally:
@@ -67,7 +64,7 @@ uv run pytest -v
 ## Data Sources & Acknowledgements
 
 - **Forecast Data:** © ECMWF, licensed under [CC BY 4.0](https://creativecommons.org/licenses/by/4.0/) from [ECMWF Open Data](https://www.ecmwf.int/en/forecasts/datasets/open-data) (regridded and unit-converted).
-- **Climatology & Historical Rankings:** Contains modified Copernicus Climate Change Service information (ERA5, 1940-present, Hersbach et al. 2020) via Google ARCO-ERA5 and [Open-Meteo Historical Weather API](https://open-meteo.com/).
+- **Climatology & Historical Rankings:** Contains modified Copernicus Climate Change Service information (ERA5, 1940-present, Hersbach et al. 2020) via Google ARCO-ERA5 and [Open-Meteo](https://open-meteo.com/).
 - **Official Alerts:** Global Disaster Alert and Coordination System ([GDACS](https://www.gdacs.org/)).
 - **Map Outlines & Places:** [Natural Earth](https://www.naturalearthdata.com/) 1:50m (public domain) and [GeoNames](https://www.geonames.org/) (CC BY 4.0).
 - **3D Rendering:** [Three.js](https://threejs.org/) (MIT Licence).

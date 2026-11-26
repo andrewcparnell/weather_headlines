@@ -9,7 +9,7 @@ on:
     branches: [main]
 
 permissions:
-  contents: read
+  contents: write
   pages: write
   id-token: write
 
@@ -30,6 +30,7 @@ jobs:
           python-version: "3.12"
 
       - name: Restore ERA5 climatology cache
+        if: github.event_name != 'push'
         uses: actions/cache@v4
         with:
           path: pipeline_cache/climatology
@@ -41,6 +42,7 @@ jobs:
         run: uv sync --frozen
 
       - name: Fetch live ECMWF weather, ERA5 rankings, and generate 5-story bulletin
+        if: github.event_name != 'push'
         env:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: |
@@ -51,6 +53,18 @@ jobs:
 
       - name: Run pipeline and data integrity tests
         run: uv run --frozen pytest -v
+
+      - name: Commit refreshed 6-hourly weather data to main
+        if: github.event_name != 'push'
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add site/data
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: refresh 6-hourly weather headlines [skip ci]"
+            git pull --rebase origin main
+            git push origin HEAD:main
+          fi
 
       - name: Upload static site artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3
