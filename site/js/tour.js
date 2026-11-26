@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126p';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126q';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -413,15 +413,11 @@ export class BroadcastTour {
       return;
     }
 
-    // Reveal words briskly over the first 52% of the cue, then hold the full sentence cleanly until the next cue
-    const weights = words.map(w => Math.max(2, w.length) + (/[.,;:]/.test(w) ? 2.5 : 0.7));
-    const totalW = weights.reduce((a, b) => a + b, 0);
-    let acc = 0;
-    this.scriptWordThresholds = weights.map(w => {
-      const thresh = (acc / totalW) * 0.52;
-      acc += w;
-      return thresh;
-    });
+    // Quick 0.48-second animated word cascade, then hold the complete sentence steady until the next point
+    const flowWindowSec = Math.min(0.48, words.length * 0.022);
+    this.scriptWordThresholds = words.map((_, idx) =>
+      words.length <= 1 ? 0 : (idx / (words.length - 1)) * flowWindowSec
+    );
 
     this.dom.scriptText.innerHTML = words
       .map(w => `<span class="script-word">${escapeHtml(w)}</span>`)
@@ -429,20 +425,11 @@ export class BroadcastTour {
     this.scriptWordEls = Array.from(this.dom.scriptText.querySelectorAll('.script-word'));
   }
 
-  _updateScriptWordsProgress(cueU) {
+  _updateScriptWordsProgress(cueElapsedSec) {
     if (!this.scriptWordEls.length) return;
-    let latestIdx = -1;
-    for (let i = 0; i < this.scriptWordThresholds.length; i++) {
-      if (cueU >= this.scriptWordThresholds[i]) {
-        latestIdx = i;
-      } else {
-        break;
-      }
-    }
     for (let i = 0; i < this.scriptWordEls.length; i++) {
-      const el = this.scriptWordEls[i];
-      el.classList.toggle('spoken', i < latestIdx);
-      el.classList.toggle('speaking', i === latestIdx);
+      const visible = cueElapsedSec >= this.scriptWordThresholds[i];
+      this.scriptWordEls[i].classList.toggle('spoken', visible);
     }
   }
 
@@ -678,9 +665,10 @@ export class BroadcastTour {
 
     const activeCue = this.cues[this.cueIndex];
     const cueDur = Math.max(0.4, activeCue.endSec - activeCue.startSec);
-    const cueU = Math.max(0, Math.min(1, (this.storyElapsedSec - activeCue.startSec) / cueDur));
+    const cueElapsedSec = Math.max(0, this.storyElapsedSec - activeCue.startSec);
+    const cueU = Math.max(0, Math.min(1, cueElapsedSec / cueDur));
 
-    this._updateScriptWordsProgress(cueU);
+    this._updateScriptWordsProgress(cueElapsedSec);
 
     if (this.cueSpans.length === this.cues.length) {
       const span = this.cueSpans[this.cueIndex];

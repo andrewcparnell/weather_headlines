@@ -618,19 +618,13 @@ body.tour-active .layer-rail {
 .script-word {
   opacity: 0;
   display: inline-block;
-  transform: translateY(2px);
-  transition: opacity 0.15s ease-out, transform 0.15s ease-out, color 0.15s ease;
+  transform: translateY(4px);
+  transition: opacity 0.18s cubic-bezier(0.2, 0.8, 0.2, 1), transform 0.18s cubic-bezier(0.2, 0.8, 0.2, 1);
 }
 
 .script-word.spoken {
-  opacity: 0.94;
-  transform: translateY(0);
-}
-
-.script-word.speaking {
   opacity: 1;
   transform: translateY(0);
-  color: #ffffff;
 }
 
 /* ============================================================================

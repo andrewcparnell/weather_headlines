@@ -1,6 +1,6 @@
-import { WeatherGlobe } from './globe.js?v=20261126p';
-import { LocationSearch } from './search.js?v=20261126p';
-import { BroadcastTour } from './tour.js?v=20261126p';
+import { WeatherGlobe } from './globe.js?v=20261126q';
+import { LocationSearch } from './search.js?v=20261126q';
+import { BroadcastTour } from './tour.js?v=20261126q';
 
 const $ = id => document.getElementById(id);
 
