@@ -217,10 +217,10 @@ def test_mobile_camera_framing_and_responsive_controls():
         aspect = w / h
         fov = min(54.0, 38.0 + (1.0 - aspect) * 28.0) if aspect < 1.0 else 38.0
         tan_half_x = aspect * math.tan(math.radians(fov * 0.5))
-        target_frac = 0.84 if aspect < 1.0 else 0.70
+        target_frac = 0.76 if aspect < 1.0 else 0.70
         ft = max(0.12, target_frac * tan_half_x)
         exact_dist = math.sqrt(1.0 + ft * ft) / ft
-        init_dist = max(3.2, min(5.6, exact_dist)) if aspect < 1.0 else 2.75
+        init_dist = max(3.4, min(6.0, exact_dist)) if aspect < 1.0 else 2.75
 
         # Projected horizontal screen fraction occupied by the 3D Earth silhouette: tan(arcsin(1/d)) / tan_half_x
         alpha = math.asin(1.0 / init_dist)

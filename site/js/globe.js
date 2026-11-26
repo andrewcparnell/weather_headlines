@@ -96,10 +96,10 @@ export function computeViewportCameraParams(width, height) {
   const aspect = Math.max(0.3, width / Math.max(1, height));
   const fov = aspect < 1.0 ? Math.min(54, 38 + (1.0 - aspect) * 28) : 38;
   const tanHalfX = aspect * Math.tan(fov * 0.5 * DEG2RAD);
-  const targetWidthFrac = aspect < 1.0 ? 0.84 : 0.70;
+  const targetWidthFrac = aspect < 1.0 ? 0.76 : 0.70;
   const ft = Math.max(0.12, targetWidthFrac * tanHalfX);
   const exactDist = Math.sqrt(1 + ft * ft) / ft;
-  const initialDist = aspect < 1.0 ? Math.max(3.2, Math.min(5.6, exactDist)) : 2.75;
+  const initialDist = aspect < 1.0 ? Math.max(3.4, Math.min(6.0, exactDist)) : 2.75;
   const altitudeScale = aspect < 0.9 ? Math.min(2.15, 0.95 / Math.max(0.42, aspect)) : 1.0;
   return { aspect, fov, initialDist, altitudeScale };
 }

@@ -1026,21 +1026,23 @@ body.tour-active .layer-rail {
 
   .layer-buttons {
     flex-direction: row;
-    overflow-x: auto;
-    -webkit-overflow-scrolling: touch;
-    scrollbar-width: none;
-    padding: 5px;
-  }
-
-  .layer-buttons::-webkit-scrollbar {
-    display: none;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 5px;
+    padding: 6px;
   }
 
   .layer-btn {
     width: auto;
+    gap: 6px;
     white-space: nowrap;
-    padding: 8px 11px;
-    font-size: 13px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .layer-swatch {
+    width: 9px;
+    height: 9px;
   }
 
   .play-launcher {
