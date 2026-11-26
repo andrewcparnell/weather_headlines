@@ -60,7 +60,7 @@
           "bearing": -12.0,
           "label": "CAPE HATTERAS",
           "metric": "139 mm / 24 h",
-          "spoken": "In the eastern United States, a powerful coastal storm is sweeping one hundred and thirty-nine millimetres of heavy rain,",
+          "spoken": "In the eastern United States, a powerful coastal storm is sweeping 139 millimetres of heavy rain,",
           "ticker": "Coastal storm off Cape Hatteras sweeps **139 mm of heavy rain** ashore",
           "start_sec": 0.0,
           "end_sec": 6.64
@@ -73,7 +73,7 @@
           "bearing": -7.2,
           "label": "ATLANTIC SEABOARD",
           "metric": "90 km/h gusts",
-          "spoken": "and gusts of ninety kilometres an hour, right up the Atlantic seaboard.",
+          "spoken": "and gusts of 90 kilometres an hour, right up the Atlantic seaboard.",
           "ticker": "Atlantic seaboard lashed by **90 km/h wind gusts** moving north",
           "start_sec": 6.64,
           "end_sec": 10.74
@@ -112,7 +112,7 @@
           "bearing": 7.2,
           "label": "MID-ATLANTIC RAINBAND",
           "metric": "#1 since 1940 (99th pct)",
-          "spoken": "Across eighty-seven years of climate records back to nineteen forty, today's offshore downpour ranks number one for late November.",
+          "spoken": "Across 87 years of climate records back to 1940, today's offshore downpour ranks number one for late November.",
           "ticker": "RANKING: **#1 wettest late-November day in 87 years** of ERA5 records since 1940",
           "start_sec": 30.04,
           "end_sec": 37.73
@@ -125,7 +125,7 @@
           "bearing": 12.0,
           "label": "NW ATLANTIC WARMING",
           "metric": "+3.0 °C since 1940-79",
-          "spoken": "Along this coast, late-autumn air has warmed by three degrees since the mid-twentieth century, doubling the frequency of extreme coastal rainstorms.",
+          "spoken": "Along this coast, late-autumn air has warmed by 3.0 °C since the mid-twentieth century, doubling the frequency of extreme coastal rainstorms.",
           "ticker": "CLIMATE LINK: **+3.0 °C coastal warming** since 1940-1979 has **doubled extreme rainstorms**",
           "start_sec": 37.73,
           "end_sec": 46.75
@@ -229,7 +229,7 @@
           "bearing": -12.0,
           "label": "WESTERN ANDES & ECUADOR",
           "metric": "184 mm / 24 h",
-          "spoken": "In South America, torrential Pacific moisture banking against the western Andes is pouring another one hundred and eighty-four millimetres of rain onto coastal Ecuador and northern Peru.",
+          "spoken": "In South America, torrential Pacific moisture banking against the western Andes is pouring another 184 millimetres of rain onto coastal Ecuador and northern Peru.",
           "ticker": "Pacific moisture dumps **184 mm of rain in 24 hours** on Ecuador and northern Peru",
           "start_sec": 0.0,
           "end_sec": 10.35
@@ -255,7 +255,7 @@
           "bearing": 0.0,
           "label": "GULF OF GUAYAQUIL",
           "metric": "718 mm in 14 days",
-          "spoken": "Crucially, this crisis has been building all month: twenty-five of the past twenty-eight days have brought heavy rain, piling up over seven hundred millimetres in just a fortnight.",
+          "spoken": "Crucially, this crisis has been building all month: 25 of the past 28 days have brought heavy rain, piling up over 700 millimetres in just a fortnight.",
           "ticker": "DURATION: **25 wet days in 4 weeks**, piling up **718 mm of rain in a fortnight**",
           "start_sec": 18.66,
           "end_sec": 28.92
@@ -268,7 +268,7 @@
           "bearing": 6.0,
           "label": "EASTERN EQUATORIAL PACIFIC",
           "metric": "#1 in 87 years",
-          "spoken": "In eighty-seven years of records since nineteen forty, this rainfall rate is completely unprecedented, ranking number one for late November.",
+          "spoken": "In 87 years of records since 1940, this rainfall rate is completely unprecedented, ranking number one for late November.",
           "ticker": "RANKING: Unprecedented **#1 for late November** across **87 years** of ERA5 data since 1940",
           "start_sec": 28.92,
           "end_sec": 37.34
@@ -281,7 +281,7 @@
           "bearing": 12.0,
           "label": "EL NINO COASTAL ZONE",
           "metric": "+1.4 °C warming shift",
-          "spoken": "Alongside a strengthening El Nino, coastal air here has warmed by one point four degrees since the mid-twentieth century, doubling the odds of extreme November downpours.",
+          "spoken": "Alongside a strengthening El Niño, coastal air here has warmed by 1.4 °C since the mid-twentieth century, doubling the odds of extreme November downpours.",
           "ticker": "CLIMATE LINK: **2026 El Nino** plus **+1.4 °C warming** has **doubled extreme November deluges**",
           "start_sec": 37.34,
           "end_sec": 47.45
@@ -380,7 +380,7 @@
           "bearing": -12.0,
           "label": "SOUTHERN ADRIATIC SEA",
           "metric": "90 km/h Scirocco gales",
-          "spoken": "Across southern Europe, southerly gales of ninety kilometres an hour are driving warm Mediterranean air straight into the Adriatic coast,",
+          "spoken": "Across southern Europe, southerly gales of 90 kilometres an hour are driving warm Mediterranean air straight into the Adriatic coast,",
           "ticker": "Southerly gales of **90 km/h** drive warm Mediterranean moisture into the Adriatic",
           "start_sec": 0.0,
           "end_sec": 7.54
@@ -393,7 +393,7 @@
           "bearing": -6.0,
           "label": "CROATIA & MONTENEGRO",
           "metric": "137 mm / 24 h",
-          "spoken": "unleashing another one hundred and thirty-seven millimetres of rain across Croatia and Montenegro.",
+          "spoken": "unleashing another 137 millimetres of rain across Croatia and Montenegro.",
           "ticker": "Fresh **137 mm downpour in 24 hours** hits Croatia and Montenegro",
           "start_sec": 7.54,
           "end_sec": 12.89
@@ -419,7 +419,7 @@
           "bearing": 6.0,
           "label": "DALMATIAN COASTLINE",
           "metric": "676 mm in 14d · #4 since 1940",
-          "spoken": "The ground here can hold no more water: ten of the last fourteen days have brought heavy storms, totalling nearly seven hundred millimetres in two weeks. Looking back to nineteen forty, today ranks fourth wettest on record for late November.",
+          "spoken": "The ground here can hold no more water: 10 of the last 14 days have brought heavy storms, totalling nearly 700 millimetres in two weeks. Looking back to 1940, today ranks fourth wettest on record for late November.",
           "ticker": "DURATION & RANK: **676 mm across 10 storm days**, ranking **4th wettest since 1940**",
           "start_sec": 21.29,
           "end_sec": 35.61
@@ -432,7 +432,7 @@
           "bearing": 12.0,
           "label": "CENTRAL MEDITERRANEAN",
           "metric": "+1.4 °C · 3x extremes",
-          "spoken": "As the Mediterranean has warmed by one point four degrees since the mid-twentieth century, severe late-autumn downpours along this coast have tripled.",
+          "spoken": "As the Mediterranean has warmed by 1.4 °C since the mid-twentieth century, severe late-autumn downpours along this coast have tripled.",
           "ticker": "CLIMATE LINK: **+1.4 °C Adriatic warming** since 1940-1979 has **tripled severe autumn rains**",
           "start_sec": 35.61,
           "end_sec": 44.3
@@ -549,7 +549,7 @@
           "bearing": -6.0,
           "label": "SE KAZAKHSTAN",
           "metric": "+14.0 °C (+16.4 °C anom)",
-          "spoken": "Afternoon temperatures in southeastern Kazakhstan have reached fourteen degrees, more than sixteen degrees above normal, while northern Siberia sits nearly twenty degrees warmer than the late-November average.",
+          "spoken": "Afternoon temperatures in southeastern Kazakhstan have reached 14 °C, more than 16 °C above normal, while northern Siberia sits nearly 20 °C warmer than the late-November average.",
           "ticker": "Kazakhstan hits **+14.0 °C (+16.4 °C anomaly)** while Siberia sits **+19.8 °C above normal**",
           "start_sec": 8.55,
           "end_sec": 20.02
@@ -562,7 +562,7 @@
           "bearing": 0.0,
           "label": "CONTINENTAL BLOCKING HIGH",
           "metric": "28 of 28 days warm",
-          "spoken": "Remarkably, this blocking high has held firm for four straight weeks, with all twenty-eight of the past twenty-eight days in southeastern Kazakhstan running warmer than normal.",
+          "spoken": "Remarkably, this blocking high has held firm for four straight weeks, with all 28 of the past 28 days in southeastern Kazakhstan running warmer than normal.",
           "ticker": "DURATION: Stubborn **blocking high** keeps **all 28 of the past 28 days** anomalously warm",
           "start_sec": 20.02,
           "end_sec": 29.67
@@ -575,7 +575,7 @@
           "bearing": 6.0,
           "label": "KAZAKH STEPPE CORE",
           "metric": "#1 since 1940 (99.4th pct)",
-          "spoken": "Across eighty-seven years of records since nineteen forty, this steppe warmth stands at number one on record.",
+          "spoken": "Across 87 years of records since 1940, this steppe warmth stands at number one on record.",
           "ticker": "RANKING: Steppe warmth stands **#1 on record (99.4th percentile)** since 1940",
           "start_sec": 29.67,
           "end_sec": 36.3
@@ -588,7 +588,7 @@
           "bearing": 12.0,
           "label": "NORTHERN SIBERIA",
           "metric": "+2.4 °C warming shift",
-          "spoken": "Northern Siberia has warmed by two point four degrees in late November since the mid-twentieth century, doubling the likelihood of extreme autumn thaws as snow cover retreats.",
+          "spoken": "Northern Siberia has warmed by 2.4 °C in late November since the mid-twentieth century, doubling the likelihood of extreme autumn thaws as snow cover retreats.",
           "ticker": "CLIMATE LINK: **+2.4 °C Siberian warming** since 1940-1979 has **doubled extreme autumn thaws**",
           "start_sec": 36.3,
           "end_sec": 46.56
@@ -687,7 +687,7 @@
           "bearing": -12.0,
           "label": "SOUTHERN ICELAND",
           "metric": "133 km/h violent gusts",
-          "spoken": "Finally, in the North Atlantic, a deep storm system is battering southern Iceland with violent gusts of one hundred and thirty-three kilometres an hour,",
+          "spoken": "Finally, in the North Atlantic, a deep storm system is battering southern Iceland with violent gusts of 133 kilometres an hour,",
           "ticker": "Deep North Atlantic storm batters southern Iceland with **133 km/h violent gusts**",
           "start_sec": 0.0,
           "end_sec": 8.26
@@ -700,7 +700,7 @@
           "bearing": -6.0,
           "label": "IRELAND & SW BRITAIN",
           "metric": "8 Irish counties warned",
-          "spoken": "while sweeping bands of heavy wind and rain across Ireland and western Britain. Eight Irish counties have been placed under weather warnings by Met Eireann, alongside flood alerts in south-west England.",
+          "spoken": "while sweeping bands of heavy wind and rain across Ireland and western Britain. Eight Irish counties have been placed under weather warnings by Met Éireann, alongside flood alerts in south-west England.",
           "ticker": "Heavy rainbands sweep **eight Irish counties under Met Eireann warnings** and SW England",
           "start_sec": 8.26,
           "end_sec": 19.56
@@ -713,7 +713,7 @@
           "bearing": 0.0,
           "label": "NORTH ATLANTIC CORRIDOR",
           "metric": "975 hPa · 9 gale days",
-          "spoken": "An energetic jet stream has aimed storm after storm along this corridor, bringing nine gale days in the past fortnight and over two hundred millimetres of rain in four weeks.",
+          "spoken": "An energetic jet stream has aimed storm after storm along this corridor, bringing nine gale days in the past fortnight and over 200 millimetres of rain in four weeks.",
           "ticker": "DURATION: **975 hPa storm track** brings **9 gale days in 2 weeks** and **229 mm in 28 days**",
           "start_sec": 19.56,
           "end_sec": 29.28
@@ -726,7 +726,7 @@
           "bearing": 6.0,
           "label": "ICELAND GALE CORE",
           "metric": "Top 1% gusts since 1940",
-          "spoken": "Peak gusts near Iceland are more than double the late-November average, ranking in the top one percent of storms since nineteen forty.",
+          "spoken": "Peak gusts near Iceland are more than double the late-November average, ranking in the top 1% of storms since 1940.",
           "ticker": "RANKING: Gusts **double the seasonal norm**, ranking in the **top 1% since 1940**",
           "start_sec": 29.28,
           "end_sec": 36.91
@@ -739,7 +739,7 @@
           "bearing": 12.0,
           "label": "NE ATLANTIC PLUME",
           "metric": "+1.6 °C warming · +4.5 °C plume",
-          "spoken": "And with regional temperatures one point six degrees warmer than in the mid-twentieth century, moisture that once fell as early-winter snow increasingly falls as heavy, flood-producing rain.",
+          "spoken": "And with regional temperatures 1.6 °C warmer than in the mid-twentieth century, moisture that once fell as early-winter snow increasingly falls as heavy, flood-producing rain.",
           "ticker": "CLIMATE LINK: **+1.6 °C warming** and a **+4.5 °C plume** turn winter snow into **flooding rain**",
           "start_sec": 36.91,
           "end_sec": 47.69

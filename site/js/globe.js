@@ -856,11 +856,14 @@ export class WeatherGlobe {
     this.camera.position.copy(camDir.multiplyScalar(distance));
     this.camera.up.set(0, 1, 0);
 
-    // Frame the target comfortably above the translucent full-width lower-third bar
+    // Frame the weather hotspot slightly right-of-centre and above the bottom bar so the top-left presenter script stays clear of the data
+    const tiltFrac = Math.min(1.0, tiltDeg / 14.5);
+    const span = Math.max(0.15, distance - 1.0);
     const lookTarget = vFocus
       .clone()
-      .addScaledVector(north, -0.075 * Math.max(0.15, distance - 1.0) * (tiltDeg / 15.0))
-      .multiplyScalar(1.0 - 0.14 * Math.min(1.0, tiltDeg / 15.0));
+      .addScaledVector(north, -0.075 * span * tiltFrac)
+      .addScaledVector(east, -0.065 * span * tiltFrac)
+      .multiplyScalar(1.0 - 0.14 * tiltFrac);
     this.camera.lookAt(lookTarget);
   }
 

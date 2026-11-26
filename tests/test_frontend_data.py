@@ -84,6 +84,8 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
     assert "[hidden]" in css and "display: none !important" in css
     assert "this.voiceEnabled = false" in tour_js
     assert "if (!this.voiceEnabled) return;" in tour_js
+    assert 'id="voiceScriptOverlay"' in html
+    assert "_prepareCueScriptWords" in tour_js
 
     sting_wav = SITE_DIR / "assets" / "bulletin-sting.wav"
     assert sting_wav.exists() and sting_wav.stat().st_size > 50_000

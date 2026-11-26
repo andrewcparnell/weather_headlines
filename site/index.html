@@ -6,7 +6,7 @@
   <title>Weather Headlines · Live Global Weather</title>
   <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
-  <link rel="stylesheet" href="style.css?v=20261126i">
+  <link rel="stylesheet" href="style.css?v=20261126k">
   <script type="importmap">
     {
       "imports": {
@@ -126,6 +126,11 @@
     </button>
   </div>
 
+  <!-- Presenter Spoken Script Overlay on Main Map (Shown when Voice is Off) -->
+  <aside id="voiceScriptOverlay" class="voice-script-overlay" hidden aria-live="polite">
+    <div id="voiceScriptText" class="voice-script-text"></div>
+  </aside>
+
   <!-- Compact BBC / Sky / CNN Floating Lower-Third Broadcast Banner (Active only when Play is clicked) -->
   <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines Broadcast">
     <div class="chyron-plate">
@@ -180,6 +185,6 @@
     <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=20261126j"></script>
+  <script type="module" src="js/main.js?v=20261126k"></script>
 </body>
 </html>

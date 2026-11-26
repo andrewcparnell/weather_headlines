@@ -1,6 +1,6 @@
-import { WeatherGlobe } from './globe.js?v=20261126j';
-import { LocationSearch } from './search.js?v=20261126j';
-import { BroadcastTour } from './tour.js?v=20261126j';
+import { WeatherGlobe } from './globe.js?v=20261126k';
+import { LocationSearch } from './search.js?v=20261126k';
+import { BroadcastTour } from './tour.js?v=20261126k';
 
 const $ = id => document.getElementById(id);
 
@@ -121,6 +121,8 @@ async function init() {
       tickerTrack: $('tickerTrack'),
       linksViewport: $('linksViewport'),
       newsLinks: $('tourNewsLinks'),
+      scriptOverlay: $('voiceScriptOverlay'),
+      scriptText: $('voiceScriptText'),
     },
     {
       onLayerSync: layerId => setActiveLayerButtons(layerId),

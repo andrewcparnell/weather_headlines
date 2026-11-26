@@ -561,6 +561,53 @@ body.tour-active .layer-rail {
   border-color: #ffffff;
 }
 
+/* Live Presenter Spoken Script Overlay on Main Map (Shown when Voice is Off) */
+.voice-script-overlay {
+  position: fixed;
+  top: 24px;
+  left: 26px;
+  width: min(460px, 38vw);
+  z-index: 26;
+  padding: 14px 18px;
+  border-radius: 7px;
+  background: rgba(5, 12, 24, 0.48);
+  border: 1px solid rgba(255, 255, 255, 0.16);
+  border-left: 5px solid var(--bbc-red);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+  pointer-events: none;
+  user-select: text;
+}
+
+.voice-script-text {
+  margin: 0;
+  font-size: clamp(18.5px, 1.55vw, 23px);
+  font-weight: 650;
+  line-height: 1.44;
+  letter-spacing: -0.01em;
+  color: #f8fafc;
+  text-shadow: 0 2px 10px rgba(0, 0, 0, 0.88);
+}
+
+.script-word {
+  opacity: 0;
+  display: inline-block;
+  transform: translateY(3px);
+  transition: opacity 0.24s ease-out, transform 0.24s ease-out, color 0.2s ease;
+}
+
+.script-word.spoken {
+  opacity: 0.94;
+  transform: translateY(0);
+}
+
+.script-word.speaking {
+  opacity: 1;
+  transform: translateY(0);
+  color: #ffffff;
+}
+
 /* ============================================================================
    FULL-WIDTH TRANSLUCENT BBC / SKY / CNN DUAL-TICKER LOWER-THIRD CHYRON
    ============================================================================ */
@@ -930,6 +977,19 @@ body.tour-active .layer-rail {
   .strap-metric,
   .attribution {
     display: none;
+  }
+
+  .voice-script-overlay {
+    top: 14px;
+    left: 12px;
+    right: 12px;
+    width: auto;
+    padding: 10px 14px;
+  }
+
+  .voice-script-text {
+    font-size: 16.5px;
+    line-height: 1.36;
   }
 
   .broadcast-chyron {
