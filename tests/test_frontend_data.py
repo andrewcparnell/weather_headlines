@@ -48,6 +48,8 @@ def test_generated_headlines_bulletin_is_valid_and_style_compliant():
     cleaned, errors = validate_and_clean_bulletin(payload)
     assert errors == []
     assert len(cleaned["stories"]) == 5
+    for st in cleaned["stories"]:
+        assert "**" in st["ticker"], f"Story {st['id']} ticker missing **keyword** highlights"
 
 
 def test_no_em_dashes_in_frontend_or_readme():

@@ -3,8 +3,8 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
-  <title>Weather Headlines · Live Global Weather &amp; World Tour</title>
-  <meta name="description" content="Explore live global weather on an interactive 3D Earth and play a 6-hourly broadcast tour of the world's top 5 weather stories.">
+  <title>Weather Headlines · Live Global Weather</title>
+  <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a BBC and Sky News style broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
   <link rel="stylesheet" href="style.css">
   <script type="importmap">
@@ -20,12 +20,12 @@
   <div id="globeStage" class="globe-stage" aria-label="Interactive 3D weather globe"></div>
   <div id="globeOverlay" class="globe-overlay" aria-hidden="true"></div>
 
-  <!-- Top-left: Country & City Search + Live Status -->
-  <header class="top-left-bar">
+  <!-- Top-left: Country & City Search (Explore mode) -->
+  <header class="top-left-bar" id="exploreHeader">
     <div class="search-box" role="search">
       <svg class="search-icon" viewBox="0 0 20 20" aria-hidden="true">
-        <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="1.8"/>
-        <path d="M12.8 12.8L17 17" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+        <circle cx="8.5" cy="8.5" r="5.5" fill="none" stroke="currentColor" stroke-width="2"/>
+        <path d="M12.8 12.8L17.2 17.2" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
       </svg>
       <input
         id="searchInput"
@@ -39,13 +39,13 @@
       >
       <div id="searchResults" class="search-results" role="listbox" hidden></div>
     </div>
-    <div class="live-pill" id="liveBadge" title="Latest ECMWF Open Data &amp; ERA5 climatology">
+    <div class="live-pill" id="liveBadge">
       <span class="live-dot"></span>
       <span id="liveTimestamp">Loading live weather...</span>
     </div>
   </header>
 
-  <!-- Optional Local Weather Readout Card (shown when searching or clicking a location) -->
+  <!-- Local Weather Readout Card (shown only when searching or clicking on the globe in Explore mode) -->
   <aside id="spotCard" class="spot-card" hidden aria-live="polite">
     <div class="spot-header">
       <div>
@@ -78,8 +78,8 @@
     </div>
   </aside>
 
-  <!-- Right side: Clean Weather Layer Switcher & Compact Legend -->
-  <nav class="layer-rail" aria-label="Weather layers">
+  <!-- Right side: Clear, Large Weather Layer Options (Explore mode) -->
+  <nav class="layer-rail" id="layerRail" aria-label="Weather layers">
     <div id="layerButtons" class="layer-buttons" role="radiogroup" aria-label="Choose weather variable">
       <button class="layer-btn active" role="radio" aria-checked="true" data-layer="temperature">
         <span class="layer-swatch swatch-temp"></span>
@@ -104,10 +104,7 @@
     </div>
 
     <div class="legend-card" id="legendCard">
-      <div class="legend-top">
-        <span id="legendTitle" class="legend-title">2 m Temperature</span>
-        <button id="unitToggle" class="unit-toggle" title="Switch temperature and wind units">°C · m/s</button>
-      </div>
+      <div id="legendTitle" class="legend-title">2 m Temperature</div>
       <div id="legendGradient" class="legend-gradient"></div>
       <div class="legend-labels">
         <span id="legendMin">-40 °C</span>
@@ -117,67 +114,73 @@
     </div>
   </nav>
 
-  <!-- Bottom Centre: Simple Play Button (Idle Mode) -->
+  <!-- Bottom Centre: Large Simple Play Button (Explore mode) -->
   <div id="playLauncher" class="play-launcher">
-    <button id="playTourBtn" class="play-tour-btn" aria-label="Play 5-highlight world weather tour" title="Play World Weather Bulletin (5 Highlights)">
+    <button id="playTourBtn" class="play-tour-btn" aria-label="Play World Weather Headlines">
       <svg class="play-triangle" viewBox="0 0 28 28" aria-hidden="true">
-        <path d="M9.5 6.8c0-1.1 1.2-1.8 2.2-1.2l11.4 7.2c.9.6.9 1.9 0 2.4L11.7 22.4c-1 .6-2.2-.1-2.2-1.2V6.8z" fill="currentColor"/>
+        <path d="M9 6.2c0-1.1 1.2-1.8 2.2-1.2l12 7.8c.9.6.9 1.8 0 2.4l-12 7.8C10.2 23.6 9 22.9 9 21.8V6.2z" fill="currentColor"/>
       </svg>
     </button>
-    <span class="play-caption">World Tour</span>
   </div>
 
-  <!-- Broadcast Lower-Third HUD (Active during World Tour) -->
-  <section id="tourHud" class="tour-hud" hidden aria-label="World Weather Bulletin">
-    <div class="tour-topbar">
-      <div class="tour-LeftMeta">
-        <span class="on-air-badge"><span class="on-air-dot"></span>BULLETIN</span>
-        <div id="tourSteps" class="tour-steps" role="tablist" aria-label="Headline stories"></div>
-      </div>
+  <!-- BBC News / Sky News Lower-Third Broadcast Banner (Active when Play is clicked) -->
+  <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines Broadcast">
+    <!-- Large, unmistakable Previous / Next / Close controls -->
+    <div class="chyron-nav-row">
+      <button id="tourPrev" class="nav-big-btn" type="button" aria-label="Previous weather story">
+        <span class="nav-arrow" aria-hidden="true">◀</span>
+        <span>Previous Story</span>
+      </button>
 
-      <div class="tour-controls">
-        <button id="tourPrev" class="ctrl-btn" title="Previous story" aria-label="Previous story">
-          <svg viewBox="0 0 20 20"><path d="M5 5v10M15 5l-7.5 5L15 15V5z" stroke="currentColor" stroke-width="1.7" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button id="tourPlayPause" class="ctrl-btn ctrl-primary" title="Pause or resume tour" aria-label="Pause tour">
-          <span id="tourPlayIcon">❚❚</span>
-        </button>
-        <button id="tourNext" class="ctrl-btn" title="Next story" aria-label="Next story">
-          <svg viewBox="0 0 20 20"><path d="M15 5v10M5 5l7.5 5L5 15V5z" stroke="currentColor" stroke-width="1.7" fill="currentColor" stroke-linecap="round" stroke-linejoin="round"/></svg>
-        </button>
-        <button id="tourVoiceBtn" class="ctrl-btn voice-btn" aria-pressed="false" title="Toggle spoken presenter voiceover">
-          <span id="tourVoiceLabel">🔇 Voice</span>
-        </button>
-        <button id="tourExit" class="ctrl-btn exit-btn" title="Exit tour and explore freely" aria-label="Exit tour">✕</button>
-      </div>
+      <button id="tourExit" class="nav-exit-btn" type="button" aria-label="Stop bulletin and return to globe">
+        <span>■ Back to Globe</span>
+      </button>
+
+      <button id="tourNext" class="nav-big-btn nav-big-next" type="button" aria-label="Next weather story">
+        <span>Next Story</span>
+        <span class="nav-arrow" aria-hidden="true">▶</span>
+      </button>
     </div>
 
-    <div class="tour-body">
-      <div class="tour-kicker-row">
-        <span id="tourKicker" class="tour-kicker">WORLD WEATHER</span>
-        <div class="tour-stat-chips">
-          <span id="statMetric" class="stat-chip stat-accent"></span>
-          <span id="statRank" class="stat-chip"></span>
-          <span id="statPersistence" class="stat-chip"></span>
+    <!-- Main TV Broadcast Lower-Third Stack -->
+    <div class="chyron-plate">
+      <!-- Red & Navy Top Strap -->
+      <div class="chyron-strap">
+        <span class="strap-live">
+          <span class="strap-dot"></span>
+          <span id="tourCounter">HEADLINE 1 OF 5</span>
+        </span>
+        <span id="tourKicker" class="strap-location">WORLD WEATHER</span>
+        <span id="tourLayerTag" class="strap-metric"></span>
+        <div class="strap-progress">
+          <div id="tourProgressBar" class="strap-progress-fill"></div>
         </div>
       </div>
 
-      <h1 id="tourHeadline" class="tour-headline">Loading global weather bulletin...</h1>
+      <!-- Big White/Navy Headline Banner -->
+      <div class="chyron-headline-box">
+        <h1 id="tourHeadline" class="chyron-headline">Loading global weather headlines...</h1>
+      </div>
 
-      <div id="beatTabs" class="beat-tabs" role="tablist" aria-label="Story chapters"></div>
+      <!-- Scrolling Bottom Ticker with Highlighted Key Words -->
+      <div class="chyron-ticker-bar" aria-live="off">
+        <div class="ticker-tag">LATEST</div>
+        <div id="tickerViewport" class="ticker-viewport">
+          <div id="tickerTrack" class="ticker-track"></div>
+        </div>
+      </div>
 
-      <p id="tourBeatText" class="tour-beat-text"></p>
-
-      <div class="tour-news-row">
-        <span class="news-label">In the news:</span>
-        <div id="tourNewsLinks" class="tour-news-links"></div>
+      <!-- Event-Specific News Articles Strip -->
+      <div class="chyron-links-bar">
+        <span class="links-tag">EVENT COVERAGE</span>
+        <div id="tourNewsLinks" class="links-list"></div>
       </div>
     </div>
   </section>
 
-  <!-- Subtle Data Attribution -->
-  <footer class="attribution">
-    <span id="attribText">Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only, not an official warning</span>
+  <!-- Subtle Data Attribution (Explore mode) -->
+  <footer class="attribution" id="attribFooter">
+    <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
   <script type="module" src="js/main.js"></script>

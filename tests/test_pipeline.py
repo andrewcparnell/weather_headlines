@@ -10,6 +10,7 @@ from pipeline.pack_globe import dequantise_u8, quantise_u8
 from pipeline.scanner import detect_global_candidates, extract_pressure_features, haversine_km
 from pipeline.validator import (
     ensure_dynamic_waypoints,
+    is_specific_event_url,
     sanitise_prose,
     validate_and_clean_bulletin,
 )
@@ -134,7 +135,11 @@ def test_validate_and_clean_bulletin():
             {"tag": "CLIMATE", "title": "Climate", "layer": "anomaly", "text": "Warmer North Atlantic sea surfaces add extra latent heat energy to autumn storms."},
         ],
         "news_links": [
-            {"source": "BBC News", "title": "Atlantic storm warnings", "url": "https://www.bbc.com/news/uk"}
+            {
+                "source": "The Guardian",
+                "title": "Atlantic storm brings gales and travel disruption",
+                "url": "https://www.theguardian.com/uk-news/2026/nov/24/atlantic-storm-warnings-gales",
+            }
         ],
     }
     draft = {"edition_title": "Bulletin", "stories": [dict(sample_story, id=f"s-{i}") for i in range(5)]}
@@ -142,4 +147,17 @@ def test_validate_and_clean_bulletin():
     assert errors == []
     assert len(cleaned["stories"]) == 5
     assert "\u2014" not in cleaned["stories"][0]["headline"]
+    assert "**" in cleaned["stories"][0]["ticker"]
     assert len(cleaned["stories"][0]["camera_waypoints"]) == 4
+
+
+def test_generic_hub_urls_rejected_and_specific_articles_accepted():
+    assert not is_specific_event_url("https://www.bbc.com/weather")
+    assert not is_specific_event_url("https://www.theguardian.com/world/extreme-weather")
+    assert not is_specific_event_url("https://www.irishtimes.com/tags/weather-events/")
+    assert not is_specific_event_url("https://climate.copernicus.eu/climate-bulletins")
+    assert is_specific_event_url(
+        "https://www.theguardian.com/us-news/2026/nov/25/heavy-rain-high-winds-thanksgiving-east-coast"
+    )
+    assert is_specific_event_url("https://www.gdacs.org/report.aspx?eventid=1018332&episodeid=28&eventtype=DR")
+

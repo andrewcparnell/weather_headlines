@@ -12,17 +12,63 @@ VALID_LAYERS = set(LAYERS.keys())
 VALID_HAZARDS = {"heat", "cold", "rain", "cyclone", "wind", "pressure"}
 FORBIDDEN_URL_EXTENSIONS = (".json", ".xml", ".cap", ".rss", ".atom", ".grib", ".grib2")
 
+GENERIC_HUB_PATHS = {
+    "",
+    "/",
+    "/weather",
+    "/news",
+    "/world",
+    "/environment",
+    "/world/extreme-weather",
+    "/environment/extreme-weather",
+    "/business/environment",
+    "/climate-bulletins",
+    "/media/news",
+    "/warnings",
+    "/warnings/home",
+}
+GENERIC_PATH_PREFIXES = (
+    "/tag/",
+    "/tags/",
+    "/topics/",
+    "/topic/",
+    "/series/",
+    "/category/",
+)
+
+
+def is_specific_event_url(url: str) -> bool:
+    """Return True only if url points to a specific article or event report rather than a generic hub."""
+    parsed = urlparse(url.strip())
+    if parsed.scheme not in ("http", "https") or not parsed.netloc:
+        return False
+    path = parsed.path.rstrip("/")
+    low_path = path.lower()
+    if low_path in GENERIC_HUB_PATHS or not low_path:
+        return False
+    if any(low_path.startswith(pref) for pref in GENERIC_PATH_PREFIXES):
+        return False
+    if low_path.endswith(FORBIDDEN_URL_EXTENSIONS):
+        return False
+    # Allow specific GDACS/ReliefWeb event reports with query IDs or deep article slugs
+    if "eventid=" in parsed.query.lower():
+        return True
+    segments = [seg for seg in low_path.split("/") if seg]
+    if not segments:
+        return False
+    last_seg = segments[-1]
+    # A real news article slug almost always has multiple words or digits, or sits >= 2 levels deep
+    has_article_slug = ("-" in last_seg and len(last_seg) >= 12) or any(ch.isdigit() for ch in low_path)
+    return has_article_slug and len(segments) >= 1
+
 
 def sanitise_prose(text: str) -> str:
     """Enforce house style: no em dashes, no 'utilise' variants, clean whitespace."""
     if not text:
         return ""
-    # Replace em dashes and spaced en dashes with standard spaced hyphens
     cleaned = text.replace("\u2014", " - ").replace(" \u2013 ", " - ")
-    # Remove any accidental 'utilise' / 'utilize' variants
     cleaned = re.sub(r"\butilis(e|es|ed|ing|ation)\b", lambda m: _replace_utilise(m.group(0)), cleaned, flags=re.I)
     cleaned = re.sub(r"\butiliz(e|es|ed|ing|ation)\b", lambda m: _replace_utilise(m.group(0)), cleaned, flags=re.I)
-    # Collapse repeated spaces
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned).strip()
     return cleaned
 
@@ -42,8 +88,28 @@ def _replace_utilise(word: str) -> str:
     return rep.capitalize() if word[0].isupper() else rep
 
 
+def auto_highlight_keywords(text: str) -> str:
+    """Ensure key figures, rankings, and durations carry **highlight** markers if none were supplied."""
+    if "**" in text:
+        return text
+    # Highlight measurements (+16.4 °C, 139 mm, 147 km/h, 975 hPa, #1, 99th percentile, N days/weeks/years)
+    pattern = re.compile(
+        r"([+-]?\d+(?:\.\d+)?\s*(?:°C|°F|mm|km/h|mph|m/s|hPa|%)"
+        r"|#\d+(?:\s+in\s+\d+\s+years)?"
+        r"|\d+(?:\.\d+)?(?:st|nd|rd|th)\s+percentile"
+        r"|\b\d+\s+(?:days|weeks|years|rivers|counties)\b)",
+        flags=re.I,
+    )
+    return pattern.sub(r"**\1**", text)
+
+
+def build_ticker_from_beats(beats: list[dict]) -> str:
+    parts = [auto_highlight_keywords(b["text"]) for b in beats if b.get("text")]
+    return "  ///  ".join(parts)
+
+
 def ensure_dynamic_waypoints(centre_lat: float, centre_lon: float, waypoints: list[dict] | None) -> list[dict]:
-    """Ensure 4 smooth, moving camera waypoints spanning at least 500 km across the surface."""
+    """Ensure 4 smooth, moving camera waypoints spanning at least 450 km across the surface."""
     cleaned: list[dict] = []
     for wp in waypoints or []:
         try:
@@ -61,7 +127,6 @@ def ensure_dynamic_waypoints(centre_lat: float, centre_lon: float, waypoints: li
     if len(cleaned) >= 3 and total_km >= 450.0:
         return cleaned[:5]
 
-    # Synthesise a sweeping 4-waypoint broadcast glide across the event region
     cos_lat = max(0.35, math.cos(math.radians(centre_lat)))
     dlon = 9.0 / cos_lat
     raw = [
@@ -88,7 +153,9 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
 
     stories = payload.get("stories")
     if not isinstance(stories, list) or not (3 <= len(stories) <= 7):
-        errors.append(f"Expected 5 stories (between 3 and 7 allowed), got {len(stories) if isinstance(stories, list) else 'non-list'}.")
+        errors.append(
+            f"Expected 5 stories (between 3 and 7 allowed), got {len(stories) if isinstance(stories, list) else 'non-list'}."
+        )
         return payload, errors
 
     cleaned_stories: list[dict] = []
@@ -142,25 +209,29 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 }
             )
 
+        raw_ticker = sanitise_prose(str(st.get("ticker") or ""))
+        ticker = auto_highlight_keywords(raw_ticker) if len(raw_ticker) >= 60 else build_ticker_from_beats(cleaned_beats)
+
         cleaned_links: list[dict] = []
         for link in st.get("news_links") or []:
             if not isinstance(link, dict):
                 continue
             url = str(link.get("url") or "").strip()
+            if not is_specific_event_url(url):
+                errors.append(
+                    f"{prefix}: URL {url!r} looks like a generic hub/tag page rather than a direct article about this event."
+                )
+                continue
             parsed = urlparse(url)
-            if parsed.scheme not in ("http", "https") or not parsed.netloc:
-                continue
-            if parsed.path.lower().endswith(FORBIDDEN_URL_EXTENSIONS):
-                continue
             cleaned_links.append(
                 {
                     "source": sanitise_prose(str(link.get("source") or parsed.netloc.removeprefix("www."))),
-                    "title": sanitise_prose(str(link.get("title") or "Read coverage")),
+                    "title": sanitise_prose(str(link.get("title") or "Read event report")),
                     "url": url,
                 }
             )
         if not cleaned_links:
-            errors.append(f"{prefix}: at least one valid http/https news or agency link is required.")
+            errors.append(f"{prefix}: at least one direct, event-specific news story URL is required.")
 
         stats_in = st.get("stats") or {}
         cleaned_stats = {
@@ -176,6 +247,7 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 "rank": idx,
                 "kicker": sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper(),
                 "headline": headline,
+                "ticker": ticker,
                 "region": sanitise_prose(str(st.get("region") or "")),
                 "country": sanitise_prose(str(st.get("country") or "")),
                 "hazard": hazard,
@@ -184,7 +256,7 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 "stats": cleaned_stats,
                 "camera_waypoints": ensure_dynamic_waypoints(c_lat, c_lon, st.get("camera_waypoints")),
                 "beats": cleaned_beats,
-                "news_links": cleaned_links[:4],
+                "news_links": cleaned_links[:3],
             }
         )
 

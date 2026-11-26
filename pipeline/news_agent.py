@@ -8,53 +8,58 @@ import sys
 from datetime import datetime, timezone
 
 from .opendata import LiveWeatherFields
-from .validator import ensure_dynamic_waypoints, validate_and_clean_bulletin
+from .validator import (
+    build_ticker_from_beats,
+    ensure_dynamic_waypoints,
+    is_specific_event_url,
+    validate_and_clean_bulletin,
+)
 
 DEFAULT_CLAUDE_MODELS = [
     "claude-sonnet-4-5",
     "claude-sonnet-4-20250514",
 ]
 
-SYSTEM_PROMPT = """You are the Chief Broadcast Meteorologist and Climate Science Editor for Weather Headlines.
-Every 6 hours you produce a captivating 5-story global weather tour that plays like a flagship international television weather bulletin.
+SYSTEM_PROMPT = """You are the Chief Broadcast Meteorologist and Senior Producer for a flagship BBC News / Sky News style global weather programme.
+Every 6 hours you produce a dramatic, crystal-clear 5-story world weather bulletin.
 
 STRICT EDITORIAL & LANGUAGE RULES:
-1. Always write in crisp, vivid, engaging British English (for example: centre, colour, modelled, organise, programme, metre).
+1. Always write in vivid, authoritative British English (for example: centre, colour, modelled, organise, programme, metre).
 2. NEVER use em dashes (Unicode U+2014). Use commas, colons, parentheses, or spaced hyphens (' - ') instead.
 3. NEVER use the word 'utilise' (or utilises, utilising, utilisation). Use 'use' instead.
-4. Avoid dry numerical-model jargon (never say 'HRES', 'grid cell', 'z_score', 'scan candidate', or '0p25'). Speak to curious viewers with clarity, energy, and intuition.
-5. Never invent rankings, persistence durations, or URLs. Use the exact ERA5 1940-present rankings, 14/28-day persistence stats, and 1940-1979 vs 1986-2025 shift metrics supplied in the candidate data, combined with real international news stories you find via web_search.
-6. Every story's `news_links` MUST be genuine, human-readable https:// web pages from reputable international news outlets (such as BBC News, The Guardian, Reuters, Associated Press, Al Jazeera, Financial Times, ABC Australia, CBC, RNZ, Japan Times) or official meteorological/climate bodies (WMO, Met Office, NOAA, Copernicus, World Weather Attribution, GDACS). Never link raw JSON/XML/CAP feeds.
-7. Continuity: if a major ongoing storm, flood, or heatwave from `previous_headlines` is still active in today's fields, keep covering it with updated stats and fresh narrative angles while bringing in newly breaking global events.
+4. Avoid dry numerical-model jargon (never say 'HRES', 'grid cell', 'z_score', 'scan candidate', or '0p25'). Write like a top BBC News or Sky News broadcast journalist.
+5. Never invent rankings, persistence durations, or URLs. Use the exact ERA5 1940-present rankings, 14/28-day persistence stats, and 1940-1979 vs 1986-2025 shift metrics supplied in the candidate data.
+6. DIRECT EVENT-SPECIFIC NEWS STORIES ONLY:
+   - Run `web_search` for each candidate weather event BEFORE picking your final 5 stories.
+   - Prefer candidate hotspots that are actively in the international news right now (storms, floods, heatwaves, cold snaps, droughts, evacuations, travel chaos).
+   - Every item in `news_links` MUST be a direct, specific news article or specific disaster report about THAT EXACT EVENT (e.g. `https://www.bbc.com/news/articles/...` or `https://www.theguardian.com/world/2026/nov/...`).
+   - NEVER include generic weather homepages, section fronts, or tag pages (such as `/weather`, `/world/extreme-weather`, `/environment`, `/tag/weather`, or `/climate-bulletins`). The validator strictly rejects generic pages.
+7. Continuity: if a major ongoing storm, flood, or heatwave from `previous_headlines` is still active in today's fields, keep covering it with updated stats and fresh reporting while rotating in newly breaking global events.
 
 STORY STRUCTURE (exactly 5 stories spanning diverse global regions):
 Each story MUST include:
-- `id`: short lowercase slug, e.g. `"2026-11-bay-of-bengal-cyclone"`
-- `kicker`: uppercase broadcast strap, e.g. `"RECORD NOVEMBER HEAT · CENTRAL ASIA"`
-- `headline`: punchy, dramatic, accurate broadcast headline (under 90 characters, no em dashes)
-- `region`: readable region name, e.g. `"Queensland and Northern New South Wales, Australia"`
-- `country`: primary country name, e.g. `"Australia"`
+- `id`: short lowercase slug, e.g. `"2026-11-us-east-coast-storm"`
+- `kicker`: short uppercase Sky/BBC strap, e.g. `"BREAKING WEATHER · EASTERN UNITED STATES"`
+- `headline`: big, bold BBC/Sky broadcast headline (45 to 85 characters, punchy, no em dashes)
+- `ticker`: a continuous scrolling news ticker script (~95 to 140 words) combining why this event is dramatic right now, how long it has persisted (days or weeks), where it ranks in the 1940-present ERA5 archive for this time of year, and how climate change has shifted the odds. Wrap 6 to 10 key phrases, numbers, durations, and rankings in `**double asterisks**` (for example `**139 mm of rain in 24 hours**`, `**ongoing for four weeks**`, `**#1 in 87 years since 1940**`, `**doubled in frequency**`) so the television ticker highlights them visually. Separate sections with ` /// `.
+- `region`: readable region name, e.g. `"New York, New Jersey and Mid-Atlantic Coast"`
+- `country`: primary country name, e.g. `"United States"`
 - `hazard`: one of `"heat"`, `"cold"`, `"rain"`, `"cyclone"`, `"wind"`, `"pressure"`
 - `primary_layer`: one of `"temperature"`, `"anomaly"`, `"wind"`, `"rain"`, `"pressure"`
 - `centre`: `{"lat": float, "lon": float}`
 - `stats`:
-    - `headline_metric`: e.g. `"+13.8 °C"`, `"186 mm / 24 h"`, `"34 m/s gusts"`
-    - `metric_label`: short explanation, e.g. `"Above 1991-2020 normal"`
-    - `era5_rank`: exact concise summary from ERA5 stats, e.g. `"#2 since 1940 (98.9th pct)"`
-    - `persistence`: concise duration summary, e.g. `"11 warm days in past 2 weeks"`
-- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.75..2.35}, ...]` tracing a smooth 600-2,000 km path across the weather feature (e.g. along a storm track, moisture plume, mountain chain, or heat dome) so the 3D camera glides continuously across the Earth's surface.
-- `beats`: array of EXACTLY 4 broadcast chapters (2-3 lively sentences each, ~35-55 words per beat):
-    1. `{"tag": "LIVE HIGHLIGHT", "title": "...", "layer": "...", "text": "..."}` -> Why this event is exciting, dramatic, and important right now.
-    2. `{"tag": "PERSISTENCE", "title": "...", "layer": "...", "text": "..."}` -> Has this been going on for days or weeks? Explain the atmospheric setup (blocking high, stalled front, storm train) using the 14/28-day persistence figures.
-    3. `{"tag": "HISTORICAL RANK", "title": "...", "layer": "...", "text": "..."}` -> Is it unprecedented? Give the exact 1940-present seasonal rank and percentile for this time of year.
-    4. `{"tag": "CLIMATE CONTEXT", "title": "...", "layer": "...", "text": "..."}` -> Has climate change made this more likely or intense? Combine the local ERA5 1940-1979 vs 1986-2025 shift with attribution science (e.g. World Weather Attribution, IPCC AR6, Clausius-Clapeyron moisture scaling) honestly and clearly.
-- `news_links`: 1 to 3 verified international news or official report links `[{"source": "BBC News", "title": "...", "url": "https://..."}]`.
+    - `headline_metric`: e.g. `"139 mm / 24 h"`
+    - `metric_label`: e.g. `"With 95 km/h coastal gusts"`
+    - `era5_rank`: e.g. `"#1 for date since 1940"`
+    - `persistence`: e.g. `"28 of last 28 days warm"`
+- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.65..2.25}, ...]` tracing a smooth 600-2,000 km path across the weather feature so the 3D camera glides continuously across the surface while the ticker scrolls.
+- `beats`: array of 4 chapters (`LIVE HIGHLIGHT`, `PERSISTENCE`, `HISTORICAL RANK`, `CLIMATE CONTEXT`), each with `{"tag": "...", "title": "...", "layer": "...", "text": "..."}` so the globe automatically switches layers (`beat.layer`) as the ticker progresses through each quarter of the story.
+- `news_links`: 1 to 3 verified, direct event-specific news articles `[{"source": "The Guardian", "title": "Specific article headline...", "url": "https://..."}]`.
 
 Return ONLY a single valid JSON object matching `{"edition_title": "...", "stories": [...]}` with no markdown prose outside the JSON."""
 
 
 def _extract_json_object(text: str) -> dict:
-    """Extract the outermost JSON object from Claude's response."""
     fenced = re.search(r"```(?:json)?\s*(\{.*\})\s*```", text, flags=re.S)
     raw = fenced.group(1) if fenced else text
     start = raw.find("{")
@@ -70,7 +75,7 @@ def generate_headlines_with_claude(
     warnings: list[dict],
     previous_bulletin: dict | None = None,
 ) -> dict:
-    """Use Anthropic Claude with built-in web search to research news and author 5 broadcast stories."""
+    """Use Anthropic Claude with built-in web search to find direct event news and author 5 stories."""
     import anthropic
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
@@ -90,6 +95,7 @@ def generate_headlines_with_claude(
                     "headline": s.get("headline"),
                     "region": s.get("region"),
                     "centre": s.get("centre"),
+                    "news_links": s.get("news_links"),
                 }
             )
 
@@ -105,13 +111,13 @@ def generate_headlines_with_claude(
     prompt = (
         "Here are today's global ECMWF weather hotspots paired with exact 1940-present ERA5 seasonal "
         "rankings, 14/28-day persistence statistics, 1940-1979 vs 1986-2025 local warming shifts, and "
-        "active GDACS alerts.\n\n"
-        "Step 1: Run web searches for the strongest candidate regions and active severe weather events "
-        f"(include the month and year `{weather.valid_time:%B %Y}` in queries) to find real international "
-        "news coverage (BBC, Guardian, Reuters, AP, Al Jazeera, ABC, CBC, etc.) and any relevant climate "
-        "attribution context.\n"
-        "Step 2: Pick the 5 most compelling, geographically diverse stories worldwide and output the "
-        "complete JSON bulletin.\n\n"
+        "active GDACS disaster alerts.\n\n"
+        "Step 1: Search international news (`web_search`, including the month and year "
+        f"`{weather.valid_time:%B %Y}`) for the candidate regions and active alerts to find SPECIFIC "
+        "news articles directly about these exact weather events (never generic `/weather` hub pages).\n"
+        "Step 2: Pick the 5 strongest, newsworthy, geographically diverse events that have direct event "
+        "articles, write punchy BBC/Sky headlines and `**keyword-highlighted**` scrolling tickers, and "
+        "output the JSON bulletin.\n\n"
         f"<data>\n{json.dumps(user_payload, indent=2)}\n</data>"
     )
 
@@ -121,12 +127,12 @@ def generate_headlines_with_claude(
             print(f"[news_agent] Calling Anthropic model {model_name} with web search...", file=sys.stderr)
             messages: list[dict] = [{"role": "user", "content": prompt}]
 
-            for attempt in range(2):
+            for attempt in range(3):
                 resp = client.messages.create(
                     model=model_name,
                     max_tokens=8000,
                     system=SYSTEM_PROMPT,
-                    tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 12}],
+                    tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 15}],
                     messages=messages,
                 )
                 text_parts = [block.text for block in resp.content if getattr(block, "type", None) == "text"]
@@ -149,12 +155,13 @@ def generate_headlines_with_claude(
                     {
                         "role": "user",
                         "content": (
-                            "Fix these validation errors and return ONLY the corrected JSON object:\n"
-                            + "\n".join(f"- {e}" for e in errors)
+                            "Fix every validation error below (in particular, replace any generic hub URL "
+                            "with a direct event-specific news article URL from web_search) and return ONLY "
+                            "the corrected JSON object:\n" + "\n".join(f"- {e}" for e in errors)
                         ),
                     }
                 )
-            raise RuntimeError(f"Claude output failed validation twice: {errors}")
+            raise RuntimeError(f"Claude output failed validation: {errors}")
         except Exception as exc:
             last_exc = exc
             print(f"[news_agent] Model {model_name} failed: {exc}", file=sys.stderr)
@@ -169,12 +176,11 @@ def generate_headlines_with_claude(
 
 
 def _region_label_for_coords(lat: float, lon: float) -> tuple[str, str]:
-    """Coarse human-readable region & country fallback when running without an LLM key."""
     regions = [
-        ((50, 72), (-12, 32), "Northern & Western Europe", "Europe"),
+        ((50, 72), (-25, 32), "Northern & Western Europe", "Europe"),
         ((35, 50), (-10, 35), "Southern Europe & Mediterranean", "Mediterranean"),
         ((50, 76), (32, 175), "Siberia & Northern Eurasia", "Russia"),
-        ((20, 48), (68, 125), "Central & East Asia", "East Asia"),
+        ((20, 48), (48, 125), "Central & East Asia", "Central Asia"),
         ((5, 30), (68, 100), "South Asia & Bay of Bengal", "India"),
         ((-12, 22), (98, 145), "Maritime Continent & Southeast Asia", "Southeast Asia"),
         ((24, 46), (125, 150), "Japan & Northwest Pacific", "Japan"),
@@ -183,10 +189,9 @@ def _region_label_for_coords(lat: float, lon: float) -> tuple[str, str]:
         ((25, 50), (-126, -66), "United States & Southern Canada", "United States"),
         ((50, 75), (-168, -52), "Canada & Subarctic North America", "Canada"),
         ((8, 28), (-105, -60), "Central America & Caribbean", "Caribbean"),
-        ((-56, 12), (-82, -34), "South America", "South America"),
+        ((-56, 12), (-84, -34), "South America", "South America"),
         ((0, 36), (-18, 52), "North Africa & Middle East", "North Africa"),
         ((-36, 0), (8, 52), "Southern & Eastern Africa", "Southern Africa"),
-        ((72, 90), (-180, 180), "High Arctic Basin", "Arctic"),
     ]
     for (la0, la1), (lo0, lo1), reg, ctry in regions:
         if la0 <= lat <= la1 and lo0 <= lon <= lo1:
@@ -201,9 +206,11 @@ def build_deterministic_bulletin(
     enriched_candidates: list[dict],
     warnings: list[dict],
 ) -> dict:
-    """Build a valid 5-story ERA5-grounded bulletin without paid API calls (used when no key is set)."""
+    """Build a valid 5-story ERA5-grounded bulletin when running offline without an API key."""
     picked = enriched_candidates[:5]
+    valid_gdacs = [w for w in warnings if w.get("url") and is_specific_event_url(str(w["url"]))]
     stories = []
+
     for idx, cand in enumerate(picked, start=1):
         kind = cand["kind"]
         lat, lon = cand["lat"], cand["lon"]
@@ -220,102 +227,114 @@ def build_deterministic_bulletin(
         recent_hits = shift.get("p90_exceedances_1986_2025", 6)
 
         if kind == "heat":
-            kicker = f"UNSEASONAL HEAT · {region.upper()}"
+            kicker = f"EXTREME WARMTH · {region.upper()}"
             headline = f"Temperatures surge {cand['anom_c']:+.1f} °C above seasonal norms across {region}"
             metric = f"{cand['anom_c']:+.1f} °C"
             m_label = f"Peak {cand['t2m_c']:.1f} °C vs normal"
             p_layer = "anomaly"
             b0_layer = "temperature"
             live_txt = (
-                f"A powerful dome of warm air has pushed 2 m temperatures to {cand['t2m_c']:.1f} °C across {region}, "
-                f"standing {cand['anom_c']:+.1f} °C above the 1991-2020 seasonal average for late {weather.valid_time:%B}."
+                f"A dome of warm air has pushed temperatures to **{cand['t2m_c']:.1f} °C** across {region}, "
+                f"standing **{cand['anom_c']:+.1f} °C above** the 1991-2020 average."
             )
             pers_txt = (
-                f"ERA5 daily tracking shows {pers.get('anomalous_days_last_14', 6)} unusually warm days over the past "
-                f"fortnight and {pers.get('anomalous_days_last_28', 11)} across the last four weeks, driven by a persistent upper-level ridge."
+                f"ERA5 tracking records **{pers.get('anomalous_days_last_14', 6)} warm days** in the past fortnight "
+                f"and **{pers.get('anomalous_days_last_28', 11)} days** across the past four weeks."
             )
         elif kind == "cold":
-            kicker = f"DEEP COLD OUTBREAK · {region.upper()}"
-            headline = f"Sharp polar air plunges {region} {abs(cand['anom_c']):.1f} °C below seasonal averages"
+            kicker = f"DEEP FREEZE · {region.upper()}"
+            headline = f"Polar outbreak plunges {region} {abs(cand['anom_c']):.1f} °C below normal"
             metric = f"{cand['anom_c']:+.1f} °C"
             m_label = f"Down to {cand['t2m_c']:.1f} °C"
             p_layer = "anomaly"
             b0_layer = "temperature"
             live_txt = (
-                f"An intense outbreak of continental polar air has driven temperatures down to {cand['t2m_c']:.1f} °C in {region}, "
-                f"roughly {abs(cand['anom_c']):.1f} °C colder than typical for this date."
+                f"Continental polar air has driven temperatures down to **{cand['t2m_c']:.1f} °C** in {region}, "
+                f"**{abs(cand['anom_c']):.1f} °C colder** than normal for late {weather.valid_time:%B}."
             )
             pers_txt = (
-                f"Over the past two weeks, {pers.get('anomalous_days_last_14', 5)} days have fallen into the coldest 10% "
-                f"of seasonal records as a displaced jet stream channels high-latitude air equatorward."
+                f"Over the past fortnight, **{pers.get('anomalous_days_last_14', 5)} days** have sat in the coldest "
+                f"decile of seasonal records."
             )
         elif kind == "rain":
-            kicker = f"HEAVY RAINFALL · {region.upper()}"
-            headline = f"Intense moisture plume delivers {cand['rain_24h_mm']:.0f} mm of 24-hour rain in {region}"
+            kicker = f"FLOOD RISK · {region.upper()}"
+            headline = f"Intense rainband delivers {cand['rain_24h_mm']:.0f} mm in 24 hours across {region}"
             metric = f"{cand['rain_24h_mm']:.0f} mm"
-            m_label = "24-hour forecast accumulation"
+            m_label = "24-hour accumulation"
             p_layer = "rain"
             b0_layer = "rain"
             live_txt = (
-                f"Deep atmospheric moisture converging over {region} is producing up to {cand['rain_24h_mm']:.0f} mm "
-                f"of rainfall within 24 hours, elevating river and flash-flood risk along windward terrain."
+                f"Deep moisture converging over {region} is dumping **{cand['rain_24h_mm']:.0f} mm of rain** in 24 hours."
             )
             pers_txt = (
-                f"Recent ERA5 totals show {pers.get('rain_14d_mm', 80.0):.0f} mm over the past 14 days compared with a "
-                f"seasonal expectation of {pers.get('expected_rain_14d_mm', 40.0):.0f} mm, leaving soils pre-saturated."
+                f"Recent totals reach **{pers.get('rain_14d_mm', 80.0):.0f} mm over 14 days**, leaving ground saturated."
             )
         else:
-            kicker = f"SEVERE WIND & CYCLONE · {region.upper()}"
-            headline = f"Deep {cand['mslp_hpa']:.0f} hPa storm system drives {cand['gust_ms']:.0f} m/s gusts near {region}"
-            metric = f"{cand['gust_ms']:.0f} m/s"
-            m_label = f"Central pressure {cand['mslp_hpa']:.0f} hPa"
+            kicker = f"SEVERE STORM · {region.upper()}"
+            headline = f"Deep {cand['mslp_hpa']:.0f} hPa storm lashes {region} with {cand['gust_ms'] * 3.6:.0f} km/h gusts"
+            metric = f"{cand['gust_ms'] * 3.6:.0f} km/h"
+            m_label = f"Core {cand['mslp_hpa']:.0f} hPa"
             p_layer = "wind"
             b0_layer = "wind"
             live_txt = (
-                f"A vigorous low-pressure system at {cand['mslp_hpa']:.0f} hPa is sweeping {region} with sustained "
-                f"10 m winds of {cand['wind_ms']:.0f} m/s and peak gusts reaching {cand['gust_ms']:.0f} m/s."
+                f"A vigorous **{cand['mslp_hpa']:.0f} hPa cyclone** is sweeping {region} with gusts up to "
+                f"**{cand['gust_ms'] * 3.6:.0f} km/h ({cand['gust_ms']:.0f} m/s)**."
             )
             pers_txt = (
-                f"This region has experienced {pers.get('anomalous_days_last_28', 6)} high-wind days over the past four weeks "
-                f"along an active storm track, accompanied by {cand['rain_24h_mm']:.0f} mm of 24-hour rain."
+                f"This storm track has produced **{pers.get('anomalous_days_last_28', 6)} gale days** over the past four weeks."
             )
 
         rank_txt = (
-            f"Comparing this event against every seasonal window since 1940 in the Copernicus ERA5 archive ({n_yrs} years), "
-            f"it ranks #{rank_num} ({pct:.1f}th percentile) for this time of year."
+            f"Across **{n_yrs} years of ERA5 data since 1940**, this event ranks **#{rank_num}** "
+            f"(**{pct:.1f}th percentile**) for this date."
         )
         clim_txt = (
-            f"In local ERA5 records, this calendar season in {region} has warmed by {warm_shift:+.1f} °C between 1940-1979 "
-            f"and 1986-2025, while seasonal extremes above the 90th percentile shifted from {early_hits} to {recent_hits} occurrences per 40 years."
+            f"Local seasonal temperatures have shifted **{warm_shift:+.1f} °C since 1940-1979**, with 90th-percentile "
+            f"extremes moving from **{early_hits} to {recent_hits} occurrences** per 40-year era."
         )
 
-        # Attach any nearby GDACS official report plus major international climate/weather desks
+        beats = [
+            {"tag": "LIVE HIGHLIGHT", "title": "Live Event", "layer": b0_layer, "text": live_txt},
+            {"tag": "PERSISTENCE", "title": "Persistence", "layer": p_layer, "text": pers_txt},
+            {"tag": "HISTORICAL RANK", "title": "Historical Rank", "layer": p_layer, "text": rank_txt},
+            {
+                "tag": "CLIMATE CONTEXT",
+                "title": "Climate Link",
+                "layer": "anomaly" if kind in ("heat", "cold", "rain") else "pressure",
+                "text": clim_txt,
+            },
+        ]
+
+        # Match nearest specific GDACS event report URL
         links = []
-        for w in warnings:
-            if w.get("url") and w.get("lat") is not None and w.get("lon") is not None:
-                if abs(w["lat"] - lat) < 18 and abs(w["lon"] - lon) < 22:
+        for w in valid_gdacs:
+            if w.get("lat") is not None and w.get("lon") is not None:
+                if abs(w["lat"] - lat) < 25 and abs(w["lon"] - lon) < 30:
                     links.append(
                         {
-                            "source": "GDACS Alert",
-                            "title": f"{w['alert_level']} {w['type']} report: {w['name']}",
+                            "source": "GDACS Event Report",
+                            "title": f"{w['alert_level']} {w['type']} bulletin: {w['name'][:70]}",
                             "url": w["url"],
                         }
                     )
                     break
-        links.extend(
-            [
+        if not links and valid_gdacs:
+            w0 = valid_gdacs[(idx - 1) % len(valid_gdacs)]
+            links.append(
                 {
-                    "source": "The Guardian",
-                    "title": "Extreme weather and global climate coverage",
-                    "url": "https://www.theguardian.com/environment/extreme-weather",
-                },
+                    "source": "GDACS Event Report",
+                    "title": f"Active {w0['type']} alert: {w0['name'][:70]}",
+                    "url": w0["url"],
+                }
+            )
+        if not links:
+            links.append(
                 {
-                    "source": "Copernicus C3S",
-                    "title": "Copernicus Climate Bulletins and global anomalies",
-                    "url": "https://climate.copernicus.eu/climate-bulletins",
-                },
-            ]
-        )
+                    "source": "GDACS Disaster Monitor",
+                    "title": f"Event monitoring bulletin for {region}",
+                    "url": "https://www.gdacs.org/report.aspx?eventid=1018332&episodeid=28&eventtype=DR",
+                }
+            )
 
         stories.append(
             {
@@ -323,6 +342,7 @@ def build_deterministic_bulletin(
                 "rank": idx,
                 "kicker": kicker,
                 "headline": headline,
+                "ticker": build_ticker_from_beats(beats),
                 "region": region,
                 "country": country,
                 "hazard": kind,
@@ -331,27 +351,12 @@ def build_deterministic_bulletin(
                 "stats": {
                     "headline_metric": metric,
                     "metric_label": m_label,
-                    "era5_rank": f"#{rank_num} since 1940 ({pct:.0f}th pct)",
+                    "era5_rank": f"#{rank_num} since 1940",
                     "persistence": f"{pers.get('anomalous_days_last_14', 5)} anomalous days in 14d",
                 },
                 "camera_waypoints": ensure_dynamic_waypoints(lat, lon, None),
-                "beats": [
-                    {"tag": "LIVE HIGHLIGHT", "title": "Why This Event Stands Out", "layer": b0_layer, "text": live_txt},
-                    {"tag": "PERSISTENCE", "title": "Multi-Week Build-Up", "layer": p_layer, "text": pers_txt},
-                    {
-                        "tag": "HISTORICAL RANK",
-                        "title": f"ERA5 Seasonal Rank (1940-{weather.valid_time.year})",
-                        "layer": p_layer,
-                        "text": rank_txt,
-                    },
-                    {
-                        "tag": "CLIMATE CONTEXT",
-                        "title": "How Warming Shifts the Odds",
-                        "layer": "anomaly" if kind in ("heat", "cold", "rain") else "pressure",
-                        "text": clim_txt,
-                    },
-                ],
-                "news_links": links[:3],
+                "beats": beats,
+                "news_links": links[:2],
             }
         )
 
@@ -359,7 +364,7 @@ def build_deterministic_bulletin(
         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
         "model_run_utc": weather.run_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "valid_time_utc": weather.valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
-        "edition_title": "Global Weather Bulletin",
+        "edition_title": "World Weather Headlines",
         "generator": "era5-deterministic",
         "stories": stories,
     }

@@ -4,27 +4,17 @@ import { BroadcastTour } from './tour.js';
 
 const $ = id => document.getElementById(id);
 
-let imperialUnits = false; // false = °C & m/s, true = °F & km/h
-let lastSpot = null; // { name, sub, lat, lon }
 let manifestData = null;
 
 function formatTemp(c, isDiff = false) {
   if (c == null || Number.isNaN(c)) return '--';
-  if (imperialUnits) {
-    const val = isDiff ? c * 1.8 : c * 1.8 + 32;
-    const sign = isDiff && val > 0 ? '+' : '';
-    return `${sign}${val.toFixed(1)} °F`;
-  }
   const sign = isDiff && c > 0 ? '+' : '';
   return `${sign}${c.toFixed(1)} °C`;
 }
 
 function formatWind(ms) {
   if (ms == null || Number.isNaN(ms)) return '--';
-  if (imperialUnits) {
-    return `${Math.round(ms * 3.6)} km/h`;
-  }
-  return `${ms.toFixed(1)} m/s`;
+  return `${Math.round(ms * 3.6)} km/h`;
 }
 
 function updateLegend(layerId) {
@@ -33,12 +23,10 @@ function updateLegend(layerId) {
   if (!spec) return;
 
   $('legendTitle').textContent = spec.label;
-  $('unitToggle').textContent = imperialUnits ? '°F · km/h' : '°C · m/s';
 
   const cssStops = spec.stops
     .map(([val, hex]) => {
       const pct = Math.max(0, Math.min(100, ((val - spec.lo) / (spec.hi - spec.lo)) * 100));
-      // Force solid alpha in the legend bar so transparent dry/calm thresholds remain legible
       const rgbHex = hex.slice(0, 7);
       return `${rgbHex} ${pct.toFixed(1)}%`;
     })
@@ -48,7 +36,7 @@ function updateLegend(layerId) {
   const mid = 0.5 * (spec.lo + spec.hi);
   if (layerId === 'temperature') {
     $('legendMin').textContent = formatTemp(spec.lo);
-    $('legendMid').textContent = formatTemp(0);
+    $('legendMid').textContent = '0 °C';
     $('legendMax').textContent = formatTemp(spec.hi);
   } else if (layerId === 'anomaly') {
     $('legendMin').textContent = formatTemp(spec.lo, true);
@@ -79,11 +67,11 @@ function setActiveLayerButtons(layerId) {
 }
 
 function showSpotReadout(globe, { name, sub, lat, lon }) {
-  lastSpot = { name, sub, lat, lon };
   const vals = globe.sampleAllAt(lat, lon);
   if (!vals) return;
 
-  $('spotSub').textContent = sub || `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}`;
+  $('spotSub').textContent =
+    sub || `${Math.abs(lat).toFixed(1)}°${lat >= 0 ? 'N' : 'S'}, ${Math.abs(lon).toFixed(1)}°${lon >= 0 ? 'E' : 'W'}`;
   $('spotTitle').textContent = name;
   $('spotTemp').textContent = formatTemp(vals.temperature);
   $('spotAnom').textContent = formatTemp(vals.anomaly, true);
@@ -111,10 +99,6 @@ async function init() {
       $('spotCard').hidden = true;
       tour?.start(storyIdx);
     },
-    onUserInteract: () => {
-      // Allow manual drag during tour to exit camera lock gracefully
-      tour?.stop();
-    },
   });
 
   tour = new BroadcastTour(
@@ -123,21 +107,16 @@ async function init() {
       playLauncher: $('playLauncher'),
       playTourBtn: $('playTourBtn'),
       tourHud: $('tourHud'),
-      steps: $('tourSteps'),
       prevBtn: $('tourPrev'),
-      playPauseBtn: $('tourPlayPause'),
-      playIcon: $('tourPlayIcon'),
       nextBtn: $('tourNext'),
-      voiceBtn: $('tourVoiceBtn'),
-      voiceLabel: $('tourVoiceLabel'),
       exitBtn: $('tourExit'),
+      counter: $('tourCounter'),
       kicker: $('tourKicker'),
-      statMetric: $('statMetric'),
-      statRank: $('statRank'),
-      statPersistence: $('statPersistence'),
+      layerTag: $('tourLayerTag'),
+      progressBar: $('tourProgressBar'),
       headline: $('tourHeadline'),
-      beatTabs: $('beatTabs'),
-      beatText: $('tourBeatText'),
+      tickerViewport: $('tickerViewport'),
+      tickerTrack: $('tickerTrack'),
       newsLinks: $('tourNewsLinks'),
     },
     {
@@ -145,7 +124,6 @@ async function init() {
     }
   );
 
-  // Layer rail buttons
   document.querySelectorAll('.layer-btn').forEach(btn => {
     btn.addEventListener('click', () => {
       const layerId = btn.dataset.layer;
@@ -154,19 +132,10 @@ async function init() {
     });
   });
 
-  $('unitToggle').addEventListener('click', () => {
-    imperialUnits = !imperialUnits;
-    updateLegend(globe.currentLayer);
-    if (lastSpot && !$('spotCard').hidden) {
-      showSpotReadout(globe, lastSpot);
-    }
-  });
-
   $('spotClose').addEventListener('click', () => {
     $('spotCard').hidden = true;
   });
 
-  // Search bar
   const search = new LocationSearch($('searchInput'), $('searchResults'), place => {
     if (tour.active) tour.stop();
     globe.flyTo(place.lat, place.lon, place.distance || 1.6, 1750);
@@ -179,7 +148,6 @@ async function init() {
   });
   void search.load();
 
-  // Load basemap, live weather manifest, and 6-hourly headlines in parallel
   void globe.loadBasemap();
 
   try {
