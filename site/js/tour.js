@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126r';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126s';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;

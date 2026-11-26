@@ -77,6 +77,8 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
     html = (SITE_DIR / "index.html").read_text()
     css = (SITE_DIR / "style.css").read_text()
     tour_js = (SITE_DIR / "js" / "tour.js").read_text()
+    globe_js = (SITE_DIR / "js" / "globe.js").read_text()
+    assert "-dt * 0.062" in globe_js, "Earth auto-spin must rotate West-to-East (anticlockwise over North Pole)"
 
     assert "Loading global weather headlines" not in html
     assert "Play Headlines" in html

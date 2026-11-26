@@ -1146,7 +1146,8 @@ export class WeatherGlobe {
       if (rawT >= 1) this.flight = null;
     } else if (!this.tourControlled) {
       if (this.autoSpin) {
-        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.062);
+        // Negative camera rotation around +Y makes Earth spin West-to-East (anticlockwise from above North Pole)
+        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -dt * 0.062);
         this.camera.position.applyQuaternion(q);
       }
       this.controls.update();
