@@ -1,15 +1,17 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126f';
 
-const FLIGHT_MS = 2400;
-const FALLBACK_STORY_SEC = 38; // Used only when muted or if an audio file is unavailable
+const FLIGHT_MS = 2300;
+const FALLBACK_STORY_SEC = 38;
+const STORY_TICKER_SPEED = 86; // px/sec for main highlighted story ticker
+const LINKS_TICKER_SPEED = 46; // px/sec slower independent CNN-style web links ticker
 
 const LAYER_LABELS = {
-  temperature: '2 M TEMPERATURE',
-  anomaly: 'TEMP ANOMALY VS NORMAL',
-  wind: '10 M WINDS & GUSTS',
-  rain: '24 H RAINFALL',
-  pressure: 'SEA LEVEL PRESSURE',
+  temperature: '2 M TEMP',
+  anomaly: 'TEMP ANOMALY',
+  wind: '10 M WINDS',
+  rain: '24 H RAIN',
+  pressure: 'PRESSURE',
 };
 
 function catmullRomVec3(points, t) {
@@ -47,7 +49,23 @@ function escapeHtml(str) {
 export function formatTickerHtml(rawTicker) {
   const escaped = escapeHtml(rawTicker);
   const withHighlights = escaped.replace(/\*\*(.+?)\*\*/g, '<mark class="ticker-kw">$1</mark>');
-  return withHighlights.replace(/\s*\/\/\/\s*/g, '<span class="ticker-sep" aria-hidden="true">◆</span>');
+  return (
+    withHighlights.replace(/\s*\/\/\/\s*/g, '<span class="ticker-sep" aria-hidden="true">◆</span>') +
+    '<span class="ticker-sep" aria-hidden="true">◆</span>'
+  );
+}
+
+function formatLinksCopyHtml(links) {
+  return (links || [])
+    .map(
+      link =>
+        `<a class="news-article-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">` +
+        `<span class="news-outlet-badge">${escapeHtml(link.source)}</span>` +
+        `<span>${escapeHtml(link.title)}</span>` +
+        `<span aria-hidden="true">↗</span>` +
+        `</a><span class="links-sep" aria-hidden="true">•</span>`
+    )
+    .join('');
 }
 
 export class BroadcastTour {
@@ -59,7 +77,9 @@ export class BroadcastTour {
     this.stories = [];
     this.bulletinStamp = '';
     this.active = false;
+    this._pendingStartIndex = null;
     this.muted = false;
+    this.linksHovered = false;
     this.storyIndex = 0;
     this.beatIndex = 0;
 
@@ -68,7 +88,12 @@ export class BroadcastTour {
     this.fallbackProgress = 0;
     this.audioEndedAt = null;
 
-    // Single reusable HTML5 Audio element so Safari/macOS gesture unlock persists across all 5 stories
+    // Independent continuous pixel offsets for the two CNN-style tickers
+    this.storyOffsetPx = 0;
+    this.storySingleWidth = 1800;
+    this.linksOffsetPx = 0;
+    this.linksSingleWidth = 1100;
+
     this.audio = new Audio();
     this.audio.preload = 'auto';
     this.audioAvailable = false;
@@ -81,10 +106,6 @@ export class BroadcastTour {
     this.audio.addEventListener('error', () => {
       this.audioAvailable = false;
     });
-
-    this.tickerCopyWidth = 2400;
-    this.tickerStartX = 0;
-    this.tickerTotalTravel = 2400;
 
     this.flightState = null;
     this.waypointVecs = [];
@@ -99,11 +120,23 @@ export class BroadcastTour {
   setBulletin(bulletin) {
     this.stories = bulletin?.stories || [];
     this.bulletinStamp = encodeURIComponent(bulletin?.generated_utc || Date.now());
+    if (this._pendingStartIndex !== null && this.stories.length) {
+      const idx = this._pendingStartIndex;
+      this._pendingStartIndex = null;
+      this.start(idx);
+      return;
+    }
+    if (this.active && this.stories.length) {
+      this.goToStory(this.storyIndex);
+    }
   }
 
   start(startIndex = 0) {
-    if (!this.stories.length) return;
-    // Cancel any leftover browser speechSynthesis from older sessions just in case
+    if (!this.stories.length) {
+      this._pendingStartIndex = startIndex;
+      return;
+    }
+    this._pendingStartIndex = null;
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
@@ -116,8 +149,8 @@ export class BroadcastTour {
   }
 
   stop() {
-    if (!this.active) return;
     this.active = false;
+    this._pendingStartIndex = null;
     this.audio.pause();
     this.audio.removeAttribute('src');
     document.body.classList.remove('tour-active');
@@ -131,20 +164,29 @@ export class BroadcastTour {
     this.muted = !this.muted;
     this.audio.muted = this.muted;
     this.dom.muteBtn.setAttribute('aria-pressed', String(this.muted));
-    this.dom.muteLabel.textContent = this.muted ? '🔇 Muted' : '🔊 Presenter On';
+    this.dom.muteLabel.textContent = this.muted ? '🔇' : '🔊';
   }
 
   goToStory(index) {
     if (!this.stories.length) return;
+    if (!this.active) {
+      this.active = true;
+      document.body.classList.add('tour-active');
+      this.dom.playLauncher.hidden = true;
+      this.dom.tourHud.hidden = false;
+      this.globe.setTourMode(true);
+    }
+
     this.storyIndex = ((index % this.stories.length) + this.stories.length) % this.stories.length;
     this.beatIndex = 0;
     this.fallbackProgress = 0;
     this.audioEndedAt = null;
+    this.storyOffsetPx = 0;
+    this.linksOffsetPx = 0;
 
     const story = this.stories[this.storyIndex];
     this.globe.highlightStoryPin(this.storyIndex);
 
-    // Start neural British female newsreader MP3 immediately
     const audioUrl = story.audio_url || `data/audio/story-${this.storyIndex + 1}.mp3`;
     this.audio.pause();
     this.audio.src = `${audioUrl}?v=${this.bulletinStamp}`;
@@ -169,8 +211,8 @@ export class BroadcastTour {
       toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
       fromDist: camNow.distance,
       toDist: startWp.distance || 1.85,
-      arcBoost: Math.min(0.82, 0.18 + angle * 0.34),
-      duration: Math.max(1350, Math.min(FLIGHT_MS, 1050 + angle * 700)),
+      arcBoost: Math.min(0.8, 0.16 + angle * 0.32),
+      duration: Math.max(1300, Math.min(FLIGHT_MS, 1000 + angle * 680)),
     };
 
     this.phase = 'flight';
@@ -184,52 +226,61 @@ export class BroadcastTour {
   _applyLayer(layerId, story) {
     this.globe.setLayer(layerId);
     this.onLayerSync?.(layerId);
-    const statPart = story?.stats?.headline_metric ? `${story.stats.headline_metric}  ·  ` : '';
+    const statPart = story?.stats?.headline_metric ? `${story.stats.headline_metric} · ` : '';
     this.dom.layerTag.textContent = `${statPart}${LAYER_LABELS[layerId] || layerId.toUpperCase()}`;
   }
 
   _renderChyron(story) {
-    this.dom.counter.textContent = `HEADLINE ${this.storyIndex + 1} OF ${this.stories.length}`;
+    this.dom.counter.textContent = `${this.storyIndex + 1} / ${this.stories.length}`;
     this.dom.kicker.textContent = story.kicker || story.region || 'WORLD WEATHER';
     this.dom.headline.textContent = story.headline;
     this.dom.progressBar.style.width = '0%';
 
+    // 1. Story ticker: repeat enough copies so the bar is 100% filled immediately and loops seamlessly
     const rawTicker = story.ticker || (story.beats || []).map(b => b.text).join('  ///  ');
-    const htmlCopy = formatTickerHtml(rawTicker);
+    const storyHtml = formatTickerHtml(rawTicker);
     this.dom.tickerTrack.innerHTML =
-      `<div class="ticker-copy">${htmlCopy}</div>` +
-      `<div class="ticker-copy" aria-hidden="true">${htmlCopy}</div>`;
+      `<div class="ticker-copy">${storyHtml}</div>` +
+      `<div class="ticker-copy" aria-hidden="true">${storyHtml}</div>` +
+      `<div class="ticker-copy" aria-hidden="true">${storyHtml}</div>`;
+    this.dom.tickerTrack.style.transform = 'translate3d(0px, 0, 0)';
+
+    // 2. CNN-style bottom web links ticker: repeat 5 copies so even 1-2 short links fill the bar seamlessly
+    const linksHtml = formatLinksCopyHtml(story.news_links || []);
+    this.dom.newsLinks.innerHTML =
+      `<div class="links-copy">${linksHtml}</div>` +
+      `<div class="links-copy">${linksHtml}</div>` +
+      `<div class="links-copy">${linksHtml}</div>` +
+      `<div class="links-copy">${linksHtml}</div>` +
+      `<div class="links-copy">${linksHtml}</div>`;
+    this.dom.newsLinks.style.transform = 'translate3d(0px, 0, 0)';
 
     requestAnimationFrame(() => {
-      const firstCopy = this.dom.tickerTrack.querySelector('.ticker-copy');
-      const viewportW = this.dom.tickerViewport.clientWidth || window.innerWidth;
-      this.tickerCopyWidth = Math.max(900, firstCopy ? firstCopy.offsetWidth : 2400);
-      this.tickerStartX = Math.round(Math.min(240, viewportW * 0.2));
-      this.tickerTotalTravel = this.tickerCopyWidth + this.tickerStartX;
-      this.dom.tickerTrack.style.transform = `translate3d(${this.tickerStartX}px, 0, 0)`;
-    });
-
-    this.dom.newsLinks.replaceChildren();
-    (story.news_links || []).forEach(link => {
-      const a = document.createElement('a');
-      a.className = 'news-article-link';
-      a.href = link.url;
-      a.target = '_blank';
-      a.rel = 'noopener noreferrer';
-      a.innerHTML =
-        `<span class="news-outlet-badge">${escapeHtml(link.source)}</span>` +
-        `<span>${escapeHtml(link.title)}</span>` +
-        `<span aria-hidden="true">↗</span>`;
-      this.dom.newsLinks.appendChild(a);
+      const firstStoryCopy = this.dom.tickerTrack.querySelector('.ticker-copy');
+      if (firstStoryCopy && firstStoryCopy.offsetWidth > 100) {
+        this.storySingleWidth = firstStoryCopy.offsetWidth;
+      }
+      const firstLinksCopy = this.dom.newsLinks.querySelector('.links-copy');
+      if (firstLinksCopy && firstLinksCopy.offsetWidth > 80) {
+        this.linksSingleWidth = firstLinksCopy.offsetWidth;
+      }
     });
   }
 
   _bindControls() {
-    this.dom.playTourBtn.onclick = () => this.start(0);
-    this.dom.prevBtn.onclick = () => this.goToStory(this.storyIndex - 1);
-    this.dom.nextBtn.onclick = () => this.goToStory(this.storyIndex + 1);
-    this.dom.muteBtn.onclick = () => this.toggleMute();
-    this.dom.exitBtn.onclick = () => this.stop();
+    this.dom.playTourBtn?.addEventListener('click', () => this.start(0));
+    this.dom.prevBtn?.addEventListener('click', () => this.goToStory(this.storyIndex - 1));
+    this.dom.nextBtn?.addEventListener('click', () => this.goToStory(this.storyIndex + 1));
+    this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
+    this.dom.exitBtn?.addEventListener('click', () => this.stop());
+
+    // Slow down links ticker gently on hover so clicking a moving news link is effortless
+    this.dom.linksViewport?.addEventListener('mouseenter', () => {
+      this.linksHovered = true;
+    });
+    this.dom.linksViewport?.addEventListener('mouseleave', () => {
+      this.linksHovered = false;
+    });
 
     document.addEventListener('keydown', e => {
       if (!this.active || document.activeElement?.tagName === 'INPUT') return;
@@ -245,7 +296,7 @@ export class BroadcastTour {
     });
   }
 
-  _computeStoryProgress(now, dtSec) {
+  _computeStoryProgress(dtSec) {
     const hasValidAudio =
       this.audioAvailable &&
       Number.isFinite(this.audio.duration) &&
@@ -274,12 +325,17 @@ export class BroadcastTour {
     if (!this.active || !this.stories.length) return;
 
     const story = this.stories[this.storyIndex];
-    const storyProgress = this._computeStoryProgress(now, dtSec);
 
-    // Sync scrolling ticker smoothly with newsreader progress
-    const rawX = this.tickerStartX - storyProgress * this.tickerTotalTravel;
-    const displayX = rawX <= -this.tickerCopyWidth ? rawX + this.tickerCopyWidth : rawX;
-    this.dom.tickerTrack.style.transform = `translate3d(${displayX.toFixed(1)}px, 0, 0)`;
+    // 1. Always scroll both tickers independently at smooth 60fps broadcast speeds!
+    this.storyOffsetPx = (this.storyOffsetPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
+    this.dom.tickerTrack.style.transform = `translate3d(${-this.storyOffsetPx.toFixed(1)}px, 0, 0)`;
+
+    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.2 : LINKS_TICKER_SPEED;
+    this.linksOffsetPx = (this.linksOffsetPx + linkSpeed * dtSec) % Math.max(1, this.linksSingleWidth);
+    this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
+
+    // 2. Story progress for progress bar, layer switching, and 3D camera glide
+    const storyProgress = this._computeStoryProgress(dtSec);
     this.dom.progressBar.style.width = `${(storyProgress * 100).toFixed(1)}%`;
 
     if (this.phase === 'flight' && this.flightState) {
@@ -302,7 +358,6 @@ export class BroadcastTour {
       return;
     }
 
-    // Switch weather layers smoothly at each quarter of the spoken bulletin
     const beats = story.beats || [];
     if (beats.length) {
       const targetBeat = Math.min(beats.length - 1, Math.floor(storyProgress * beats.length));
@@ -313,7 +368,6 @@ export class BroadcastTour {
       }
     }
 
-    // Advance cleanly after a brief 850 ms studio breath pause when the newsreader finishes
     if (this.audioEndedAt !== null) {
       if (now - this.audioEndedAt >= 850) {
         this.goToStory(this.storyIndex + 1);
@@ -324,7 +378,6 @@ export class BroadcastTour {
       return;
     }
 
-    // Continuous 3D surface camera glide across the 4 waypoints synced to storyProgress
     const sPos = catmullRomVec3(this.waypointVecs, storyProgress).normalize();
     const sAhead = catmullRomVec3(this.waypointVecs, Math.min(1, storyProgress + 0.08)).normalize();
 

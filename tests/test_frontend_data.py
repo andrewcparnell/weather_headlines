@@ -58,6 +58,7 @@ def test_no_em_dashes_in_frontend_or_readme():
     files_to_check = [
         Path(__file__).resolve().parent.parent / "README.md",
         SITE_DIR / "index.html",
+        SITE_DIR / "style.css",
         SITE_DIR / "js" / "main.js",
         SITE_DIR / "js" / "globe.js",
         SITE_DIR / "js" / "tour.js",
@@ -66,6 +67,24 @@ def test_no_em_dashes_in_frontend_or_readme():
     for path in files_to_check:
         txt = path.read_text()
         assert "\u2014" not in txt, f"Found forbidden em dash in {path}"
+        assert "utilise" not in txt.lower(), f"Found forbidden word in {path}"
+        assert "utilize" not in txt.lower(), f"Found forbidden word in {path}"
+
+
+def test_broadcast_chyron_hidden_and_dual_speed_tickers():
+    import re
+
+    html = (SITE_DIR / "index.html").read_text()
+    css = (SITE_DIR / "style.css").read_text()
+    tour_js = (SITE_DIR / "js" / "tour.js").read_text()
+
+    assert "Loading global weather headlines" not in html
+    assert "[hidden]" in css and "display: none !important" in css
+
+    story_match = re.search(r"STORY_TICKER_SPEED\s*=\s*(\d+)", tour_js)
+    links_match = re.search(r"LINKS_TICKER_SPEED\s*=\s*(\d+)", tour_js)
+    assert story_match and links_match, "Both ticker speeds must be defined in tour.js"
+    assert int(story_match.group(1)) != int(links_match.group(1)), "Tickers must scroll at different speeds"
 
 
 def test_dom_ids_and_module_paths_match_index_html():

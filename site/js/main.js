@@ -1,6 +1,6 @@
-import { WeatherGlobe } from './globe.js';
-import { LocationSearch } from './search.js';
-import { BroadcastTour } from './tour.js';
+import { WeatherGlobe } from './globe.js?v=20261126f';
+import { LocationSearch } from './search.js?v=20261126f';
+import { BroadcastTour } from './tour.js?v=20261126f';
 
 const $ = id => document.getElementById(id);
 
@@ -119,6 +119,7 @@ async function init() {
       headline: $('tourHeadline'),
       tickerViewport: $('tickerViewport'),
       tickerTrack: $('tickerTrack'),
+      linksViewport: $('linksViewport'),
       newsLinks: $('tourNewsLinks'),
     },
     {
@@ -149,14 +150,20 @@ async function init() {
     });
   });
   void search.load();
-
   void globe.loadBasemap();
 
+  // Load headlines independently of WebP textures so the Play button is ready immediately!
+  fetch(`data/headlines.json?t=${Date.now()}`, { cache: 'no-store' })
+    .then(r => (r.ok ? r.json() : null))
+    .then(bulletin => {
+      if (!bulletin) return;
+      tour.setBulletin(bulletin);
+      globe.setStoryPins(bulletin.stories, -1);
+    })
+    .catch(err => console.error('Failed loading headlines:', err));
+
   try {
-    const [manifest, bulletinResp] = await Promise.all([
-      globe.loadWeatherManifest('data/manifest.json'),
-      fetch(`data/headlines.json?t=${Date.now()}`),
-    ]);
+    const manifest = await globe.loadWeatherManifest('data/manifest.json');
     manifestData = manifest;
     updateLegend(globe.currentLayer);
 
@@ -169,12 +176,6 @@ async function init() {
       timeZone: 'UTC',
     });
     $('liveTimestamp').textContent = `Live ECMWF · ${fmt} UTC`;
-
-    if (bulletinResp.ok) {
-      const bulletin = await bulletinResp.json();
-      tour.setBulletin(bulletin);
-      globe.setStoryPins(bulletin.stories, -1);
-    }
   } catch (err) {
     console.error(err);
     $('liveTimestamp').textContent = 'Weather data unavailable';

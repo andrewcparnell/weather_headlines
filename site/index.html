@@ -4,9 +4,9 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Weather Headlines · Live Global Weather</title>
-  <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a BBC and Sky News style broadcast tour of the world's top 5 weather stories.">
+  <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
-  <link rel="stylesheet" href="style.css">
+  <link rel="stylesheet" href="style.css?v=20261126f">
   <script type="importmap">
     {
       "imports": {
@@ -116,69 +116,58 @@
 
   <!-- Bottom Centre: Large Simple Play Button (Explore mode) -->
   <div id="playLauncher" class="play-launcher">
-    <button id="playTourBtn" class="play-tour-btn" aria-label="Play World Weather Headlines">
+    <button id="playTourBtn" class="play-tour-btn" type="button" aria-label="Play World Weather Headlines">
       <svg class="play-triangle" viewBox="0 0 28 28" aria-hidden="true">
         <path d="M9 6.2c0-1.1 1.2-1.8 2.2-1.2l12 7.8c.9.6.9 1.8 0 2.4l-12 7.8C10.2 23.6 9 22.9 9 21.8V6.2z" fill="currentColor"/>
       </svg>
     </button>
   </div>
 
-  <!-- BBC News / Sky News Lower-Third Broadcast Banner (Active when Play is clicked) -->
+  <!-- Compact BBC / Sky / CNN Floating Lower-Third Broadcast Banner (Active only when Play is clicked) -->
   <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines Broadcast">
-    <!-- Large, unmistakable Previous / Next / Sound / Close controls -->
-    <div class="chyron-nav-row">
-      <button id="tourPrev" class="nav-big-btn" type="button" aria-label="Previous weather story">
-        <span class="nav-arrow" aria-hidden="true">◀</span>
-        <span>Previous Story</span>
-      </button>
-
-      <div class="chyron-centre-btns">
-        <button id="tourMuteBtn" class="nav-exit-btn" type="button" aria-pressed="false" aria-label="Mute or unmute newsreader">
-          <span id="tourMuteLabel">🔊 Presenter On</span>
-        </button>
-        <button id="tourExit" class="nav-exit-btn" type="button" aria-label="Stop bulletin and return to globe">
-          <span>■ Back to Globe</span>
-        </button>
-      </div>
-
-      <button id="tourNext" class="nav-big-btn nav-big-next" type="button" aria-label="Next weather story">
-        <span>Next Story</span>
-        <span class="nav-arrow" aria-hidden="true">▶</span>
-      </button>
-    </div>
-
-    <!-- Main TV Broadcast Lower-Third Stack -->
     <div class="chyron-plate">
-      <!-- Red & Navy Top Strap -->
+      <!-- Compact Top Bar: Live Counter, Region, and Clear Large Action Buttons -->
       <div class="chyron-strap">
         <span class="strap-live">
           <span class="strap-dot"></span>
-          <span id="tourCounter">HEADLINE 1 OF 5</span>
+          <span id="tourCounter">1 / 5</span>
         </span>
         <span id="tourKicker" class="strap-location">WORLD WEATHER</span>
         <span id="tourLayerTag" class="strap-metric"></span>
+
+        <div class="chyron-actions">
+          <button id="tourPrev" class="chyron-btn" type="button" aria-label="Previous story">◀ Prev</button>
+          <button id="tourNext" class="chyron-btn chyron-btn-next" type="button" aria-label="Next story">Next ▶</button>
+          <button id="tourMuteBtn" class="chyron-btn chyron-btn-util" type="button" aria-pressed="false" aria-label="Mute or unmute presenter">
+            <span id="tourMuteLabel">🔊</span>
+          </button>
+          <button id="tourExit" class="chyron-btn chyron-btn-util" type="button" aria-label="Exit bulletin">✕</button>
+        </div>
+
         <div class="strap-progress">
           <div id="tourProgressBar" class="strap-progress-fill"></div>
         </div>
       </div>
 
-      <!-- Big White/Navy Headline Banner -->
+      <!-- Compact Broadcast Headline Banner -->
       <div class="chyron-headline-box">
-        <h1 id="tourHeadline" class="chyron-headline">Loading global weather headlines...</h1>
+        <h1 id="tourHeadline" class="chyron-headline"></h1>
       </div>
 
-      <!-- Scrolling Bottom Ticker with Highlighted Key Words -->
-      <div class="chyron-ticker-bar" aria-live="off">
-        <div class="ticker-tag">LATEST</div>
+      <!-- Ticker 1 (Faster): Event Story with Highlighted Key Words -->
+      <div class="chyron-ticker-bar">
+        <div class="ticker-tag">STORY</div>
         <div id="tickerViewport" class="ticker-viewport">
           <div id="tickerTrack" class="ticker-track"></div>
         </div>
       </div>
 
-      <!-- Event-Specific News Articles Strip -->
+      <!-- Ticker 2 (Different Speed, CNN-style): Scrolling Clickable Event News Links -->
       <div class="chyron-links-bar">
-        <span class="links-tag">EVENT COVERAGE</span>
-        <div id="tourNewsLinks" class="links-list"></div>
+        <div class="links-tag">IN THE NEWS</div>
+        <div id="linksViewport" class="ticker-viewport">
+          <div id="tourNewsLinks" class="links-track"></div>
+        </div>
       </div>
     </div>
   </section>
@@ -188,6 +177,6 @@
     <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js"></script>
+  <script type="module" src="js/main.js?v=20261126f"></script>
 </body>
 </html>
