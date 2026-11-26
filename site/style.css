@@ -72,6 +72,7 @@ body.tour-active .layer-buttons {
 body.tour-active .top-left-bar {
   top: 18px;
   left: 26px;
+  z-index: 24;
   pointer-events: none;
 }
 
@@ -184,7 +185,7 @@ body.tour-active .layer-rail {
   position: fixed;
   top: 22px;
   left: 22px;
-  z-index: 20;
+  z-index: 50;
   display: flex;
   flex-direction: column;
   gap: 9px;
@@ -194,6 +195,7 @@ body.tour-active .layer-rail {
 
 .search-box {
   position: relative;
+  z-index: 10;
   display: flex;
   align-items: center;
   background: var(--glass);
@@ -233,10 +235,11 @@ body.tour-active .layer-rail {
 
 .search-results {
   position: absolute;
+  z-index: 20;
   top: calc(100% + 6px);
   left: 0;
   right: 0;
-  background: rgba(9, 17, 32, 0.97);
+  background: rgba(9, 17, 32, 0.98);
   border: 1.5px solid rgba(255, 255, 255, 0.35);
   border-radius: 8px;
   box-shadow: var(--shadow);
@@ -280,6 +283,8 @@ body.tour-active .layer-rail {
 }
 
 .live-pill {
+  position: relative;
+  z-index: 1;
   display: inline-flex;
   flex-direction: column;
   gap: 3px;

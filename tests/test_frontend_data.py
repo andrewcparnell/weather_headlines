@@ -87,6 +87,7 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
     assert "Text On" in html
     assert "Voice Off" in html
     assert "[hidden]" in css and "display: none !important" in css
+    assert ".search-box {\n  position: relative;\n  z-index: 10;" in css
     assert "this.textEnabled = true" in tour_js
     assert "this.voiceEnabled = false" in tour_js
     assert "if (!this.voiceEnabled) return;" in tour_js
