@@ -1,11 +1,12 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126g';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126h';
 
-const OPENING_FLIGHT_MS = 1520;
-const STORY_SWITCH_FLIGHT_MS = 1750;
-const FALLBACK_STORY_SEC = 45;
-const STORY_TICKER_SPEED = 96; // px/sec nominal story ticker speed
-const LINKS_TICKER_SPEED = 46; // px/sec slower independent CNN-style web links ticker
+const STORY_FLIGHT_MS = 1900;
+const FALLBACK_STORY_SEC = 47;
+const SILENT_CLOCK_PACE = 0.80; // Gentle reading pace when presenter voice is switched off
+const STORY_TICKER_SPEED = 46;  // px/sec calm, readable story ticker speed
+const LINKS_TICKER_SPEED = 26;  // px/sec slower independent CNN-style web links ticker
+const TOUR_TILT_DEG = 14.5;
 
 const LAYER_LABELS = {
   temperature: '2 M TEMP',
@@ -15,9 +16,21 @@ const LAYER_LABELS = {
   pressure: 'SEA-LEVEL PRESSURE',
 };
 
-function smoothstep01(x) {
+function quinticEase(x) {
   const t = Math.max(0, Math.min(1, x));
-  return t * t * (3 - 2 * t);
+  return t * t * t * (t * (t * 6 - 15) + 10);
+}
+
+function catmullRomScalar(v0, v1, v2, v3, u) {
+  const u2 = u * u;
+  const u3 = u2 * u;
+  return (
+    0.5 *
+    (2 * v1 +
+      (-v0 + v2) * u +
+      (2 * v0 - 5 * v1 + 4 * v2 - v3) * u2 +
+      (-v0 + 3 * v1 - 3 * v2 + v3) * u3)
+  );
 }
 
 function escapeHtml(str) {
@@ -63,12 +76,13 @@ function normaliseStoryCues(story) {
       const propStart = (accW / totalW) * totalDur;
       accW += weights[idx];
       const propEnd = idx === rawCues.length - 1 ? totalDur : (accW / totalW) * totalDur;
+      const gentleBearing = -12 + (24 * idx) / Math.max(1, rawCues.length - 1);
       return {
         layer: c.layer || story.primary_layer || 'temperature',
         lat: Number(c.lat ?? story.centre.lat),
         lon: Number(c.lon ?? story.centre.lon),
-        distance: Number(c.distance || 1.58),
-        bearing: Number(c.bearing ?? (idx % 2 === 0 ? -22 : 22)),
+        distance: Number(c.distance || 1.62),
+        bearing: gentleBearing,
         label: c.label || story.kicker || story.region || 'WORLD WEATHER',
         metric: c.metric || story.stats?.headline_metric || '',
         startSec: hasExplicitTimes ? Number(c.start_sec) : propStart,
@@ -78,7 +92,6 @@ function normaliseStoryCues(story) {
     });
   }
 
-  // Fallback for legacy stories with only `beats` + `camera_waypoints`
   const beats = story.beats || [];
   const wps = story.camera_waypoints || [];
   const count = Math.max(1, beats.length);
@@ -86,19 +99,36 @@ function normaliseStoryCues(story) {
     const wp = wps[Math.min(idx, Math.max(0, wps.length - 1))] || {
       lat: story.centre.lat,
       lon: story.centre.lon,
-      distance: 1.62,
+      distance: 1.64,
     };
     return {
       layer: b.layer || story.primary_layer || 'temperature',
       lat: wp.lat,
       lon: wp.lon,
-      distance: wp.distance || 1.62,
-      bearing: idx % 2 === 0 ? -22 : 22,
+      distance: wp.distance || 1.64,
+      bearing: -12 + (24 * idx) / Math.max(1, count - 1),
       label: b.title || story.kicker || 'WORLD WEATHER',
       metric: story.stats?.headline_metric || b.tag || '',
       startSec: (idx / count) * totalDur,
       endSec: ((idx + 1) / count) * totalDur,
       ticker: b.text || '',
+    };
+  });
+}
+
+function buildCameraKnots(cues, totalDur) {
+  const n = cues.length;
+  return cues.map((c, i) => {
+    let tSec;
+    if (i === 0) tSec = 0;
+    else if (i === n - 1) tSec = totalDur;
+    else tSec = 0.5 * (c.startSec + c.endSec);
+
+    return {
+      tSec,
+      vec: latLonToVec3(c.lat, c.lon, 1).normalize(),
+      distance: c.distance,
+      bearing: c.bearing,
     };
   });
 }
@@ -114,12 +144,13 @@ export class BroadcastTour {
     this.active = false;
     this._pendingStartIndex = null;
 
-    // Presenter voice is switched OFF by default per user preference
+    // Presenter voice is switched OFF by default
     this.voiceEnabled = false;
     this.linksHovered = false;
     this.storyIndex = 0;
     this.cueIndex = -1;
     this.cues = [];
+    this.cameraKnots = [];
     this.storyDurationSec = FALLBACK_STORY_SEC;
     this.storyElapsedSec = 0;
 
@@ -127,26 +158,24 @@ export class BroadcastTour {
     this.phaseElapsedMs = 0;
     this.storyFinishedAt = null;
 
-    // Ticker pixel layout & smooth scroll state
     this.cueSpans = [];
-    this.storySingleWidth = 2200;
+    this.storySingleWidth = 1800;
     this.displayStoryPx = 0;
     this.linksOffsetPx = 0;
     this.linksSingleWidth = 1100;
 
-    // Smooth camera state across & within cues
+    // Continuous camera state (eliminates duplicate transitions or velocity snaps)
     this.flightState = null;
     this.currentFocusVec = new THREE.Vector3(0, 0, 1);
     this.currentDist = 1.85;
-    this.currentBearing = -20;
-    this.cueCamTransition = null;
+    this.currentBearing = 0;
+    this.currentTilt = 0;
 
-    // Opening urgent broadcast drumbeat sting
+    // Short, soft felt-timpani transition beat played on launch and between stories
     this.stingAudio = new Audio('assets/bulletin-sting.wav');
     this.stingAudio.preload = 'auto';
-    this.stingAudio.volume = 0.82;
+    this.stingAudio.volume = 0.52;
 
-    // Spoken British female presenter audio (muted while voiceEnabled === false)
     this.audio = new Audio();
     this.audio.preload = 'auto';
     this.audio.muted = true;
@@ -175,6 +204,11 @@ export class BroadcastTour {
     this.dom.muteLabel.textContent = this.voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
   }
 
+  _playSoftSting() {
+    this.stingAudio.currentTime = 0;
+    this.stingAudio.play().catch(() => {});
+  }
+
   setBulletin(bulletin) {
     this.stories = bulletin?.stories || [];
     this.bulletinStamp = encodeURIComponent(bulletin?.generated_utc || Date.now());
@@ -185,7 +219,7 @@ export class BroadcastTour {
       return;
     }
     if (this.active && this.stories.length) {
-      this.goToStory(this.storyIndex, { withOpeningSting: false });
+      this.goToStory(this.storyIndex, { playSting: false });
     }
   }
 
@@ -199,20 +233,24 @@ export class BroadcastTour {
       window.speechSynthesis.cancel();
     }
 
-    // Play the short breaking-news drumbeat sting on launch!
-    this.stingAudio.currentTime = 0;
-    this.stingAudio.play().catch(() => {});
+    // Capture exact Explore camera position so frame 1 of the flight has zero jump
+    const camNow = this.globe.getCurrentCameraGeo();
+    this.currentFocusVec.copy(latLonToVec3(camNow.lat, camNow.lon, 1).normalize());
+    this.currentDist = camNow.distance;
+    this.currentBearing = 0;
+    this.currentTilt = 0;
 
     this.active = true;
     document.body.classList.add('tour-active');
     this.dom.playLauncher.hidden = true;
     this.dom.tourHud.hidden = false;
     this.globe.setTourMode(true);
-    this.goToStory(startIndex, { withOpeningSting: true });
+    this.goToStory(startIndex, { playSting: true });
   }
 
   stop() {
     this.active = false;
+    this.phase = 'idle';
     this._pendingStartIndex = null;
     this.stingAudio.pause();
     this.audio.pause();
@@ -242,17 +280,22 @@ export class BroadcastTour {
     }
   }
 
-  goToStory(index, { withOpeningSting = false } = {}) {
+  goToStory(index, { playSting = true } = {}) {
     if (!this.stories.length) return;
     if (!this.active) {
       this.start(index);
       return;
     }
 
+    if (playSting) {
+      this._playSoftSting();
+    }
+
     this.storyIndex = ((index % this.stories.length) + this.stories.length) % this.stories.length;
     const story = this.stories[this.storyIndex];
     this.cues = normaliseStoryCues(story);
     this.storyDurationSec = this.cues[this.cues.length - 1]?.endSec || Number(story.duration_sec) || FALLBACK_STORY_SEC;
+    this.cameraKnots = buildCameraKnots(this.cues, this.storyDurationSec);
     this.storyElapsedSec = 0;
     this.storyFinishedAt = null;
     this.cueIndex = -1;
@@ -260,7 +303,6 @@ export class BroadcastTour {
 
     this.globe.highlightStoryPin(this.storyIndex);
 
-    // Prepare the story MP3 (starts speaking cleanly right as the camera flight arrives)
     const audioUrl = story.audio_url || `data/audio/story-${this.storyIndex + 1}.mp3`;
     this.audio.pause();
     this.audio.src = `${audioUrl}?v=${this.bulletinStamp}`;
@@ -269,58 +311,53 @@ export class BroadcastTour {
     this.audio.load();
     this.audioAvailable = true;
 
-    const firstCue = this.cues[0];
-    const camNow = this.globe.getCurrentCameraGeo();
-    const fromDir = this.phase === 'idle'
-      ? latLonToVec3(camNow.lat, camNow.lon, 1).normalize()
-      : this.currentFocusVec.clone().normalize();
-    const toDir = latLonToVec3(firstCue.lat, firstCue.lon, 1).normalize();
+    // Single great-circle flight directly onto Knot 0 of the new story (never duplicated!)
+    const startKnot = this.cameraKnots[0];
+    const fromDir = this.currentFocusVec.clone().normalize();
+    const toDir = startKnot.vec.clone().normalize();
     const angle = fromDir.angleTo(toDir);
-
-    const flightDur = withOpeningSting
-      ? OPENING_FLIGHT_MS
-      : Math.max(1150, Math.min(STORY_SWITCH_FLIGHT_MS, 950 + angle * 620));
 
     this.flightState = {
       fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromDir),
       toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
-      fromDist: this.phase === 'idle' ? camNow.distance : this.currentDist,
-      toDist: firstCue.distance,
+      fromDist: this.currentDist,
+      toDist: startKnot.distance,
       fromBearing: this.currentBearing,
-      toBearing: firstCue.bearing - 10,
-      arcBoost: Math.min(0.75, 0.16 + angle * 0.34),
-      duration: flightDur,
+      toBearing: startKnot.bearing,
+      fromTilt: this.currentTilt,
+      toTilt: TOUR_TILT_DEG,
+      arcBoost: Math.min(0.68, 0.12 + angle * 0.32),
+      duration: Math.max(1350, Math.min(STORY_FLIGHT_MS, 1050 + angle * 550)),
     };
 
     this.phase = 'flight';
     this.phaseElapsedMs = 0;
 
     this._renderChyron(story);
-    this._activateCue(0, story, { immediateCam: false });
+    this._activateCue(0);
   }
 
   _beginCuesPhase() {
     this.phase = 'cues';
     this.storyElapsedSec = 0;
     this.audio.muted = !this.voiceEnabled;
-    // Play audio (muted when Voice Off, audible when Voice On) so hardware timing is always ready
     this.audio.play().catch(() => {
       this.audioAvailable = false;
     });
   }
 
-  _activateCue(cueIdx, story, { immediateCam = false } = {}) {
+  _activateCue(cueIdx) {
     if (cueIdx < 0 || cueIdx >= this.cues.length) return;
     this.cueIndex = cueIdx;
     const cue = this.cues[cueIdx];
 
-    // 1. Switch the live weather variable on the globe & update legend + strap metric
+    // Smoothly cross-fade weather variable & update read-only legend + strap badge
     this.globe.setLayer(cue.layer);
     this.onLayerSync?.(cue.layer);
     const metricPrefix = cue.metric ? `${cue.metric} · ` : '';
     this.dom.layerTag.textContent = `${metricPrefix}${LAYER_LABELS[cue.layer] || cue.layer.toUpperCase()}`;
 
-    // 2. Move the animated surface spotlight rings & location callout onto this sentence's coordinates
+    // Glide on-globe surface spotlight ring & location callout to this sentence's coordinates
     this.globe.setTourFocusCallout({
       lat: cue.lat,
       lon: cue.lon,
@@ -329,33 +366,61 @@ export class BroadcastTour {
       layer: cue.layer,
     });
 
-    // 3. Highlight the active sentence clause in the scrolling STORY ticker
     this.dom.tickerTrack.querySelectorAll('.ticker-cue').forEach(el => {
       el.classList.toggle('active', Number(el.dataset.cue) === cueIdx);
     });
+  }
 
-    // 4. Set up smooth 3D camera sweep from previous focus onto this cue's location
-    const targetVec = latLonToVec3(cue.lat, cue.lon, 1).normalize();
-    if (immediateCam) {
-      this.currentFocusVec.copy(targetVec);
-      this.currentDist = cue.distance;
-      this.currentBearing = cue.bearing;
-      this.cueCamTransition = null;
-    } else {
-      const fromVec = this.currentFocusVec.clone().normalize();
-      const hopAngle = fromVec.angleTo(targetVec);
-      this.cueCamTransition = {
-        fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromVec),
-        toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), targetVec),
-        fromDist: this.currentDist,
-        toDist: cue.distance,
-        fromBearing: this.currentBearing,
-        toBearing: cue.bearing - 11,
-        hopArc: Math.min(0.28, hopAngle * 0.25),
-        elapsedSec: 0,
-        durationSec: Math.min(2.6, Math.max(1.5, 1.2 + hopAngle * 2.2)),
+  _sampleStorySpline(elapsedSec) {
+    const knots = this.cameraKnots;
+    const n = knots.length;
+    if (n === 0) {
+      return { vec: new THREE.Vector3(0, 0, 1), distance: 1.65, bearing: 0 };
+    }
+    if (n === 1 || elapsedSec <= knots[0].tSec) {
+      return {
+        vec: knots[0].vec.clone(),
+        distance: knots[0].distance,
+        bearing: knots[0].bearing,
       };
     }
+    if (elapsedSec >= knots[n - 1].tSec) {
+      return {
+        vec: knots[n - 1].vec.clone(),
+        distance: knots[n - 1].distance,
+        bearing: knots[n - 1].bearing,
+      };
+    }
+
+    let k = 0;
+    for (let i = 0; i < n - 1; i++) {
+      if (elapsedSec < knots[i + 1].tSec) {
+        k = i;
+        break;
+      }
+    }
+
+    const k0 = knots[Math.max(0, k - 1)];
+    const k1 = knots[k];
+    const k2 = knots[k + 1];
+    const k3 = knots[Math.min(n - 1, k + 2)];
+
+    const span = Math.max(0.05, k2.tSec - k1.tSec);
+    const u = Math.max(0, Math.min(1, (elapsedSec - k1.tSec) / span));
+
+    const vec = new THREE.Vector3(
+      catmullRomScalar(k0.vec.x, k1.vec.x, k2.vec.x, k3.vec.x, u),
+      catmullRomScalar(k0.vec.y, k1.vec.y, k2.vec.y, k3.vec.y, u),
+      catmullRomScalar(k0.vec.z, k1.vec.z, k2.vec.z, k3.vec.z, u)
+    ).normalize();
+
+    const distance = Math.max(
+      1.36,
+      Math.min(2.4, catmullRomScalar(k0.distance, k1.distance, k2.distance, k3.distance, u))
+    );
+    const bearing = catmullRomScalar(k0.bearing, k1.bearing, k2.bearing, k3.bearing, u);
+
+    return { vec, distance, bearing };
   }
 
   _renderChyron(story) {
@@ -364,20 +429,19 @@ export class BroadcastTour {
     this.dom.headline.textContent = story.headline;
     this.dom.progressBar.style.width = '0%';
 
-    // Render sentence cues as distinct inline spans so we can measure exact pixel boundaries
-    const buildCopyInner = () =>
-      this.cues
-        .map(
-          (c, idx) =>
-            `<span class="ticker-cue${idx === 0 ? ' active' : ''}" data-cue="${idx}">` +
-            formatTickerClauseHtml(c.ticker) +
-            `</span>`
-        )
-        .join('');
+    const copyInner = this.cues
+      .map(
+        (c, idx) =>
+          `<span class="ticker-cue${idx === 0 ? ' active' : ''}" data-cue="${idx}">` +
+          formatTickerClauseHtml(c.ticker) +
+          `</span>`
+      )
+      .join('');
 
-    const copyInner = buildCopyInner();
+    // Repeat enough copies to span ultra-wide 4K monitors seamlessly
     this.dom.tickerTrack.innerHTML =
       `<div class="ticker-copy">${copyInner}</div>` +
+      `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>` +
       `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>` +
       `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>`;
 
@@ -387,11 +451,12 @@ export class BroadcastTour {
       `<div class="links-copy">${linksHtml}</div>` +
       `<div class="links-copy">${linksHtml}</div>` +
       `<div class="links-copy">${linksHtml}</div>` +
+      `<div class="links-copy">${linksHtml}</div>` +
       `<div class="links-copy">${linksHtml}</div>`;
     this.dom.newsLinks.style.transform = 'translate3d(0px, 0, 0)';
 
     this.cueSpans = [];
-    this.displayStoryPx = -120;
+    this.displayStoryPx = -65;
 
     requestAnimationFrame(() => {
       const firstStoryCopy = this.dom.tickerTrack.querySelector('.ticker-copy');
@@ -416,10 +481,10 @@ export class BroadcastTour {
   _bindControls() {
     this.dom.playTourBtn?.addEventListener('click', () => this.start(0));
     this.dom.prevBtn?.addEventListener('click', () =>
-      this.goToStory(this.storyIndex - 1, { withOpeningSting: false })
+      this.goToStory(this.storyIndex - 1, { playSting: true })
     );
     this.dom.nextBtn?.addEventListener('click', () =>
-      this.goToStory(this.storyIndex + 1, { withOpeningSting: false })
+      this.goToStory(this.storyIndex + 1, { playSting: true })
     );
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
     this.dom.exitBtn?.addEventListener('click', () => this.stop());
@@ -436,9 +501,9 @@ export class BroadcastTour {
       if (e.key === 'Escape') {
         this.stop();
       } else if (e.key === 'ArrowRight') {
-        this.goToStory(this.storyIndex + 1, { withOpeningSting: false });
+        this.goToStory(this.storyIndex + 1, { playSting: true });
       } else if (e.key === 'ArrowLeft') {
-        this.goToStory(this.storyIndex - 1, { withOpeningSting: false });
+        this.goToStory(this.storyIndex - 1, { playSting: true });
       } else if (e.key.toLowerCase() === 'm') {
         this.toggleMute();
       }
@@ -446,13 +511,13 @@ export class BroadcastTour {
   }
 
   _updateLinksTicker(dtSec) {
-    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.2 : LINKS_TICKER_SPEED;
+    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.28 : LINKS_TICKER_SPEED;
     this.linksOffsetPx = (this.linksOffsetPx + linkSpeed * dtSec) % Math.max(1, this.linksSingleWidth);
     this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
   }
 
   _applyStoryTickerOffset(rawPx) {
-    const leadInPx = 22;
+    const leadInPx = 28;
     const w = Math.max(1, this.storySingleWidth);
     const wrapped = (((rawPx - leadInPx) % w) + w) % w;
     this.dom.tickerTrack.style.transform = `translate3d(${-wrapped.toFixed(1)}px, 0, 0)`;
@@ -466,16 +531,13 @@ export class BroadcastTour {
 
     if (!this.active || !this.stories.length || !this.cues.length) return;
 
-    const story = this.stories[this.storyIndex];
-
-    // Always scroll the CNN-style bottom web links ticker at its independent speed
     this._updateLinksTicker(dtSec);
 
-    // Phase 1: Dramatic swoop onto Cue 0 (accompanied by the opening drumbeat sting on launch)
+    // Phase 1: Single smooth great-circle flight onto Knot 0 of the story
     if (this.phase === 'flight' && this.flightState) {
       this.phaseElapsedMs += dtMs;
       const t = Math.min(1, this.phaseElapsedMs / this.flightState.duration);
-      const ease = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
+      const ease = quinticEase(t);
 
       const q = new THREE.Quaternion().slerpQuaternions(this.flightState.fromQuat, this.flightState.toQuat, ease);
       const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
@@ -483,16 +545,17 @@ export class BroadcastTour {
         THREE.MathUtils.lerp(this.flightState.fromDist, this.flightState.toDist, ease) +
         Math.sin(t * Math.PI) * this.flightState.arcBoost;
       const bearing = THREE.MathUtils.lerp(this.flightState.fromBearing, this.flightState.toBearing, ease);
+      const tilt = THREE.MathUtils.lerp(this.flightState.fromTilt, this.flightState.toTilt, ease);
 
       this.currentFocusVec.copy(dir);
       this.currentDist = dist;
       this.currentBearing = bearing;
+      this.currentTilt = tilt;
 
       const { lat, lon } = vec3ToLatLon(dir);
-      this.globe.setTourCameraPose(lat, lon, dist, bearing, 18.5);
+      this.globe.setTourCameraPose(lat, lon, dist, bearing, tilt);
 
-      // Lead Cue 0 smoothly into the STORY reading window during the swoop so text never sits still
-      this.displayStoryPx = THREE.MathUtils.lerp(-130, 0, ease);
+      this.displayStoryPx = THREE.MathUtils.lerp(-65, 0, ease);
       this._applyStoryTickerOffset(this.displayStoryPx);
 
       if (t >= 1) {
@@ -501,7 +564,7 @@ export class BroadcastTour {
       return;
     }
 
-    // Phase 2: Sentence-by-sentence synchronised playback (locked to voice when Voice On, or real-time clock when Voice Off)
+    // Phase 2: Continuous spline glide + sentence-synchronised variable switches & calm ticker scroll
     const useAudioClock =
       this.voiceEnabled &&
       this.audioAvailable &&
@@ -512,7 +575,7 @@ export class BroadcastTour {
     if (useAudioClock) {
       this.storyElapsedSec = this.audio.currentTime;
     } else if (this.storyFinishedAt === null) {
-      this.storyElapsedSec += dtSec;
+      this.storyElapsedSec += dtSec * SILENT_CLOCK_PACE;
       if (this.storyElapsedSec >= this.storyDurationSec) {
         this.storyElapsedSec = this.storyDurationSec;
         this.storyFinishedAt = now;
@@ -522,7 +585,6 @@ export class BroadcastTour {
     const overallProgress = Math.min(1, this.storyElapsedSec / Math.max(1, this.storyDurationSec));
     this.dom.progressBar.style.width = `${(overallProgress * 100).toFixed(1)}%`;
 
-    // Find which sentence cue corresponds to `storyElapsedSec`
     let targetCueIdx = this.cues.length - 1;
     for (let i = 0; i < this.cues.length; i++) {
       if (this.storyElapsedSec < this.cues[i].endSec || i === this.cues.length - 1) {
@@ -532,76 +594,41 @@ export class BroadcastTour {
     }
 
     if (targetCueIdx !== this.cueIndex) {
-      this._activateCue(targetCueIdx, story, { immediateCam: false });
+      this._activateCue(targetCueIdx);
     }
 
     const activeCue = this.cues[this.cueIndex];
     const cueDur = Math.max(0.4, activeCue.endSec - activeCue.startSec);
     const cueU = Math.max(0, Math.min(1, (this.storyElapsedSec - activeCue.startSec) / cueDur));
 
-    // Synchronise the scrolling STORY ticker position directly with the active sentence cue!
     if (this.cueSpans.length === this.cues.length) {
       const span = this.cueSpans[this.cueIndex];
       const targetPx = span.leftPx + cueU * span.widthPx;
       if (Math.abs(targetPx - this.displayStoryPx) > this.storySingleWidth * 0.5) {
         this.displayStoryPx = targetPx;
       } else {
-        this.displayStoryPx += (targetPx - this.displayStoryPx) * Math.min(1, dtSec * 12);
+        this.displayStoryPx += (targetPx - this.displayStoryPx) * Math.min(1, dtSec * 6.5);
       }
     } else {
       this.displayStoryPx = (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
     }
     this._applyStoryTickerOffset(this.displayStoryPx);
 
-    // Advance cleanly to the next story 0.75s after the final sentence finishes
-    if (this.storyFinishedAt !== null && now - this.storyFinishedAt >= 750) {
-      this.goToStory(this.storyIndex + 1, { withOpeningSting: false });
+    if (this.storyFinishedAt !== null && now - this.storyFinishedAt >= 800) {
+      this.goToStory(this.storyIndex + 1, { playSting: true });
       return;
     }
 
-    // Continuous 3D camera motion: smooth hop onto active cue + steady cinema orbit + drift toward next cue!
-    const nextCue = this.cues[Math.min(this.cues.length - 1, this.cueIndex + 1)];
-    const cueBaseVec = latLonToVec3(activeCue.lat, activeCue.lon, 1).normalize();
-    const nextCueVec = latLonToVec3(nextCue.lat, nextCue.lon, 1).normalize();
+    // Evaluate continuous Catmull-Rom spline + silky exponential damper (zero jumps at sentence boundaries!)
+    const targetPose = this._sampleStorySpline(this.storyElapsedSec);
+    const damp = 1 - Math.exp(-dtSec * 3.8);
 
-    let focusVec;
-    let dist;
-    let bearing;
+    this.currentFocusVec.lerp(targetPose.vec, damp).normalize();
+    this.currentDist = THREE.MathUtils.lerp(this.currentDist, targetPose.distance, damp);
+    this.currentBearing = THREE.MathUtils.lerp(this.currentBearing, targetPose.bearing, damp);
+    this.currentTilt = THREE.MathUtils.lerp(this.currentTilt, TOUR_TILT_DEG, damp);
 
-    if (this.cueCamTransition) {
-      this.cueCamTransition.elapsedSec += dtSec;
-      const trT = Math.min(1, this.cueCamTransition.elapsedSec / this.cueCamTransition.durationSec);
-      const trEase = smoothstep01(trT);
-      const q = new THREE.Quaternion().slerpQuaternions(
-        this.cueCamTransition.fromQuat,
-        this.cueCamTransition.toQuat,
-        trEase
-      );
-      focusVec = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
-      dist =
-        THREE.MathUtils.lerp(this.cueCamTransition.fromDist, this.cueCamTransition.toDist, trEase) +
-        Math.sin(trT * Math.PI) * this.cueCamTransition.hopArc;
-      bearing = THREE.MathUtils.lerp(this.cueCamTransition.fromBearing, activeCue.bearing, trEase);
-      if (trT >= 1) {
-        this.cueCamTransition = null;
-      }
-    } else {
-      focusVec = cueBaseVec.clone();
-      dist = activeCue.distance;
-      bearing = activeCue.bearing;
-    }
-
-    // Keep the globe smoothly gliding & banking throughout every single second of the sentence
-    const anticipation = smoothstep01((cueU - 0.35) / 0.65) * 0.28;
-    focusVec.lerp(nextCueVec, anticipation).normalize();
-    const liveBearing = bearing + (cueU - 0.3) * 22.0;
-    const liveDist = dist - 0.065 * Math.sin(cueU * Math.PI);
-
-    this.currentFocusVec.copy(focusVec);
-    this.currentDist = liveDist;
-    this.currentBearing = liveBearing;
-
-    const { lat, lon } = vec3ToLatLon(focusVec);
-    this.globe.setTourCameraPose(lat, lon, liveDist, liveBearing, 18.5);
+    const { lat, lon } = vec3ToLatLon(this.currentFocusVec);
+    this.globe.setTourCameraPose(lat, lon, this.currentDist, this.currentBearing, this.currentTilt);
   }
 }

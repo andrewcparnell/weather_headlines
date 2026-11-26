@@ -856,11 +856,11 @@ export class WeatherGlobe {
     this.camera.position.copy(camDir.multiplyScalar(distance));
     this.camera.up.set(0, 1, 0);
 
-    // Frame the target in the upper-middle 58% of the screen, cleanly above the lower-third chyron
+    // Frame the target comfortably above the translucent full-width lower-third bar
     const lookTarget = vFocus
       .clone()
-      .addScaledVector(north, -0.095 * Math.max(0.2, distance - 1.0))
-      .multiplyScalar(0.84);
+      .addScaledVector(north, -0.075 * Math.max(0.15, distance - 1.0) * (tiltDeg / 15.0))
+      .multiplyScalar(1.0 - 0.14 * Math.min(1.0, tiltDeg / 15.0));
     this.camera.lookAt(lookTarget);
   }
 
@@ -1048,7 +1048,7 @@ export class WeatherGlobe {
     if (!this.focusCallout?.active) return;
 
     // Smoothly glide the surface spotlight & callout when transitioning between sentence locations
-    this.focusCallout.currentVec.lerp(this.focusCallout.targetVec, Math.min(1, dt * 6.5));
+    this.focusCallout.currentVec.lerp(this.focusCallout.targetVec, Math.min(1, dt * 2.8));
     this.focusCallout.currentVec.normalize().multiplyScalar(1.0045);
 
     this.focusRingGroup.position.copy(this.focusCallout.currentVec);

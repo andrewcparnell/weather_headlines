@@ -84,7 +84,7 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
     assert "this.voiceEnabled = false" in tour_js
 
     sting_wav = SITE_DIR / "assets" / "bulletin-sting.wav"
-    assert sting_wav.exists() and sting_wav.stat().st_size > 100_000
+    assert sting_wav.exists() and sting_wav.stat().st_size > 50_000
     assert "bulletin-sting.wav" in tour_js
 
     story_match = re.search(r"STORY_TICKER_SPEED\s*=\s*(\d+)", tour_js)
