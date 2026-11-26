@@ -4,7 +4,9 @@ from __future__ import annotations
 import argparse
 import json
 import os
+import re
 import sys
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .climatology import enrich_all_candidates, load_era5_historical_context
@@ -14,7 +16,29 @@ from .opendata import fetch_live_weather
 from .pack_globe import package_globe_layers
 from .scanner import detect_global_candidates
 from .tts import build_bulletin_audio
+from .validator import validate_and_clean_bulletin
 from .warnings_feed import fetch_global_warnings
+
+
+def _redact_secrets(msg: str) -> str:
+    return re.sub(r"sk-ant-[A-Za-z0-9_-]+", "sk-ant-***", msg or "")
+
+
+def _is_recent_valid_bulletin(bulletin: dict | None, max_age_hours: float = 18.0) -> bool:
+    if not isinstance(bulletin, dict):
+        return False
+    _, errs = validate_and_clean_bulletin(bulletin)
+    if errs:
+        return False
+    gen = str(bulletin.get("generated_utc") or "").strip()
+    if not gen:
+        return False
+    try:
+        dt = datetime.fromisoformat(gen.replace("Z", "+00:00"))
+        age_h = (datetime.now(timezone.utc) - dt).total_seconds() / 3600.0
+        return age_h <= max_age_hours
+    except ValueError:
+        return False
 
 
 def run_pipeline(
@@ -65,16 +89,47 @@ def run_pipeline(
             )
         )
 
-    # 5. Generate 5-story broadcast tour with Claude + Web Search (or fallback cleanly if no key)
+    # 5. Generate 5-story broadcast tour with Claude + Web Search (or fallback cleanly if unavailable)
+    now_iso = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    run_iso = weather.run_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    valid_iso = weather.valid_time.strftime("%Y-%m-%dT%H:%M:%SZ")
+    need_audio_synth = True
+
     has_key = bool(os.environ.get("ANTHROPIC_API_KEY", "").strip())
     if has_key:
-        bulletin = generate_headlines_with_claude(weather, enriched, warnings, previous_bulletin)
-    elif skip_headlines_if_no_key and previous_bulletin:
+        try:
+            bulletin = generate_headlines_with_claude(weather, enriched, warnings, previous_bulletin)
+        except Exception as exc:
+            safe_err = _redact_secrets(str(exc)).replace("\n", " ")
+            print(f"[build] Warning: Claude headline generation failed ({safe_err}).", file=sys.stderr)
+            if os.environ.get("GITHUB_ACTIONS") == "true":
+                print(
+                    f"::warning title=Claude Headline Fallback::{safe_err} - Live ECMWF and ERA5 weather layers were updated cleanly.",
+                    flush=True,
+                )
+            if _is_recent_valid_bulletin(previous_bulletin, max_age_hours=18.0):
+                print(
+                    "[build] Preserving recent curated stories while refreshing timestamps and live globe fields.",
+                    file=sys.stderr,
+                )
+                bulletin = dict(previous_bulletin)
+                bulletin["generated_utc"] = now_iso
+                bulletin["model_run_utc"] = run_iso
+                bulletin["valid_time_utc"] = valid_iso
+                need_audio_synth = False
+            else:
+                print("[build] Building fresh ERA5-grounded fallback bulletin.", file=sys.stderr)
+                bulletin = build_deterministic_bulletin(weather, enriched, warnings)
+    elif skip_headlines_if_no_key and _is_recent_valid_bulletin(previous_bulletin, max_age_hours=18.0):
         print(
-            "[build] ANTHROPIC_API_KEY not set; keeping existing headlines.json while updating live globe layers.",
+            "[build] ANTHROPIC_API_KEY not set; keeping recent headlines.json while updating live globe layers.",
             file=sys.stderr,
         )
-        bulletin = previous_bulletin
+        bulletin = dict(previous_bulletin)
+        bulletin["generated_utc"] = now_iso
+        bulletin["model_run_utc"] = run_iso
+        bulletin["valid_time_utc"] = valid_iso
+        need_audio_synth = False
     else:
         print(
             "[build] ANTHROPIC_API_KEY not set; building ERA5-grounded fallback bulletin.",
@@ -82,11 +137,12 @@ def run_pipeline(
         )
         bulletin = build_deterministic_bulletin(weather, enriched, warnings)
 
-    # 6. Synthesise neural British female newsreader MP3s for all stories
-    try:
-        bulletin = build_bulletin_audio(bulletin, out_dir)
-    except Exception as exc:
-        print(f"[build] Warning: neural TTS audio synthesis failed ({exc}); keeping text bulletin.", file=sys.stderr)
+    # 6. Synthesise neural British female newsreader MP3s for newly authored stories
+    if need_audio_synth:
+        try:
+            bulletin = build_bulletin_audio(bulletin, out_dir)
+        except Exception as exc:
+            print(f"[build] Warning: neural TTS audio synthesis failed ({exc}); keeping text bulletin.", file=sys.stderr)
 
     tmp = headlines_path.with_suffix(".tmp.json")
     tmp.write_text(json.dumps(bulletin, indent=2, ensure_ascii=False))

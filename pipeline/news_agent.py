@@ -5,6 +5,7 @@ import json
 import os
 import re
 import sys
+import time
 from datetime import datetime, timezone
 
 from .opendata import LiveWeatherFields
@@ -16,8 +17,9 @@ from .validator import (
 )
 
 DEFAULT_CLAUDE_MODELS = [
+    "claude-sonnet-4-6",
     "claude-sonnet-4-5",
-    "claude-sonnet-4-20250514",
+    "claude-haiku-4-5",
 ]
 
 SYSTEM_PROMPT = """You are the Chief Broadcast Meteorologist and Senior Producer for a flagship BBC News / Sky News style global weather programme.
@@ -53,8 +55,8 @@ Each story MUST include:
     - `metric_label`: e.g. `"With 95 km/h coastal gusts"`
     - `era5_rank`: e.g. `"#1 for date since 1940"`
     - `persistence`: e.g. `"28 of last 28 days warm"`
-- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.45..2.15}, ...]` tracing a smooth 600-2,000 km path across the weather feature so the 3D camera glides continuously across the surface while the ticker scrolls.
-- `cues`: array of 5 sentence-level synchronised broadcast cues `[{"layer": "rain"|"wind"|"pressure"|"temperature"|"anomaly", "lat": float, "lon": float, "distance": 1.48..2.02, "bearing": -14..14, "label": "SHORT SUB-LOCATION", "metric": "SHORT STAT", "spoken": "Exact spoken sentence for this cue.", "ticker": "Crisp 10 to 15 word scrolling ticker clause with **highlighted key words**"}]`. Keep each cue's `ticker` concise (around 65 to 90 characters) so the ticker scrolls at a calm, comfortable reading speed while switching `layer`, `(lat, lon)`, and `label` in lockstep with what is being spoken (for example: show `"rain"` when talking about heavy rain, switch to `"wind"` when talking about gusts, `"pressure"` when discussing the low or blocking high, and `"anomaly"` when discussing the climate warming shift).
+- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.45..2.15}, ...]` tracing a smooth 750-2,000 km path across the weather feature so the 3D camera glides continuously across the surface while the ticker scrolls.
+- `cues`: array of 5 sentence-level synchronised broadcast cues `[{"layer": "rain"|"wind"|"pressure"|"temperature"|"anomaly", "lat": float, "lon": float, "distance": 1.48..2.02, "bearing": -14..14, "label": "SHORT SUB-LOCATION", "metric": "SHORT STAT", "spoken": "Exact spoken sentence for this cue.", "ticker": "Crisp 10 to 15 word scrolling ticker clause with **highlighted key words**"}]`. Across the 5 cues, MUST switch across at least 3 distinct weather layers (for example `"rain"`, `"wind"`, `"pressure"`, `"anomaly"`) and move across distinct sub-locations spanning at least 600 km across the weather system. Keep each cue's `ticker` concise (around 65 to 90 characters) so the ticker scrolls at a calm, comfortable reading speed.
 - `beats`: array of 4 chapters (`LIVE HIGHLIGHT`, `PERSISTENCE`, `HISTORICAL RANK`, `CLIMATE CONTEXT`), each with `{"tag": "...", "title": "...", "layer": "...", "text": "..."}`.
 - `news_links`: 1 to 3 verified, direct event-specific news articles `[{"source": "The Guardian", "title": "Specific article headline...", "url": "https://..."}]`.
 
@@ -106,8 +108,8 @@ def generate_headlines_with_claude(
         "ecmwf_run_utc": weather.run_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "valid_time_utc": weather.valid_time.strftime("%Y-%m-%dT%H:%M:%SZ"),
         "previous_headlines": prev_summary,
-        "active_gdacs_alerts": warnings[:20],
-        "candidate_hotspots_with_era5_1940_2026_stats": enriched_candidates,
+        "active_gdacs_alerts": warnings[:12],
+        "candidate_hotspots_with_era5_1940_2026_stats": enriched_candidates[:10],
     }
 
     prompt = (
@@ -119,7 +121,7 @@ def generate_headlines_with_claude(
         "news articles directly about these exact weather events (never generic `/weather` hub pages).\n"
         "Step 2: Pick the 5 strongest, newsworthy, geographically diverse events that have direct event "
         "articles, write punchy BBC/Sky headlines and `**keyword-highlighted**` scrolling tickers, and "
-        "output the JSON bulletin.\n\n"
+        "output ONLY the JSON bulletin.\n\n"
         f"<data>\n{json.dumps(user_payload, indent=2)}\n</data>"
     )
 
@@ -130,16 +132,72 @@ def generate_headlines_with_claude(
             messages: list[dict] = [{"role": "user", "content": prompt}]
 
             for attempt in range(3):
+                search_budget = 7 if attempt == 0 else 3
                 resp = client.messages.create(
                     model=model_name,
-                    max_tokens=8000,
+                    max_tokens=14000,
                     system=SYSTEM_PROMPT,
-                    tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 15}],
+                    tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": search_budget}],
                     messages=messages,
                 )
-                text_parts = [block.text for block in resp.content if getattr(block, "type", None) == "text"]
-                combined_text = "\n".join(text_parts)
-                draft = _extract_json_object(combined_text)
+
+                # If server-side web_search hit its per-turn iteration cap, continue cleanly until end_turn
+                continuations = 0
+                accumulated_text_parts = [
+                    block.text for block in resp.content if getattr(block, "type", None) == "text"
+                ]
+                while getattr(resp, "stop_reason", None) == "pause_turn" and continuations < 3:
+                    continuations += 1
+                    print(
+                        f"[news_agent] Resuming paused web_search turn ({continuations}/3) on {model_name}...",
+                        file=sys.stderr,
+                    )
+                    messages.append({"role": "assistant", "content": resp.content})
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "Finish and return ONLY the complete valid JSON object matching "
+                                '{"edition_title": "...", "stories": [...]} with no prose outside the JSON.'
+                            ),
+                        }
+                    )
+                    resp = client.messages.create(
+                        model=model_name,
+                        max_tokens=14000,
+                        system=SYSTEM_PROMPT,
+                        tools=[{"type": "web_search_20250305", "name": "web_search", "max_uses": 2}],
+                        messages=messages,
+                    )
+                    accumulated_text_parts.extend(
+                        block.text for block in resp.content if getattr(block, "type", None) == "text"
+                    )
+
+                latest_text = "\n".join(
+                    block.text for block in resp.content if getattr(block, "type", None) == "text"
+                )
+                combined_text = latest_text if "{" in latest_text else "\n".join(accumulated_text_parts)
+
+                try:
+                    draft = _extract_json_object(combined_text)
+                except (ValueError, json.JSONDecodeError) as parse_exc:
+                    print(
+                        f"[news_agent] JSON parse error on attempt {attempt + 1} (stop_reason={getattr(resp, 'stop_reason', None)}): {parse_exc}",
+                        file=sys.stderr,
+                    )
+                    messages.append({"role": "assistant", "content": resp.content})
+                    messages.append(
+                        {
+                            "role": "user",
+                            "content": (
+                                "Your previous reply did not contain a complete valid JSON object "
+                                f"({parse_exc}). Return ONLY the complete valid JSON object matching "
+                                '{"edition_title": "World Weather Headlines", "stories": [...]} with 5 stories.'
+                            ),
+                        }
+                    )
+                    continue
+
                 draft.update(
                     {
                         "generated_utc": datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ"),
@@ -152,7 +210,7 @@ def generate_headlines_with_claude(
                 if not errors:
                     return cleaned
                 print(f"[news_agent] Validation issues on attempt {attempt + 1}: {errors}", file=sys.stderr)
-                messages.append({"role": "assistant", "content": combined_text})
+                messages.append({"role": "assistant", "content": resp.content})
                 messages.append(
                     {
                         "role": "user",
@@ -163,7 +221,23 @@ def generate_headlines_with_claude(
                         ),
                     }
                 )
-            raise RuntimeError(f"Claude output failed validation: {errors}")
+            raise RuntimeError(f"Claude output failed validation after 3 attempts on {model_name}")
+        except anthropic.AuthenticationError as auth_exc:
+            raise RuntimeError(f"Anthropic authentication failed (check ANTHROPIC_API_KEY secret): {auth_exc}") from auth_exc
+        except anthropic.BadRequestError as bad_exc:
+            msg_low = str(bad_exc).lower()
+            if "credit balance" in msg_low or "billing" in msg_low:
+                raise RuntimeError(
+                    f"Anthropic API credit balance is empty (add prepaid API credits at console.anthropic.com): {bad_exc}"
+                ) from bad_exc
+            last_exc = bad_exc
+            print(f"[news_agent] Model {model_name} BadRequestError: {bad_exc}", file=sys.stderr)
+            continue
+        except anthropic.RateLimitError as rate_exc:
+            last_exc = rate_exc
+            print(f"[news_agent] Model {model_name} hit rate limit; pausing 10s before fallback model: {rate_exc}", file=sys.stderr)
+            time.sleep(10)
+            continue
         except Exception as exc:
             last_exc = exc
             print(f"[news_agent] Model {model_name} failed: {exc}", file=sys.stderr)

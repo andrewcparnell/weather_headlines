@@ -133,6 +133,8 @@ async def _synthesise_one_mp3(
         elif mtype == "SentenceBoundary":
             sentence_starts.append(float(msg.get("offset", 0)) / 1e7)
 
+    if len(audio_bytes) < 16_000:
+        raise RuntimeError(f"TTS returned insufficient audio payload ({len(audio_bytes)} bytes)")
     tmp.write_bytes(bytes(audio_bytes))
     tmp.replace(out_path)
     # Edge-TTS outputs 48 kbps CBR MP3

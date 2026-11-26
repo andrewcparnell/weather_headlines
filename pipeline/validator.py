@@ -100,7 +100,12 @@ def auto_highlight_keywords(text: str) -> str:
         r"|\b\d+\s+(?:days|weeks|years|rivers|counties)\b)",
         flags=re.I,
     )
-    return pattern.sub(r"**\1**", text)
+    highlighted = pattern.sub(r"**\1**", text)
+    if "**" in highlighted or not highlighted.strip():
+        return highlighted
+    words = highlighted.split()
+    span = min(4, len(words))
+    return "**" + " ".join(words[:span]) + "**" + (" " + " ".join(words[span:]) if len(words) > span else "")
 
 
 def build_ticker_from_beats(beats: list[dict]) -> str:
@@ -124,33 +129,99 @@ def infer_cue_layer(text: str, fallback: str) -> str:
     return fallback if fallback in VALID_LAYERS else "temperature"
 
 
+HAZARD_LAYER_PALETTE: dict[str, list[str]] = {
+    "heat": ["temperature", "anomaly", "pressure", "wind"],
+    "cold": ["temperature", "anomaly", "pressure", "wind"],
+    "rain": ["rain", "wind", "pressure", "anomaly"],
+    "cyclone": ["wind", "pressure", "rain", "anomaly"],
+    "wind": ["wind", "pressure", "rain", "anomaly"],
+    "pressure": ["pressure", "wind", "anomaly", "temperature"],
+}
+
+
+def _interpolate_along_waypoints(waypoints: list[dict], frac: float) -> tuple[float, float, float]:
+    """Interpolate (lat, lon, distance) cleanly along a multi-point camera path for frac in [0, 1]."""
+    if not waypoints:
+        return 0.0, 0.0, 1.85
+    if len(waypoints) == 1 or frac <= 0.0:
+        w = waypoints[0]
+        return w["lat"], w["lon"], w["distance"]
+    if frac >= 1.0:
+        w = waypoints[-1]
+        return w["lat"], w["lon"], w["distance"]
+
+    pos = frac * (len(waypoints) - 1)
+    idx = min(int(pos), len(waypoints) - 2)
+    t = pos - idx
+    a, b = waypoints[idx], waypoints[idx + 1]
+    dlon = ((b["lon"] - a["lon"] + 180.0) % 360.0) - 180.0
+    lat = round(max(-82.0, min(82.0, a["lat"] + t * (b["lat"] - a["lat"]))), 2)
+    lon = round(((a["lon"] + t * dlon + 180.0) % 360.0) - 180.0, 2)
+    dist = round(max(1.42, min(2.4, a["distance"] + t * (b["distance"] - a["distance"]))), 2)
+    return lat, lon, dist
+
+
+def _assign_default_cue_timings(cues: list[dict]) -> None:
+    """Ensure every cue carries monotonic [start_sec, end_sec] even before neural TTS runs."""
+    if not cues:
+        return
+    valid_existing = True
+    prev_end = 0.0
+    for c in cues:
+        s = c.get("start_sec")
+        e = c.get("end_sec")
+        if s is None or e is None or not (float(e) > float(s) >= prev_end - 0.05):
+            valid_existing = False
+            break
+        prev_end = float(e)
+    if valid_existing:
+        return
+
+    weights = [max(14, len((c.get("spoken") or c.get("ticker") or "").strip())) for c in cues]
+    total_chars = sum(weights)
+    est_duration = max(24.0, round(total_chars / 14.5, 2))
+    acc = 0.0
+    n = len(cues)
+    for i, w in enumerate(weights):
+        t0 = (acc / total_chars) * est_duration
+        acc += w
+        t1 = est_duration if i == n - 1 else (acc / total_chars) * est_duration
+        cues[i]["start_sec"] = round(t0, 2)
+        cues[i]["end_sec"] = round(max(t0 + 0.5, t1), 2)
+
+
 def clean_or_build_cues(
     st: dict,
     cleaned_beats: list[dict],
     waypoints: list[dict],
     primary_layer: str,
     kicker: str,
+    hazard: str = "wind",
 ) -> list[dict]:
-    """Validate explicit sentence-level `cues` or synthesise them from beats + waypoints."""
+    """Validate explicit sentence-level `cues` or synthesise >= 5 multi-layer moving cues."""
     raw_cues = st.get("cues")
-    default_bearings = [-24, 22, -18, 24, -20, 18]
+    default_bearings = [-14.0, -7.0, 0.0, 7.0, 14.0, -10.0, 10.0, -5.0]
     cues_out: list[dict] = []
 
     if isinstance(raw_cues, list) and len(raw_cues) >= 3:
         for i, c in enumerate(raw_cues[:8]):
             if not isinstance(c, dict):
                 continue
-            wp_fb = waypoints[min(i, len(waypoints) - 1)]
+            fb_lat, fb_lon, fb_dist = _interpolate_along_waypoints(
+                waypoints, i / max(1, len(raw_cues[:8]) - 1)
+            )
             try:
-                lat = round(max(-82.0, min(82.0, float(c.get("lat", wp_fb["lat"])))), 2)
-                lon = round(((float(c.get("lon", wp_fb["lon"])) + 180.0) % 360.0) - 180.0, 2)
-                dist = round(max(1.36, min(2.6, float(c.get("distance", wp_fb["distance"])))), 2)
+                lat = round(max(-82.0, min(82.0, float(c.get("lat", fb_lat)))), 2)
+                lon = round(((float(c.get("lon", fb_lon)) + 180.0) % 360.0) - 180.0, 2)
+                dist = round(max(1.36, min(2.6, float(c.get("distance", fb_dist)))), 2)
                 bearing = round(max(-45.0, min(45.0, float(c.get("bearing", default_bearings[i % len(default_bearings)])))), 1)
             except (TypeError, ValueError):
-                lat, lon, dist = wp_fb["lat"], wp_fb["lon"], wp_fb["distance"]
+                lat, lon, dist = fb_lat, fb_lon, fb_dist
                 bearing = default_bearings[i % len(default_bearings)]
 
             spoken = sanitise_prose(str(c.get("spoken") or c.get("text") or ""))
+            if not spoken:
+                continue
             ticker_part = auto_highlight_keywords(sanitise_prose(str(c.get("ticker") or spoken)))
             raw_layer = str(c.get("layer") or "").strip().lower()
             layer = raw_layer if raw_layer in VALID_LAYERS else infer_cue_layer(ticker_part, primary_layer)
@@ -161,7 +232,7 @@ def clean_or_build_cues(
                 "lon": lon,
                 "distance": dist,
                 "bearing": bearing,
-                "label": sanitise_prose(str(c.get("label") or kicker)).upper(),
+                "label": sanitise_prose(str(c.get("label") or kicker))[:38].upper(),
                 "metric": sanitise_prose(str(c.get("metric") or "")),
                 "spoken": spoken,
                 "ticker": ticker_part,
@@ -174,36 +245,104 @@ def clean_or_build_cues(
                     pass
             cues_out.append(entry)
 
-    if len(cues_out) >= 3:
-        return cues_out
+    # Build or top up to at least 5 cues using the opening headline + 4 narrative beats
+    if len(cues_out) < 5:
+        headline_txt = sanitise_prose(str(st.get("headline") or "")).rstrip(".")
+        stats_in = st.get("stats") or {}
+        metric_str = sanitise_prose(str(stats_in.get("headline_metric") or ""))
+        region_str = sanitise_prose(str(st.get("region") or kicker)).upper()[:36]
 
-    # Fallback: construct sentence-synced cues from the 4 beats + dynamic waypoints
-    for i, beat in enumerate(cleaned_beats):
-        wp = waypoints[min(i, len(waypoints) - 1)]
-        b_txt = beat["text"]
-        b_layer = beat["layer"]
-        # Ensure consecutive cues vary layers when the prose discusses a secondary variable
-        inferred = infer_cue_layer(b_txt, b_layer)
-        if i > 0 and cues_out[-1]["layer"] == b_layer and inferred != b_layer:
-            b_layer = inferred
-        cues_out.append(
-            {
-                "layer": b_layer,
-                "lat": wp["lat"],
-                "lon": wp["lon"],
-                "distance": round(max(1.42, min(2.2, wp["distance"] - (0.14 if i in (1, 2) else 0.0))), 2),
-                "bearing": default_bearings[i % len(default_bearings)],
-                "label": (beat.get("title") or kicker)[:34].upper(),
-                "metric": beat.get("tag") or "",
-                "spoken": b_txt.replace("**", ""),
-                "ticker": auto_highlight_keywords(b_txt),
-            }
-        )
+        fallback_templates: list[dict] = []
+        if headline_txt:
+            la0, lo0, d0 = _interpolate_along_waypoints(waypoints, 0.0)
+            fallback_templates.append(
+                {
+                    "layer": primary_layer,
+                    "lat": la0,
+                    "lon": lo0,
+                    "distance": d0,
+                    "bearing": default_bearings[0],
+                    "label": region_str or kicker[:36],
+                    "metric": metric_str or "BREAKING WEATHER",
+                    "spoken": f"{headline_txt}.",
+                    "ticker": auto_highlight_keywords(
+                        f"{headline_txt} ({metric_str})" if metric_str and metric_str not in headline_txt else headline_txt
+                    ),
+                }
+            )
+
+        for b_idx, beat in enumerate(cleaned_beats):
+            frac = (b_idx + 1) / max(1, len(cleaned_beats))
+            la, lo, dist = _interpolate_along_waypoints(waypoints, frac)
+            b_txt = beat["text"]
+            b_layer = infer_cue_layer(b_txt, beat["layer"])
+            fallback_templates.append(
+                {
+                    "layer": b_layer,
+                    "lat": la,
+                    "lon": lo,
+                    "distance": round(max(1.44, min(2.2, dist - (0.12 if b_idx in (0, 1) else 0.0))), 2),
+                    "bearing": default_bearings[(b_idx + 1) % len(default_bearings)],
+                    "label": (beat.get("title") or beat.get("tag") or kicker)[:36].upper(),
+                    "metric": beat.get("tag") or metric_str,
+                    "spoken": b_txt.replace("**", ""),
+                    "ticker": auto_highlight_keywords(b_txt),
+                }
+            )
+
+        if not cues_out:
+            cues_out = fallback_templates[:5]
+        else:
+            # Reset stale timing so topped-up cues receive coherent timings
+            for existing in cues_out:
+                existing.pop("start_sec", None)
+                existing.pop("end_sec", None)
+            for cand_cue in fallback_templates:
+                if len(cues_out) >= 5:
+                    break
+                if not any(cand_cue["spoken"][:28].lower() in x["spoken"].lower() for x in cues_out):
+                    cues_out.append(cand_cue)
+            while len(cues_out) < 5 and fallback_templates:
+                cues_out.append(dict(fallback_templates[len(cues_out) % len(fallback_templates)]))
+
+    # Guarantee >= 3 distinct weather layers across the story's cues
+    palette = HAZARD_LAYER_PALETTE.get(hazard, ["wind", "pressure", "rain", "anomaly"])
+    for p_layer in [primary_layer, *palette]:
+        if len({c["layer"] for c in cues_out}) >= 3:
+            break
+        if p_layer not in VALID_LAYERS or p_layer in {c["layer"] for c in cues_out}:
+            continue
+        # Replace a duplicate layer (preferring later cues: persistence / rank / climate)
+        counts: dict[str, int] = {}
+        for c in cues_out:
+            counts[c["layer"]] = counts.get(c["layer"], 0) + 1
+        for rev_idx in range(len(cues_out) - 1, -1, -1):
+            cur_l = cues_out[rev_idx]["layer"]
+            if counts.get(cur_l, 0) > 1:
+                cues_out[rev_idx]["layer"] = p_layer
+                counts[cur_l] -= 1
+                counts[p_layer] = 1
+                break
+
+    # Guarantee cue locations trace a >= 600 km path across the weather feature
+    cue_path_km = sum(
+        haversine_km(cues_out[i - 1]["lat"], cues_out[i - 1]["lon"], cues_out[i]["lat"], cues_out[i]["lon"])
+        for i in range(1, len(cues_out))
+    )
+    if cue_path_km < 550.0:
+        n_cues = len(cues_out)
+        for i, c in enumerate(cues_out):
+            la, lo, dist = _interpolate_along_waypoints(waypoints, i / max(1, n_cues - 1))
+            c["lat"] = la
+            c["lon"] = lo
+            c["distance"] = dist
+
+    _assign_default_cue_timings(cues_out)
     return cues_out
 
 
 def ensure_dynamic_waypoints(centre_lat: float, centre_lon: float, waypoints: list[dict] | None) -> list[dict]:
-    """Ensure 4 smooth, moving camera waypoints spanning at least 450 km across the surface."""
+    """Ensure 4 smooth, moving camera waypoints spanning at least 700 km across the surface."""
     cleaned: list[dict] = []
     for wp in waypoints or []:
         try:
@@ -218,7 +357,7 @@ def ensure_dynamic_waypoints(centre_lat: float, centre_lon: float, waypoints: li
     for a, b in zip(cleaned, cleaned[1:]):
         total_km += haversine_km(a["lat"], a["lon"], b["lat"], b["lon"])
 
-    if len(cleaned) >= 3 and total_km >= 450.0:
+    if len(cleaned) >= 4 and total_km >= 700.0:
         return cleaned[:5]
 
     cos_lat = max(0.35, math.cos(math.radians(centre_lat)))
@@ -246,14 +385,14 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
         return {}, ["Bulletin root must be a JSON object."]
 
     stories = payload.get("stories")
-    if not isinstance(stories, list) or not (3 <= len(stories) <= 7):
+    if not isinstance(stories, list) or len(stories) < 5:
         errors.append(
-            f"Expected 5 stories (between 3 and 7 allowed), got {len(stories) if isinstance(stories, list) else 'non-list'}."
+            f"Expected 5 stories, got {len(stories) if isinstance(stories, list) else 'non-list'}."
         )
         return payload, errors
 
     cleaned_stories: list[dict] = []
-    for idx, st in enumerate(stories, start=1):
+    for idx, st in enumerate(stories[:5], start=1):
         prefix = f"stories[{idx - 1}]"
         if not isinstance(st, dict):
             errors.append(f"{prefix}: must be an object.")
@@ -305,7 +444,7 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
 
         dyn_waypoints = ensure_dynamic_waypoints(c_lat, c_lon, st.get("camera_waypoints"))
         kicker_clean = sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper()
-        cleaned_cues = clean_or_build_cues(st, cleaned_beats, dyn_waypoints, primary_layer, kicker_clean)
+        cleaned_cues = clean_or_build_cues(st, cleaned_beats, dyn_waypoints, primary_layer, kicker_clean, hazard=hazard)
 
         raw_ticker = sanitise_prose(str(st.get("ticker") or ""))
         if len(raw_ticker) >= 60:
@@ -325,14 +464,14 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 duration_sec = None
 
         cleaned_links: list[dict] = []
+        rejected_urls: list[str] = []
         for link in st.get("news_links") or []:
             if not isinstance(link, dict):
                 continue
             url = str(link.get("url") or "").strip()
             if not is_specific_event_url(url):
-                errors.append(
-                    f"{prefix}: URL {url!r} looks like a generic hub/tag page rather than a direct article about this event."
-                )
+                if url:
+                    rejected_urls.append(url)
                 continue
             parsed = urlparse(url)
             cleaned_links.append(
@@ -343,7 +482,12 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 }
             )
         if not cleaned_links:
-            errors.append(f"{prefix}: at least one direct, event-specific news story URL is required.")
+            if rejected_urls:
+                errors.append(
+                    f"{prefix}: URLs {rejected_urls!r} look like generic hub/tag pages; supply at least one direct article URL about this event."
+                )
+            else:
+                errors.append(f"{prefix}: at least one direct, event-specific news story URL is required.")
 
         stats_in = st.get("stats") or {}
         cleaned_stats = {

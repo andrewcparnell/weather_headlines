@@ -175,3 +175,104 @@ def test_newsreader_speech_normalisation():
     assert "1940 to 1979" in spoken
 
 
+def test_deterministic_bulletin_satisfies_all_cue_and_layer_invariants():
+    from pipeline.news_agent import build_deterministic_bulletin
+
+    now = datetime(2026, 11, 26, 21, tzinfo=timezone.utc)
+    lats = np.linspace(90.0, -90.0, 721, dtype=np.float32)
+    lons = (np.arange(1440, dtype=np.float32) * 0.25) - 180.0
+    zeros = np.zeros((721, 1440), dtype=np.float32)
+    wf = LiveWeatherFields(
+        run_time=now,
+        valid_time=now,
+        step_hours=9,
+        rain_window_hours=(0, 24),
+        lats=lats,
+        lons=lons,
+        t2m_c=zeros + 12.0,
+        u10=zeros + 5.0,
+        v10=zeros,
+        wind_speed=zeros + 5.0,
+        gust_max=zeros + 25.0,
+        rain_24h_mm=zeros,
+        mslp_hpa=zeros + 1005.0,
+    )
+    enriched = [
+        {
+            "id": f"cand-{i}",
+            "kind": kind,
+            "primary_layer": "wind" if kind == "cyclone" else ("rain" if kind == "rain" else "anomaly"),
+            "lat": lat,
+            "lon": lon,
+            "t2m_c": 24.0,
+            "anom_c": 9.5 if kind != "cold" else -10.5,
+            "rain_24h_mm": 115.0,
+            "wind_ms": 22.0,
+            "gust_ms": 33.0,
+            "mslp_hpa": 962.0,
+            "era5": {
+                "rank_since_1940": 1,
+                "years_compared": 87,
+                "percentile": 99.4,
+                "persistence": {"anomalous_days_last_14": 8, "anomalous_days_last_28": 15, "rain_14d_mm": 140.0},
+                "climate_shift": {
+                    "local_seasonal_warming_c_since_1940_1979": 1.6,
+                    "p90_exceedances_1940_1979": 2,
+                    "p90_exceedances_1986_2025": 7,
+                },
+            },
+        }
+        for i, (kind, lat, lon) in enumerate(
+            [
+                ("cyclone", 58.0, -18.0),
+                ("rain", 36.5, -75.5),
+                ("heat", -25.0, 135.0),
+                ("cold", 61.0, 95.0),
+                ("rain", 14.0, 121.0),
+            ],
+            start=1,
+        )
+    ]
+    bulletin = build_deterministic_bulletin(wf, enriched, warnings=[])
+    assert len(bulletin["stories"]) == 5
+    for st in bulletin["stories"]:
+        cues = st["cues"]
+        assert len(cues) >= 5
+        assert len({c["layer"] for c in cues}) >= 3
+        assert "**" in st["ticker"]
+        prev_end = 0.0
+        path_km = 0.0
+        for idx, c in enumerate(cues):
+            assert c["end_sec"] > c["start_sec"] >= prev_end - 0.05
+            prev_end = c["end_sec"]
+            if idx > 0:
+                path_km += haversine_km(cues[idx - 1]["lat"], cues[idx - 1]["lon"], c["lat"], c["lon"])
+        assert path_km >= 500.0
+
+
+def test_validator_filters_secondary_hub_link_when_valid_event_link_exists():
+    base_beat = "Heavy Atlantic gales are sweeping inland across western coastal counties right now."
+    story = {
+        "id": "s",
+        "headline": "Atlantic storm brings severe coastal gales across Ireland",
+        "primary_layer": "wind",
+        "hazard": "cyclone",
+        "centre": {"lat": 53.3, "lon": -8.0},
+        "beats": [{"tag": f"B{j}", "title": "Beat", "layer": "wind", "text": base_beat} for j in range(4)],
+        "news_links": [
+            {"source": "BBC Hub", "title": "Weather", "url": "https://www.bbc.com/weather"},
+            {
+                "source": "The Irish Times",
+                "title": "Storm warnings issued for western counties",
+                "url": "https://www.irishtimes.com/ireland/2026/11/26/storm-warnings-western-counties/",
+            },
+        ],
+    }
+    cleaned, errors = validate_and_clean_bulletin(
+        {"stories": [dict(story, id=f"s-{i}") for i in range(5)]}
+    )
+    assert errors == []
+    assert len(cleaned["stories"][0]["news_links"]) == 1
+    assert "irishtimes.com" in cleaned["stories"][0]["news_links"][0]["url"]
+
+

@@ -1,8 +1,8 @@
 {
   "version": 1,
-  "generated_utc": "2026-11-26T13:30:00Z",
-  "model_run_utc": "2026-11-26T00:00:00Z",
-  "valid_time_utc": "2026-11-26T12:00:00Z",
+  "generated_utc": "2026-11-26T20:09:17Z",
+  "model_run_utc": "2026-11-26T12:00:00Z",
+  "valid_time_utc": "2026-11-26T21:00:00Z",
   "edition_title": "World Weather Headlines",
   "generator": "ecmwf-era5-curated",
   "stories": [

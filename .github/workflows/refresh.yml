@@ -13,6 +13,9 @@ permissions:
   pages: write
   id-token: write
 
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: "true"
+
 concurrency:
   group: pages-weather-headlines
   cancel-in-progress: false
@@ -34,8 +37,9 @@ jobs:
         uses: actions/cache@v4
         with:
           path: pipeline_cache/climatology
-          key: era5-climo-v1-${{ github.run_id }}
+          key: era5-climo-v1-${{ runner.os }}-${{ github.run_id }}
           restore-keys: |
+            era5-climo-v1-${{ runner.os }}-
             era5-climo-v1-
 
       - name: Install dependencies
@@ -62,8 +66,7 @@ jobs:
           git add site/data
           if ! git diff --cached --quiet; then
             git commit -m "chore: refresh 6-hourly weather headlines [skip ci]"
-            git pull --rebase origin main
-            git push origin HEAD:main
+            git pull --rebase -X theirs origin main && git push origin HEAD:main || echo "::warning::Skipped git push due to concurrent main branch update; deploying fresh site artifact directly."
           fi
 
       - name: Upload static site artifact for GitHub Pages
