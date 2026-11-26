@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126h';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126j';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -205,6 +205,7 @@ export class BroadcastTour {
   }
 
   _playSoftSting() {
+    if (!this.voiceEnabled) return;
     this.stingAudio.currentTime = 0;
     this.stingAudio.play().catch(() => {});
   }
@@ -265,6 +266,9 @@ export class BroadcastTour {
   toggleMute() {
     this.voiceEnabled = !this.voiceEnabled;
     this.audio.muted = !this.voiceEnabled;
+    if (!this.voiceEnabled) {
+      this.stingAudio.pause();
+    }
     this._syncVoiceButtonUi();
 
     if (this.voiceEnabled && this.active && this.phase === 'cues') {
