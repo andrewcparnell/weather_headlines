@@ -6,7 +6,7 @@
   <title>Weather Headlines · Live Global Weather</title>
   <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
-  <link rel="stylesheet" href="style.css?v=20261126h">
+  <link rel="stylesheet" href="style.css?v=20261126i">
   <script type="importmap">
     {
       "imports": {
@@ -114,12 +114,15 @@
     </div>
   </nav>
 
-  <!-- Bottom Centre: Large Simple Play Button (Explore mode) -->
+  <!-- Bottom Centre: Large Simple Play Button + Label (Explore mode) -->
   <div id="playLauncher" class="play-launcher">
-    <button id="playTourBtn" class="play-tour-btn" type="button" aria-label="Play World Weather Headlines">
-      <svg class="play-triangle" viewBox="0 0 28 28" aria-hidden="true">
-        <path d="M9 6.2c0-1.1 1.2-1.8 2.2-1.2l12 7.8c.9.6.9 1.8 0 2.4l-12 7.8C10.2 23.6 9 22.9 9 21.8V6.2z" fill="currentColor"/>
-      </svg>
+    <button id="playTourBtn" class="play-tour-btn" type="button" aria-label="Play Headlines">
+      <span class="play-circle">
+        <svg class="play-triangle" viewBox="0 0 28 28" aria-hidden="true">
+          <path d="M8.6 6.6c0-1 .95-1.58 1.82-1.06l11.2 6.84c.82.5.82 1.74 0 2.24l-11.2 6.84c-.87.52-1.82-.06-1.82-1.06V6.6z" fill="currentColor"/>
+        </svg>
+      </span>
+      <span class="play-caption">Play Headlines</span>
     </button>
   </div>
 

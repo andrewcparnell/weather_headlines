@@ -79,6 +79,7 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
     tour_js = (SITE_DIR / "js" / "tour.js").read_text()
 
     assert "Loading global weather headlines" not in html
+    assert "Play Headlines" in html
     assert "Voice Off" in html
     assert "[hidden]" in css and "display: none !important" in css
     assert "this.voiceEnabled = false" in tour_js
