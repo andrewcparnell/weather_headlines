@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126q';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126r';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -167,7 +167,8 @@ export class BroadcastTour {
     this.linksOffsetPx = 0;
     this.linksSingleWidth = 1100;
     this.scriptWordEls = [];
-    this.scriptWordThresholds = [];
+    this.fastFlowSec = [];
+    this.spokenCueFracs = [];
 
     // Continuous camera state (eliminates duplicate transitions or velocity snaps)
     this.flightState = null;
@@ -409,15 +410,26 @@ export class BroadcastTour {
     if (!words.length) {
       this.dom.scriptText.innerHTML = '';
       this.scriptWordEls = [];
-      this.scriptWordThresholds = [];
+      this.fastFlowSec = [];
+      this.spokenCueFracs = [];
       return;
     }
 
-    // Quick 0.48-second animated word cascade, then hold the complete sentence steady until the next point
+    // 1. Voice OFF: quick 0.48-second animated word cascade, then hold steady until next point
     const flowWindowSec = Math.min(0.48, words.length * 0.022);
-    this.scriptWordThresholds = words.map((_, idx) =>
+    this.fastFlowSec = words.map((_, idx) =>
       words.length <= 1 ? 0 : (idx / (words.length - 1)) * flowWindowSec
     );
+
+    // 2. Voice ON: natural presenter speech cadence matching Sonia's spoken voice across the cue
+    const weights = words.map(w => Math.max(2, w.length) + (/[.,;:]/.test(w) ? 3.5 : 0.8));
+    const totalW = weights.reduce((a, b) => a + b, 0);
+    let acc = 0;
+    this.spokenCueFracs = weights.map(w => {
+      const frac = (acc / totalW) * 0.86;
+      acc += w;
+      return frac;
+    });
 
     this.dom.scriptText.innerHTML = words
       .map(w => `<span class="script-word">${escapeHtml(w)}</span>`)
@@ -425,10 +437,12 @@ export class BroadcastTour {
     this.scriptWordEls = Array.from(this.dom.scriptText.querySelectorAll('.script-word'));
   }
 
-  _updateScriptWordsProgress(cueElapsedSec) {
+  _updateScriptWordsProgress(cueElapsedSec, cueU) {
     if (!this.scriptWordEls.length) return;
     for (let i = 0; i < this.scriptWordEls.length; i++) {
-      const visible = cueElapsedSec >= this.scriptWordThresholds[i];
+      const visible = this.voiceEnabled
+        ? cueU >= this.spokenCueFracs[i]
+        : cueElapsedSec >= this.fastFlowSec[i];
       this.scriptWordEls[i].classList.toggle('spoken', visible);
     }
   }
@@ -622,7 +636,7 @@ export class BroadcastTour {
 
       this.displayStoryPx = THREE.MathUtils.lerp(-65, 0, ease);
       this._applyStoryTickerOffset(this.displayStoryPx);
-      this._updateScriptWordsProgress(-0.01);
+      this._updateScriptWordsProgress(-0.01, -0.01);
 
       if (t >= 1) {
         this._beginCuesPhase();
@@ -668,7 +682,7 @@ export class BroadcastTour {
     const cueElapsedSec = Math.max(0, this.storyElapsedSec - activeCue.startSec);
     const cueU = Math.max(0, Math.min(1, cueElapsedSec / cueDur));
 
-    this._updateScriptWordsProgress(cueElapsedSec);
+    this._updateScriptWordsProgress(cueElapsedSec, cueU);
 
     if (this.cueSpans.length === this.cues.length) {
       const span = this.cueSpans[this.cueIndex];
