@@ -80,6 +80,8 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
 
     assert "Loading global weather headlines" not in html
     assert "Play Headlines" in html
+    assert "Report created:" in html
+    assert "Next report:" in html
     assert "Text On" in html
     assert "Voice Off" in html
     assert "[hidden]" in css and "display: none !important" in css

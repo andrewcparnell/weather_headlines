@@ -1,10 +1,61 @@
-import { WeatherGlobe } from './globe.js?v=20261126n';
-import { LocationSearch } from './search.js?v=20261126n';
-import { BroadcastTour } from './tour.js?v=20261126n';
+import { WeatherGlobe } from './globe.js?v=20261126p';
+import { LocationSearch } from './search.js?v=20261126p';
+import { BroadcastTour } from './tour.js?v=20261126p';
 
 const $ = id => document.getElementById(id);
 
 let manifestData = null;
+let reportCreatedIso = null;
+
+function formatUtcStamp(dt) {
+  return (
+    dt.toLocaleString('en-GB', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+      hour12: false,
+      timeZone: 'UTC',
+    }) + ' UTC'
+  );
+}
+
+function nextScheduledReportUtc(createdDt) {
+  // Matches `.github/workflows/refresh.yml` 6-hourly cron (`25 1,7,13,19 * * *` -> live ~:30 UTC)
+  const refMs = Math.max(createdDt.getTime() + 20 * 60_000, Date.now());
+  const ref = new Date(refMs);
+  const y = ref.getUTCFullYear();
+  const m = ref.getUTCMonth();
+  const d = ref.getUTCDate();
+
+  for (const dayOffset of [0, 1, 2]) {
+    for (const hr of [1, 7, 13, 19]) {
+      const slotMs = Date.UTC(y, m, d + dayOffset, hr, 30, 0);
+      if (slotMs > refMs) {
+        return new Date(slotMs);
+      }
+    }
+  }
+  return new Date(refMs + 6 * 3600_000);
+}
+
+function updateReportScheduleUi(isoString) {
+  if (isoString) {
+    reportCreatedIso = isoString;
+  }
+  if (!reportCreatedIso) return;
+  const createdDt = new Date(reportCreatedIso);
+  if (Number.isNaN(createdDt.getTime())) return;
+
+  const nextDt = nextScheduledReportUtc(createdDt);
+  const minsLeft = Math.max(1, Math.round((nextDt.getTime() - Date.now()) / 60_000));
+  const hrs = Math.floor(minsLeft / 60);
+  const mins = minsLeft % 60;
+  const rel = hrs > 0 ? `in ${hrs}h ${String(mins).padStart(2, '0')}m` : `in ${mins}m`;
+
+  $('liveTimestamp').textContent = `Report created: ${formatUtcStamp(createdDt)}`;
+  $('nextReportTimestamp').textContent = `Next report: ${formatUtcStamp(nextDt)} (${rel})`;
+}
 
 function formatTemp(c, isDiff = false) {
   if (c == null || Number.isNaN(c)) return '--';
@@ -163,23 +214,21 @@ async function init() {
       if (!bulletin) return;
       tour.setBulletin(bulletin);
       globe.setStoryPins(bulletin.stories, -1);
+      if (bulletin.generated_utc) {
+        updateReportScheduleUi(bulletin.generated_utc);
+      }
     })
     .catch(err => console.error('Failed loading headlines:', err));
+
+  setInterval(() => updateReportScheduleUi(), 60_000);
 
   try {
     const manifest = await globe.loadWeatherManifest('data/manifest.json');
     manifestData = manifest;
     updateLegend(globe.currentLayer);
-
-    const validDt = new Date(manifest.valid_time_utc);
-    const fmt = validDt.toLocaleString('en-GB', {
-      day: 'numeric',
-      month: 'short',
-      hour: '2-digit',
-      minute: '2-digit',
-      timeZone: 'UTC',
-    });
-    $('liveTimestamp').textContent = `Live ECMWF · ${fmt} UTC`;
+    if (!reportCreatedIso && manifest.generated_utc) {
+      updateReportScheduleUi(manifest.generated_utc);
+    }
   } catch (err) {
     console.error(err);
     $('liveTimestamp').textContent = 'Weather data unavailable';

@@ -6,7 +6,7 @@
   <title>Weather Headlines · Live Global Weather</title>
   <meta name="description" content="Explore live global weather on an interactive 3D Earth and watch a broadcast tour of the world's top 5 weather stories.">
   <meta name="theme-color" content="#050b14">
-  <link rel="stylesheet" href="style.css?v=20261126n">
+  <link rel="stylesheet" href="style.css?v=20261126p">
   <script type="importmap">
     {
       "imports": {
@@ -39,9 +39,12 @@
       >
       <div id="searchResults" class="search-results" role="listbox" hidden></div>
     </div>
-    <div class="live-pill" id="liveBadge">
-      <span class="live-dot"></span>
-      <span id="liveTimestamp">Loading live weather...</span>
+    <div class="live-pill" id="liveBadge" aria-live="polite">
+      <div class="live-pill-row">
+        <span class="live-dot"></span>
+        <span id="liveTimestamp">Report created: Loading...</span>
+      </div>
+      <div class="live-pill-sub" id="nextReportTimestamp">Next report: --</div>
     </div>
   </header>
 
@@ -188,6 +191,6 @@
     <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=20261126n"></script>
+  <script type="module" src="js/main.js?v=20261126p"></script>
 </body>
 </html>

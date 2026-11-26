@@ -54,8 +54,8 @@ html, body {
   overflow: hidden;
 }
 
-/* Hide Explore interactive chrome during the TV broadcast tour while keeping the read-only variable legend in top-right */
-body.tour-active .top-left-bar,
+/* Hide Explore interactive chrome during the TV broadcast tour while keeping the top-left report timestamps and top-right legend */
+body.tour-active .search-box,
 body.tour-active .layer-buttons,
 body.tour-active .spot-card,
 body.tour-active .attribution,
@@ -64,8 +64,15 @@ body.tour-active .story-pin {
   pointer-events: none !important;
 }
 
+body.tour-active .search-box,
 body.tour-active .layer-buttons {
   display: none !important;
+}
+
+body.tour-active .top-left-bar {
+  top: 18px;
+  left: 26px;
+  pointer-events: none;
 }
 
 body.tour-active .layer-rail {
@@ -274,16 +281,34 @@ body.tour-active .layer-rail {
 
 .live-pill {
   display: inline-flex;
-  align-items: center;
-  gap: 8px;
+  flex-direction: column;
+  gap: 3px;
   align-self: flex-start;
-  padding: 6px 12px;
-  border-radius: 5px;
-  background: rgba(9, 17, 32, 0.75);
-  border: 1px solid rgba(255, 255, 255, 0.16);
+  padding: 7px 13px;
+  border-radius: 6px;
+  background: rgba(8, 16, 30, 0.72);
+  backdrop-filter: blur(8px);
+  -webkit-backdrop-filter: blur(8px);
+  border: 1px solid rgba(255, 255, 255, 0.18);
   font-size: 12.5px;
   font-weight: 600;
+  color: #e2e8f0;
+  line-height: 1.3;
+}
+
+.live-pill-row {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.live-pill-sub {
+  padding-left: 16px;
+  font-size: 12px;
+  font-weight: 500;
   color: var(--text-muted);
+  white-space: nowrap;
 }
 
 .live-dot {
@@ -297,7 +322,7 @@ body.tour-active .layer-rail {
 /* --- Spot Weather Readout Card (Explore Mode) --- */
 .spot-card {
   position: fixed;
-  top: 114px;
+  top: 132px;
   left: 22px;
   z-index: 18;
   width: min(340px, calc(100vw - 44px));
@@ -561,10 +586,10 @@ body.tour-active .layer-rail {
   border-color: #ffffff;
 }
 
-/* Live Presenter Spoken Script Overlay on Main Map (Shown when Voice is Off) */
+/* Live Presenter Spoken Script Overlay on Main Map (Shown below top-left report schedule when Text is On) */
 .voice-script-overlay {
   position: fixed;
-  top: 24px;
+  top: 78px;
   left: 26px;
   width: min(460px, 38vw);
   z-index: 26;
@@ -980,7 +1005,7 @@ body.tour-active .layer-rail {
   }
 
   .voice-script-overlay {
-    top: 14px;
+    top: 72px;
     left: 12px;
     right: 12px;
     width: auto;
