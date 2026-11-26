@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126w';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126y';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -290,19 +290,40 @@ export class BroadcastTour {
     this.audio.muted = !this.voiceEnabled;
     if (!this.voiceEnabled) {
       this.stingAudio.pause();
+      this.audio.pause();
+      this._syncVoiceButtonUi();
+      return;
     }
     this._syncVoiceButtonUi();
 
-    if (this.voiceEnabled && this.active && this.phase === 'cues') {
-      if (Number.isFinite(this.audio.duration) && this.audio.duration > 3) {
-        const targetT = Math.min(this.audio.duration - 0.15, Math.max(0, this.storyElapsedSec));
-        if (Math.abs(this.audio.currentTime - targetT) > 0.35) {
-          this.audio.currentTime = targetT;
-        }
+    if (!this.active) return;
+
+    // Align spoken playback cleanly to the start of the active on-screen sentence cue
+    const activeCueStart =
+      this.phase === 'cues' && this.cueIndex >= 0 && this.cues[this.cueIndex]
+        ? this.cues[this.cueIndex].startSec
+        : 0;
+
+    if (this.phase === 'cues') {
+      this.storyElapsedSec = activeCueStart;
+      this.storyFinishedAt = null;
+      const startFromCue = () => {
+        try {
+          this.audio.currentTime = Math.min(
+            Math.max(0, (this.audio.duration || activeCueStart + 1) - 0.15),
+            Math.max(0, activeCueStart)
+          );
+        } catch (_) {}
+        this.audio.play().catch(() => {
+          this.audioAvailable = false;
+        });
+      };
+      if (this.audio.readyState >= 1) {
+        startFromCue();
+      } else {
+        this.audio.addEventListener('loadedmetadata', startFromCue, { once: true });
+        this.audio.load();
       }
-      this.audio.play().catch(() => {
-        this.audioAvailable = false;
-      });
     }
   }
 
@@ -369,9 +390,14 @@ export class BroadcastTour {
     this.storyElapsedSec = 0;
     this._syncVoiceButtonUi();
     this.audio.muted = !this.voiceEnabled;
-    this.audio.play().catch(() => {
-      this.audioAvailable = false;
-    });
+    try {
+      this.audio.currentTime = 0;
+    } catch (_) {}
+    if (this.voiceEnabled) {
+      this.audio.play().catch(() => {
+        this.audioAvailable = false;
+      });
+    }
   }
 
   _activateCue(cueIdx) {

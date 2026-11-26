@@ -452,9 +452,10 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
         else:
             ticker = "  ///  ".join(c["ticker"] for c in cleaned_cues if c.get("ticker"))
 
-        voice_script = sanitise_prose(str(st.get("voice_script") or ""))
-        if len(voice_script) < 40:
-            voice_script = " ".join(c["spoken"] for c in cleaned_cues if c.get("spoken"))
+        # Always derive voice_script directly from cues[*].spoken so voiceover and screen text never diverge
+        voice_script = " ".join(c["spoken"] for c in cleaned_cues if c.get("spoken")).strip()
+        if not voice_script:
+            voice_script = sanitise_prose(str(st.get("voice_script") or headline))
         audio_url = str(st.get("audio_url") or "").strip()
         duration_sec = None
         if st.get("duration_sec") is not None:

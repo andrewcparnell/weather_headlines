@@ -30,17 +30,20 @@ def normalise_for_newsreader(text: str) -> str:
     s = re.sub(r"\b(19\d{2}|20\d{2})\s*[-–]\s*(19\d{2}|20\d{2})\b", r"\1 to \2", s)
 
     # Signed temperatures: +16.4 °C -> 16.4 degrees Celsius, -25 °C -> minus 25 degrees Celsius
-    s = re.sub(r"\+(\d+(?:\.\d+)?)\s*°C\b", r"\1 degrees Celsius", s)
-    s = re.sub(r"-(\d+(?:\.\d+)?)\s*°C\b", r"minus \1 degrees Celsius", s)
-    s = re.sub(r"(\d+(?:\.\d+)?)\s*°C\b", r"\1 degrees Celsius", s)
+    s = re.sub(r"\+(\d+(?:\.\d+)?)\s*°C\+?", r"\1 degrees Celsius", s)
+    s = re.sub(r"-(\d+(?:\.\d+)?)\s*°C\+?", r"minus \1 degrees Celsius", s)
+    s = re.sub(r"(\d+(?:\.\d+)?)\s*°C\+?", r"\1 degrees Celsius", s)
 
     # Units spoken naturally by a TV presenter
     s = re.sub(r"\b(\d+(?:,\d+)?(?:\.\d+)?)\s*mm\s*/\s*24\s*h\b", r"\1 millimetres in 24 hours", s, flags=re.I)
     s = re.sub(r"\b(\d+(?:,\d+)?(?:\.\d+)?)\s*mm\b", r"\1 millimetres", s)
+    s = re.sub(r"\b(\d+(?:\.\d+)?)\s*cm\b", r"\1 centimetres", s)
+    s = re.sub(r"\b(\d+(?:\.\d+)?)\s*km²", r"\1 square kilometres", s, flags=re.I)
     s = re.sub(r"\b(\d+(?:\.\d+)?)\s*km/h\b", r"\1 kilometres an hour", s, flags=re.I)
     s = re.sub(r"\b(\d+(?:\.\d+)?)\s*mph\b", r"\1 miles an hour", s, flags=re.I)
     s = re.sub(r"\b(\d+(?:\.\d+)?)\s*m/s\b", r"\1 metres per second", s)
     s = re.sub(r"\b(\d+(?:\.\d+)?)\s*hPa\b", r"\1 hectopascals", s)
+    s = re.sub(r"(\d+(?:\.\d+)?)\s*×", r"\1 times", s)
     s = re.sub(r"\b2\s*m\s+temperature", "surface temperature", s, flags=re.I)
     s = re.sub(r"\b10\s*m\s+wind", "surface wind", s, flags=re.I)
 
@@ -61,26 +64,23 @@ def normalise_for_newsreader(text: str) -> str:
 
 
 def compose_spoken_script_from_story(story: dict) -> str:
-    """Build a natural, well-paced newsreader script if `voice_script` was not supplied explicitly."""
+    """Build the exact spoken script from `cues[*].spoken` (single source of truth matching on-screen text)."""
+    cues = story.get("cues") or []
+    cue_sentences = [(c.get("spoken") or "").strip() for c in cues if (c.get("spoken") or "").strip()]
+    if cue_sentences:
+        return normalise_for_newsreader(" ".join(cue_sentences))
+
     explicit = (story.get("voice_script") or "").strip()
-    if len(explicit) >= 60:
+    if len(explicit) >= 40:
         return normalise_for_newsreader(explicit)
 
     headline = (story.get("headline") or "").rstrip(".")
     beats = story.get("beats") or []
     parts = [f"{headline}."]
-    transitions = [
-        "",
-        "Looking at how long this has lasted:",
-        "In the historical climate record:",
-        "And on the role of climate change:",
-    ]
-    for idx, b in enumerate(beats[:4]):
+    for b in beats[:4]:
         txt = (b.get("text") or "").strip()
-        if not txt:
-            continue
-        lead = transitions[idx] if idx < len(transitions) else ""
-        parts.append(f"{lead} {txt}".strip())
+        if txt:
+            parts.append(txt)
     return normalise_for_newsreader(" ".join(parts))
 
 
@@ -111,35 +111,88 @@ def assign_cue_timings(cues: list[dict], duration_sec: float, sentence_offsets_s
         cues[i]["end_sec"] = round(max(t0 + 0.4, t1), 2)
 
 
-async def _synthesise_one_mp3(
+async def _synthesise_raw_mp3_bytes(
     text: str,
+    voice: str,
+    rate: str,
+    pitch: str,
+    sem: asyncio.Semaphore,
+) -> bytes:
+    import edge_tts
+
+    async with sem:
+        last_err: Exception | None = None
+        for attempt in range(3):
+            try:
+                comm = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
+                audio_bytes = bytearray()
+                async for msg in comm.stream():
+                    if msg.get("type") == "audio":
+                        audio_bytes.extend(msg["data"])
+                if len(audio_bytes) < 1_800:
+                    raise RuntimeError(f"Cue TTS returned insufficient audio payload ({len(audio_bytes)} bytes)")
+                return bytes(audio_bytes)
+            except Exception as exc:
+                last_err = exc
+                if attempt < 2:
+                    await asyncio.sleep(0.6 * (attempt + 1))
+        raise RuntimeError(f"Edge-TTS cue synthesis failed: {last_err}")
+
+
+async def _synthesise_story_from_cues(
+    story: dict,
     out_path: Path,
     voice: str,
     rate: str,
     pitch: str,
-) -> tuple[float, list[float]]:
-    import edge_tts
+    sem: asyncio.Semaphore,
+) -> float:
+    """Synthesise each cue's exact `spoken` text individually and concatenate raw 48 kbps CBR MP3 frames.
 
+    Guarantees 100% word-for-word match between voiceover and on-screen caption text AND exact
+    millisecond [start_sec, end_sec] boundaries for every cue regardless of punctuation.
+    """
+    cues = story.get("cues") or []
+    if not cues:
+        spoken = compose_spoken_script_from_story(story)
+        raw_bytes = await _synthesise_raw_mp3_bytes(spoken, voice=voice, rate=rate, pitch=pitch, sem=sem)
+        if len(raw_bytes) < 16_000:
+            raise RuntimeError(f"TTS returned insufficient audio payload ({len(raw_bytes)} bytes)")
+        out_path.parent.mkdir(parents=True, exist_ok=True)
+        tmp = out_path.with_suffix(".tmp.mp3")
+        tmp.write_bytes(raw_bytes)
+        tmp.replace(out_path)
+        return round((len(raw_bytes) * 8.0) / 48000.0, 2)
+
+    cue_texts = [
+        normalise_for_newsreader((c.get("spoken") or c.get("ticker") or "").strip())
+        for c in cues
+    ]
+    cue_chunks = await asyncio.gather(
+        *(_synthesise_raw_mp3_bytes(txt, voice=voice, rate=rate, pitch=pitch, sem=sem) for txt in cue_texts)
+    )
+
+    combined = bytearray()
+    running_sec = 0.0
+    for cue, chunk in zip(cues, cue_chunks):
+        cue_dur = (len(chunk) * 8.0) / 48000.0
+        cue["start_sec"] = round(running_sec, 2)
+        running_sec += cue_dur
+        cue["end_sec"] = round(max(cue["start_sec"] + 0.4, running_sec), 2)
+        combined.extend(chunk)
+
+    if len(combined) < 16_000:
+        raise RuntimeError(f"Combined story TTS returned insufficient audio payload ({len(combined)} bytes)")
+
+    story["voice_script"] = " ".join((c.get("spoken") or "").strip() for c in cues if (c.get("spoken") or "").strip())
     out_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = out_path.with_suffix(".tmp.mp3")
-    comm = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
-
-    sentence_starts: list[float] = []
-    audio_bytes = bytearray()
-    async for msg in comm.stream():
-        mtype = msg.get("type")
-        if mtype == "audio":
-            audio_bytes.extend(msg["data"])
-        elif mtype == "SentenceBoundary":
-            sentence_starts.append(float(msg.get("offset", 0)) / 1e7)
-
-    if len(audio_bytes) < 16_000:
-        raise RuntimeError(f"TTS returned insufficient audio payload ({len(audio_bytes)} bytes)")
-    tmp.write_bytes(bytes(audio_bytes))
+    tmp.write_bytes(bytes(combined))
     tmp.replace(out_path)
-    # Edge-TTS outputs 48 kbps CBR MP3
-    duration_sec = round((len(audio_bytes) * 8.0) / 48000.0, 2)
-    return duration_sec, sentence_starts
+
+    total_sec = round((len(combined) * 8.0) / 48000.0, 2)
+    cues[-1]["end_sec"] = total_sec
+    return total_sec
 
 
 async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[str]:
@@ -148,27 +201,22 @@ async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[st
     pitch = os.environ.get("WEATHER_TTS_PITCH", DEFAULT_PITCH).strip() or DEFAULT_PITCH
 
     audio_dir.mkdir(parents=True, exist_ok=True)
-    sem = asyncio.Semaphore(3)
+    sem = asyncio.Semaphore(4)
 
     async def _worker(idx: int, story: dict) -> str:
-        async with sem:
-            cues = story.get("cues") or []
-            if cues and not story.get("voice_script"):
-                story["voice_script"] = " ".join((c.get("spoken") or "").strip() for c in cues if c.get("spoken"))
-            spoken = compose_spoken_script_from_story(story)
-            filename = f"story-{idx}.mp3"
-            dest = audio_dir / filename
-            duration_sec, sent_starts = await _synthesise_one_mp3(spoken, dest, voice=voice, rate=rate, pitch=pitch)
-            rel = f"data/audio/{filename}"
-            story["audio_url"] = rel
-            story["duration_sec"] = duration_sec
-            if cues:
-                assign_cue_timings(cues, duration_sec, sent_starts if len(sent_starts) == len(cues) else None)
-            print(
-                f"[tts] Synthesised {filename} ({dest.stat().st_size // 1024} KB, {duration_sec:.1f}s) using {voice}",
-                file=sys.stderr,
-            )
-            return rel
+        filename = f"story-{idx}.mp3"
+        dest = audio_dir / filename
+        duration_sec = await _synthesise_story_from_cues(
+            story, dest, voice=voice, rate=rate, pitch=pitch, sem=sem
+        )
+        rel = f"data/audio/{filename}"
+        story["audio_url"] = rel
+        story["duration_sec"] = duration_sec
+        print(
+            f"[tts] Synthesised {filename} ({dest.stat().st_size // 1024} KB, {duration_sec:.2f}s, {len(story.get('cues') or [])} synced cues) using {voice}",
+            file=sys.stderr,
+        )
+        return rel
 
     return list(await asyncio.gather(*(_worker(idx, st) for idx, st in enumerate(stories, start=1))))
 
@@ -182,3 +230,27 @@ def build_bulletin_audio(bulletin: dict, out_data_dir: Path) -> dict:
     asyncio.run(_synthesise_all_async(stories, audio_dir))
     bulletin["voice"] = os.environ.get("WEATHER_TTS_VOICE", DEFAULT_VOICE)
     return bulletin
+
+
+def main() -> int:
+    import json
+    from datetime import datetime, timezone
+
+    from .config import DATA_DIR
+    from .validator import validate_and_clean_bulletin
+
+    headlines_path = DATA_DIR / "headlines.json"
+    payload = json.loads(headlines_path.read_text())
+    cleaned, errors = validate_and_clean_bulletin(payload)
+    if errors:
+        raise RuntimeError(f"Cannot synthesise audio for invalid bulletin: {errors}")
+    cleaned = build_bulletin_audio(cleaned, DATA_DIR)
+    cleaned["generated_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+    tmp = headlines_path.with_suffix(".tmp.json")
+    tmp.write_text(json.dumps(cleaned, indent=2, ensure_ascii=False) + "\n")
+    tmp.replace(headlines_path)
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

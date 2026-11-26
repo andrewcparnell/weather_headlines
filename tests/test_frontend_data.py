@@ -122,6 +122,14 @@ def test_every_story_has_multi_layer_multi_location_synced_cues():
             if idx > 0:
                 path_km += haversine_km(cues[idx - 1]["lat"], cues[idx - 1]["lon"], c["lat"], c["lon"])
         assert path_km >= 500.0, f"{st['id']} cue locations only move {path_km:.0f} km"
+        expected_voice = " ".join(c["spoken"].strip() for c in cues if c.get("spoken", "").strip())
+        assert st.get("voice_script", "").strip() == expected_voice, (
+            f"{st['id']} voice_script must match cues[*].spoken word-for-word"
+        )
+        if st.get("duration_sec") is not None:
+            assert abs(cues[-1]["end_sec"] - float(st["duration_sec"])) <= 0.35, (
+                f"{st['id']} final cue end_sec ({cues[-1]['end_sec']}) must match duration_sec ({st['duration_sec']})"
+            )
 
 
 def test_dom_ids_and_module_paths_match_index_html():
