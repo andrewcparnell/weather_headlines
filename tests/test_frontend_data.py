@@ -62,3 +62,28 @@ def test_no_em_dashes_in_frontend_or_readme():
     for path in files_to_check:
         txt = path.read_text()
         assert "\u2014" not in txt, f"Found forbidden em dash in {path}"
+
+
+def test_dom_ids_and_module_paths_match_index_html():
+    import re
+
+    html = (SITE_DIR / "index.html").read_text()
+    html_ids = set(re.findall(r'\bid="([^"]+)"', html))
+
+    main_js = (SITE_DIR / "js" / "main.js").read_text()
+    referenced_ids = set(re.findall(r"\$\(\s*'([^']+)'\s*\)", main_js))
+    missing_ids = referenced_ids - html_ids
+    assert not missing_ids, f"IDs referenced in main.js missing from index.html: {missing_ids}"
+
+    # Verify importmap and vendor files exist
+    for rel in (
+        "vendor/three.module.js",
+        "vendor/three.core.min.js",
+        "vendor/OrbitControls.js",
+        "assets/basemap.json",
+        "assets/gazetteer.json",
+        "data/manifest.json",
+        "data/headlines.json",
+    ):
+        assert (SITE_DIR / rel).exists(), f"Missing static asset {rel}"
+
