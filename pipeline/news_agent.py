@@ -53,8 +53,9 @@ Each story MUST include:
     - `metric_label`: e.g. `"With 95 km/h coastal gusts"`
     - `era5_rank`: e.g. `"#1 for date since 1940"`
     - `persistence`: e.g. `"28 of last 28 days warm"`
-- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.65..2.25}, ...]` tracing a smooth 600-2,000 km path across the weather feature so the 3D camera glides continuously across the surface while the ticker scrolls.
-- `beats`: array of 4 chapters (`LIVE HIGHLIGHT`, `PERSISTENCE`, `HISTORICAL RANK`, `CLIMATE CONTEXT`), each with `{"tag": "...", "title": "...", "layer": "...", "text": "..."}` so the globe automatically switches layers (`beat.layer`) as the ticker progresses through each quarter of the story.
+- `camera_waypoints`: 4 waypoints `[{"lat": ..., "lon": ..., "distance": 1.45..2.15}, ...]` tracing a smooth 600-2,000 km path across the weather feature so the 3D camera glides continuously across the surface while the ticker scrolls.
+- `cues`: array of 5 sentence-level synchronised broadcast cues `[{"layer": "rain"|"wind"|"pressure"|"temperature"|"anomaly", "lat": float, "lon": float, "distance": 1.44..2.05, "bearing": -26..26, "label": "SHORT SUB-LOCATION", "metric": "SHORT STAT", "spoken": "Exact spoken sentence for this cue.", "ticker": "Matching scrolling ticker clause with **highlighted key words**"}]`. Crucially, switch `layer`, `(lat, lon)`, and `label` from cue to cue so the globe variable and location change in lockstep with what is being spoken and scrolled (for example: show `"rain"` when talking about heavy rain, switch to `"wind"` when talking about gusts, `"pressure"` when discussing the low or blocking high, and `"anomaly"` when discussing the climate warming shift).
+- `beats`: array of 4 chapters (`LIVE HIGHLIGHT`, `PERSISTENCE`, `HISTORICAL RANK`, `CLIMATE CONTEXT`), each with `{"tag": "...", "title": "...", "layer": "...", "text": "..."}`.
 - `news_links`: 1 to 3 verified, direct event-specific news articles `[{"source": "The Guardian", "title": "Specific article headline...", "url": "https://..."}]`.
 
 Return ONLY a single valid JSON object matching `{"edition_title": "...", "stories": [...]}` with no markdown prose outside the JSON."""

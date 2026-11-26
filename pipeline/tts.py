@@ -84,14 +84,60 @@ def compose_spoken_script_from_story(story: dict) -> str:
     return normalise_for_newsreader(" ".join(parts))
 
 
-async def _synthesise_one_mp3(text: str, out_path: Path, voice: str, rate: str, pitch: str) -> None:
+def assign_cue_timings(cues: list[dict], duration_sec: float, sentence_offsets_sec: list[float] | None = None) -> None:
+    """Assign [start_sec, end_sec] to each cue using TTS SentenceBoundary offsets or spoken length weights."""
+    if not cues or duration_sec <= 1.0:
+        return
+
+    n = len(cues)
+    if sentence_offsets_sec and len(sentence_offsets_sec) == n:
+        starts = [max(0.0, float(s)) for s in sentence_offsets_sec]
+        starts[0] = 0.0
+        for i in range(n):
+            end = starts[i + 1] if i + 1 < n else duration_sec
+            cues[i]["start_sec"] = round(starts[i], 2)
+            cues[i]["end_sec"] = round(max(starts[i] + 0.4, end), 2)
+        cues[-1]["end_sec"] = round(duration_sec, 2)
+        return
+
+    weights = [max(12, len(normalise_for_newsreader(c.get("spoken") or c.get("ticker") or ""))) for c in cues]
+    total_w = float(sum(weights))
+    acc = 0.0
+    for i, w in enumerate(weights):
+        t0 = (acc / total_w) * duration_sec
+        acc += w
+        t1 = duration_sec if i == n - 1 else (acc / total_w) * duration_sec
+        cues[i]["start_sec"] = round(t0, 2)
+        cues[i]["end_sec"] = round(max(t0 + 0.4, t1), 2)
+
+
+async def _synthesise_one_mp3(
+    text: str,
+    out_path: Path,
+    voice: str,
+    rate: str,
+    pitch: str,
+) -> tuple[float, list[float]]:
     import edge_tts
 
     out_path.parent.mkdir(parents=True, exist_ok=True)
     tmp = out_path.with_suffix(".tmp.mp3")
     comm = edge_tts.Communicate(text=text, voice=voice, rate=rate, pitch=pitch)
-    await comm.save(str(tmp))
+
+    sentence_starts: list[float] = []
+    audio_bytes = bytearray()
+    async for msg in comm.stream():
+        mtype = msg.get("type")
+        if mtype == "audio":
+            audio_bytes.extend(msg["data"])
+        elif mtype == "SentenceBoundary":
+            sentence_starts.append(float(msg.get("offset", 0)) / 1e7)
+
+    tmp.write_bytes(bytes(audio_bytes))
     tmp.replace(out_path)
+    # Edge-TTS outputs 48 kbps CBR MP3
+    duration_sec = round((len(audio_bytes) * 8.0) / 48000.0, 2)
+    return duration_sec, sentence_starts
 
 
 async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[str]:
@@ -104,13 +150,22 @@ async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[st
 
     async def _worker(idx: int, story: dict) -> str:
         async with sem:
+            cues = story.get("cues") or []
+            if cues and not story.get("voice_script"):
+                story["voice_script"] = " ".join((c.get("spoken") or "").strip() for c in cues if c.get("spoken"))
             spoken = compose_spoken_script_from_story(story)
             filename = f"story-{idx}.mp3"
             dest = audio_dir / filename
-            await _synthesise_one_mp3(spoken, dest, voice=voice, rate=rate, pitch=pitch)
+            duration_sec, sent_starts = await _synthesise_one_mp3(spoken, dest, voice=voice, rate=rate, pitch=pitch)
             rel = f"data/audio/{filename}"
             story["audio_url"] = rel
-            print(f"[tts] Synthesised {filename} ({dest.stat().st_size // 1024} KB) using {voice}", file=sys.stderr)
+            story["duration_sec"] = duration_sec
+            if cues:
+                assign_cue_timings(cues, duration_sec, sent_starts if len(sent_starts) == len(cues) else None)
+            print(
+                f"[tts] Synthesised {filename} ({dest.stat().st_size // 1024} KB, {duration_sec:.1f}s) using {voice}",
+                file=sys.stderr,
+            )
             return rel
 
     return list(await asyncio.gather(*(_worker(idx, st) for idx, st in enumerate(stories, start=1))))

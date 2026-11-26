@@ -4,6 +4,14 @@ import { OrbitControls } from '../vendor/OrbitControls.js';
 const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 
+const LAYER_MODE_INDEX = {
+  temperature: 0,
+  anomaly: 1,
+  wind: 2,
+  rain: 3,
+  pressure: 4,
+};
+
 export function latLonToVec3(lat, lon, radius = 1, out = new THREE.Vector3()) {
   const phi = lat * DEG2RAD;
   const lam = lon * DEG2RAD;
@@ -61,7 +69,6 @@ function buildLutTexture(layerSpec) {
     data[i * 4 + 2] = c[2];
     data[i * 4 + 3] = c[3];
   }
-  // Index 255 = missing / transparent
   data[255 * 4 + 3] = 0;
   const tex = new THREE.DataTexture(data, 256, 1, THREE.RGBAFormat, THREE.UnsignedByteType);
   tex.minFilter = THREE.LinearFilter;
@@ -97,19 +104,25 @@ export class WeatherGlobe {
     this.layerSpecs = new Map();
     this.layerLuts = new Map();
     this.layerTextures = new Map();
-    this.layerBuffers = new Map(); // CPU RGBA Uint8ClampedArray [720 * 361 * 4]
+    this.layerBuffers = new Map();
 
     this.currentLayer = 'temperature';
-    this.transition = null; // { from, to, start, duration }
+    this.transition = null;
     this.flight = null;
     this.tourControlled = false;
     this.autoSpin = true;
 
+    // Regional focus for high-density storm particles & broadcast surface spotlight
+    this.focusRegion = null; // { lat, lon }
+    this.focusCallout = null; // { vec, el, labelEl, metricEl, visible }
+
     this.hlElements = [];
     this.storyPinElements = [];
 
+    this._elapsedSec = 0;
     this._initScene();
     this._initParticles();
+    this._initFocusSpotlight();
     this._bindEvents();
     this._lastFrame = performance.now();
     this._animate = this._animate.bind(this);
@@ -119,7 +132,7 @@ export class WeatherGlobe {
   _initScene() {
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(38, window.innerWidth / window.innerHeight, 0.05, 40);
-    latLonToVec3(26, -12, 2.75, this.camera.position);
+    latLonToVec3(26, -12, 2.72, this.camera.position);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
     this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
@@ -132,7 +145,7 @@ export class WeatherGlobe {
     this.controls.dampingFactor = 0.065;
     this.controls.rotateSpeed = 0.55;
     this.controls.zoomSpeed = 0.75;
-    this.controls.minDistance = 1.26;
+    this.controls.minDistance = 1.24;
     this.controls.maxDistance = 4.6;
 
     // Subtle deep-space starfield
@@ -164,11 +177,13 @@ export class WeatherGlobe {
       uTexB: { value: blankTex },
       uLutA: { value: blankTex },
       uLutB: { value: blankTex },
-      uChannelA: { value: 0 }, // 0 = red scalar, 2 = blue channel (wind speed)
+      uChannelA: { value: 0 },
       uChannelB: { value: 0 },
       uSqrtA: { value: 0.0 },
       uSqrtB: { value: 0.0 },
       uMix: { value: 0.0 },
+      uTime: { value: 0.0 },
+      uLayerMode: { value: 0 },
       uGrid: { value: new THREE.Vector2(720, 361) },
       uSunDir: { value: new THREE.Vector3(-0.55, 0.45, 0.7).normalize() },
     };
@@ -198,6 +213,8 @@ export class WeatherGlobe {
         uniform float uSqrtA;
         uniform float uSqrtB;
         uniform float uMix;
+        uniform float uTime;
+        uniform int uLayerMode;
         uniform vec2 uGrid;
         uniform vec3 uSunDir;
 
@@ -205,14 +222,18 @@ export class WeatherGlobe {
         varying vec3 vWorldNormal;
         varying vec3 vViewPos;
 
-        vec4 sampleLayer(sampler2D fieldTex, sampler2D lutTex, int chan, float isSqrt, vec2 uvField) {
+        vec4 sampleLayer(sampler2D fieldTex, sampler2D lutTex, int chan, float isSqrt, vec2 uvField, out float normVal) {
           vec4 raw = texture2D(fieldTex, uvField);
           float byteNorm = (chan == 2) ? raw.b : raw.r;
-          if (byteNorm > 0.997) return vec4(0.0);
+          if (byteNorm > 0.997) {
+            normVal = 0.0;
+            return vec4(0.0);
+          }
           float t = clamp(byteNorm * (255.0 / 254.0), 0.0, 1.0);
           if (isSqrt > 0.5) {
             t = t * t;
           }
+          normVal = t;
           float lutU = (t * 254.0 + 0.5) / 256.0;
           return texture2D(lutTex, vec2(lutU, 0.5));
         }
@@ -228,18 +249,38 @@ export class WeatherGlobe {
           vec3 baseCol = texture2D(uBaseMap, vec2(u, vTop)).rgb;
 
           vec2 uvField = vec2(u + 0.5 / uGrid.x, (vTop * (uGrid.y - 1.0) + 0.5) / uGrid.y);
-          vec4 colA = sampleLayer(uTexA, uLutA, uChannelA, uSqrtA, uvField);
-          vec4 colB = sampleLayer(uTexB, uLutB, uChannelB, uSqrtB, uvField);
+          float normA = 0.0;
+          float normB = 0.0;
+          vec4 colA = sampleLayer(uTexA, uLutA, uChannelA, uSqrtA, uvField, normA);
+          vec4 colB = sampleLayer(uTexB, uLutB, uChannelB, uSqrtB, uvField, normB);
           vec4 weather = mix(colA, colB, uMix);
+          float intensity = mix(normA, normB, uMix);
+
+          // Live meteorological shader animation tailored to active variable
+          if (uLayerMode == 3 && weather.a > 0.15) {
+            // Rainfall: animated radar wave ripple across active rainbands
+            float wave = 0.5 + 0.5 * sin(uTime * 4.4 - latDeg * 0.65 + lonDeg * 0.55);
+            float heavyBoost = smoothstep(0.08, 0.45, intensity);
+            weather.rgb += vec3(0.10, 0.22, 0.34) * wave * heavyBoost;
+            weather.a = min(1.0, weather.a + 0.12 * wave * heavyBoost);
+          } else if (uLayerMode == 1) {
+            // Temp Anomaly: living pulse on strong warm/cold departures
+            float extremeness = smoothstep(0.16, 0.38, abs(intensity - 0.5));
+            float pulse = 0.5 + 0.5 * sin(uTime * 3.1 - latDeg * 0.25);
+            weather.rgb *= (1.0 + 0.14 * pulse * extremeness);
+          } else if (uLayerMode == 0) {
+            // Temperature: subtle thermal shimmer in extreme heat/cold zones
+            float extremeness = smoothstep(0.24, 0.44, abs(intensity - 0.52));
+            float pulse = 0.5 + 0.5 * sin(uTime * 2.6 + lonDeg * 0.2);
+            weather.rgb *= (1.0 + 0.10 * pulse * extremeness);
+          }
 
           vec3 nWorld = normalize(vWorldNormal);
-          vec3 viewDir = normalize(vViewPos);
           float diffuse = 0.78 + 0.26 * max(0.0, dot(nWorld, uSunDir));
           vec3 litBase = baseCol * diffuse;
 
-          vec3 blended = mix(litBase, weather.rgb, weather.a * 0.88);
+          vec3 blended = mix(litBase, weather.rgb, weather.a * 0.89);
 
-          // Subtle atmospheric horizon rim
           float rim = pow(1.0 - max(0.0, dot(nWorld, normalize(cameraPosition - nObj))), 3.2);
           blended += vec3(0.14, 0.34, 0.58) * rim * 0.42;
 
@@ -251,7 +292,6 @@ export class WeatherGlobe {
     this.sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 144, 108), globeMat);
     this.earthGroup.add(this.sphereMesh);
 
-    // Outer atmospheric halo
     const haloMat = new THREE.ShaderMaterial({
       side: THREE.BackSide,
       transparent: true,
@@ -283,9 +323,13 @@ export class WeatherGlobe {
   }
 
   _initParticles() {
-    this.particleCount = 4000;
+    // 3,000 global particles + 1,800 high-density regional storm particles during Tour mode!
+    this.globalParticleCount = 3000;
+    this.regionalParticleCount = 1800;
+    this.particleCount = this.globalParticleCount + this.regionalParticleCount;
+
     this.particles = new Float32Array(this.particleCount * 3); // [lat, lon, age]
-    const positions = new Float32Array(this.particleCount * 6); // 2 vertices per streak
+    const positions = new Float32Array(this.particleCount * 6);
     const colors = new Float32Array(this.particleCount * 6);
 
     for (let i = 0; i < this.particleCount; i++) {
@@ -307,14 +351,107 @@ export class WeatherGlobe {
     this.earthGroup.add(this.particleLines);
   }
 
+  _initFocusSpotlight() {
+    // Animated concentric surface radar rings + floating broadcast callout pin for Tour sentences
+    this.focusRingGroup = new THREE.Group();
+    this.focusRingGroup.visible = false;
+
+    const ringGeoA = new THREE.RingGeometry(0.012, 0.017, 48);
+    const ringGeoB = new THREE.RingGeometry(0.012, 0.016, 48);
+    this.focusRingMatA = new THREE.MeshBasicMaterial({
+      color: 0xfde047,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.85,
+      depthWrite: false,
+    });
+    this.focusRingMatB = new THREE.MeshBasicMaterial({
+      color: 0xffffff,
+      side: THREE.DoubleSide,
+      transparent: true,
+      opacity: 0.65,
+      depthWrite: false,
+    });
+    this.focusRingA = new THREE.Mesh(ringGeoA, this.focusRingMatA);
+    this.focusRingB = new THREE.Mesh(ringGeoB, this.focusRingMatB);
+    this.focusDot = new THREE.Mesh(
+      new THREE.CircleGeometry(0.0085, 24),
+      new THREE.MeshBasicMaterial({ color: 0xe11d48, side: THREE.DoubleSide, depthWrite: false })
+    );
+    this.focusRingGroup.add(this.focusRingA, this.focusRingB, this.focusDot);
+    this.earthGroup.add(this.focusRingGroup);
+
+    const el = document.createElement('div');
+    el.className = 'focus-callout';
+    el.hidden = true;
+    el.innerHTML =
+      '<span class="focus-callout-dot"></span>' +
+      '<span class="focus-callout-text">' +
+      '<strong class="focus-callout-label"></strong>' +
+      '<span class="focus-callout-metric"></span>' +
+      '</span>';
+    this.overlayEl.appendChild(el);
+    this.focusCallout = {
+      el,
+      labelEl: el.querySelector('.focus-callout-label'),
+      metricEl: el.querySelector('.focus-callout-metric'),
+      targetVec: new THREE.Vector3(0, 0, 1.006),
+      currentVec: new THREE.Vector3(0, 0, 1.006),
+      active: false,
+    };
+  }
+
   _respawnParticle(i, randomAge = false) {
-    // Area-uniform random point on sphere: sin(lat) ~ Uniform[-0.98, 0.98]
-    const u = (Math.random() * 2 - 1) * 0.985;
-    const lat = Math.asin(u) * RAD2DEG;
-    const lon = Math.random() * 360 - 180;
+    const isRegional = i >= this.globalParticleCount && this.focusRegion;
+    let lat;
+    let lon;
+    if (isRegional) {
+      const spreadLat = 18;
+      const cosC = Math.max(0.28, Math.cos(this.focusRegion.lat * DEG2RAD));
+      const spreadLon = Math.min(48, 22 / cosC);
+      lat = Math.max(-83, Math.min(83, this.focusRegion.lat + (Math.random() * 2 - 1) * spreadLat));
+      lon = (((this.focusRegion.lon + (Math.random() * 2 - 1) * spreadLon + 180) % 360) + 360) % 360 - 180;
+    } else {
+      const u = (Math.random() * 2 - 1) * 0.985;
+      lat = Math.asin(u) * RAD2DEG;
+      lon = Math.random() * 360 - 180;
+    }
     this.particles[i * 3] = lat;
     this.particles[i * 3 + 1] = lon;
-    this.particles[i * 3 + 2] = randomAge ? Math.random() * 90 : 0;
+    this.particles[i * 3 + 2] = randomAge ? Math.random() * 80 : 0;
+  }
+
+  setTourFocusCallout(cue) {
+    if (!cue || cue.lat == null || cue.lon == null) {
+      this.focusRegion = null;
+      this.focusRingGroup.visible = false;
+      if (this.focusCallout) {
+        this.focusCallout.active = false;
+        this.focusCallout.el.hidden = true;
+      }
+      return;
+    }
+
+    const prevRegion = this.focusRegion;
+    this.focusRegion = { lat: cue.lat, lon: cue.lon };
+
+    // Immediately seed regional storm particles around the new focus if we jumped > 20 deg
+    if (!prevRegion || Math.hypot(prevRegion.lat - cue.lat, prevRegion.lon - cue.lon) > 20) {
+      for (let i = this.globalParticleCount; i < this.particleCount; i++) {
+        this._respawnParticle(i, true);
+      }
+    }
+
+    const vec = latLonToVec3(cue.lat, cue.lon, 1.005);
+    if (!this.focusCallout.active) {
+      this.focusCallout.currentVec.copy(vec);
+    }
+    this.focusCallout.targetVec.copy(vec);
+    this.focusCallout.active = true;
+    this.focusCallout.labelEl.textContent = cue.label || '';
+    this.focusCallout.metricEl.textContent = cue.metric || '';
+    this.focusCallout.metricEl.hidden = !cue.metric;
+    this.focusRingGroup.visible = true;
   }
 
   async loadBasemap(url = 'assets/basemap.json') {
@@ -323,7 +460,6 @@ export class WeatherGlobe {
     const topo = await resp.json();
     const scale = topo.scale || 100;
 
-    // 1. Paint shaded land & deep ocean onto a 2048x1024 equirectangular canvas
     const W = 2048;
     const H = 1024;
     const canvas = document.createElement('canvas');
@@ -350,7 +486,6 @@ export class WeatherGlobe {
       const pts = decodeDeltaRing(encodedRing, scale);
       if (pts.length < 3) continue;
 
-      // Draw on canvas (also draw shifted +-360 for antimeridian-crossing rings)
       let minLon = Infinity;
       let maxLon = -Infinity;
       let avgLat = 0;
@@ -381,7 +516,6 @@ export class WeatherGlobe {
         ctx.fill();
       }
 
-      // Build crisp 3D coastline vectors on r = 1.0018
       for (let i = 0; i < pts.length - 1; i++) {
         const [lo0, la0] = pts[i];
         const [lo1, la1] = pts[i + 1];
@@ -406,11 +540,10 @@ export class WeatherGlobe {
     const coastMat = new THREE.LineBasicMaterial({
       color: 0xd8e8f8,
       transparent: true,
-      opacity: 0.52,
+      opacity: 0.56,
     });
     this.earthGroup.add(new THREE.LineSegments(coastGeo, coastMat));
 
-    // 2. Country borders on r = 1.0015
     const borderPositions = [];
     for (const encodedLine of topo.borders || []) {
       const pts = decodeDeltaRing(encodedLine, scale);
@@ -425,7 +558,7 @@ export class WeatherGlobe {
     const borderMat = new THREE.LineBasicMaterial({
       color: 0x9ab6d4,
       transparent: true,
-      opacity: 0.26,
+      opacity: 0.3,
     });
     this.earthGroup.add(new THREE.LineSegments(borderGeo, borderMat));
   }
@@ -499,11 +632,10 @@ export class WeatherGlobe {
     if (pos.length) {
       const geo = new THREE.BufferGeometry();
       geo.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
-      const mat = new THREE.LineBasicMaterial({ color: 0xe2f1ff, transparent: true, opacity: 0.44 });
-      this.isobarGroup.add(new THREE.LineSegments(geo, mat));
+      this.isobarMat = new THREE.LineBasicMaterial({ color: 0xe6f4ff, transparent: true, opacity: 0.56 });
+      this.isobarGroup.add(new THREE.LineSegments(geo, this.isobarMat));
     }
 
-    // Create DOM elements for H/L badges
     for (const item of this.hlElements) item.el.remove();
     this.hlElements = centres.map(c => {
       const el = document.createElement('div');
@@ -564,7 +696,6 @@ export class WeatherGlobe {
       this.globeUniforms.uMix.value = 0.0;
       this.transition = null;
     } else {
-      // Snapshot current visible state as A, cross-fade to B over 420 ms
       const prevSpec = this.layerSpecs.get(this.currentLayer);
       this.globeUniforms.uTexA.value = this.layerTextures.get(this.currentLayer);
       this.globeUniforms.uLutA.value = this.layerLuts.get(this.currentLayer);
@@ -576,40 +707,44 @@ export class WeatherGlobe {
       this.globeUniforms.uChannelB.value = chan;
       this.globeUniforms.uSqrtB.value = isSqrt;
       this.globeUniforms.uMix.value = 0.0;
-      this.transition = { start: performance.now(), duration: 420 };
+      this.transition = { start: performance.now(), duration: 480 };
     }
 
     this.currentLayer = layerId;
+    this.globeUniforms.uLayerMode.value = LAYER_MODE_INDEX[layerId] ?? 0;
+
+    // Show crisp isobars on Pressure AND subtly on Wind/Rain storms during Tour mode
     this.isobarGroup.visible = layerId === 'pressure';
-    // Wind particles shine brightly on Winds, softly on Pressure/Rain, very subtle elsewhere
-    if (layerId === 'wind') this.particleMat.opacity = 0.9;
-    else if (layerId === 'pressure' || layerId === 'rain') this.particleMat.opacity = 0.34;
-    else this.particleMat.opacity = 0.16;
+
+    if (layerId === 'wind') this.particleMat.opacity = 0.96;
+    else if (layerId === 'rain') this.particleMat.opacity = 0.82;
+    else if (layerId === 'pressure') this.particleMat.opacity = 0.72;
+    else this.particleMat.opacity = 0.48;
+  }
+
+  _sampleScalarFast(layerId, lat, lon) {
+    const buf = this.layerBuffers.get(layerId);
+    const spec = this.layerSpecs.get(layerId);
+    if (!buf || !spec) return null;
+    const u = (((lon + 180) % 360) + 360) % 360 / 360;
+    const v = Math.max(0, Math.min(1, (90 - lat) / 180));
+    const ix = Math.floor(u * buf.nx) % buf.nx;
+    const iy = Math.min(buf.ny - 1, Math.round(v * (buf.ny - 1)));
+    const byte = buf.rgba[(iy * buf.nx + ix) * 4];
+    if (byte >= 255) return null;
+    let t = byte / 254;
+    if (spec.scale === 'sqrt') t = t * t;
+    return spec.lo + t * (spec.hi - spec.lo);
   }
 
   sampleAllAt(lat, lon) {
     if (!this.manifest) return null;
-    const readScalar = id => {
-      const buf = this.layerBuffers.get(id);
-      const spec = this.layerSpecs.get(id);
-      if (!buf || !spec) return null;
-      const u = (((lon + 180) % 360) + 360) % 360 / 360;
-      const v = Math.max(0, Math.min(1, (90 - lat) / 180));
-      const ix = Math.floor(u * buf.nx) % buf.nx;
-      const iy = Math.min(buf.ny - 1, Math.round(v * (buf.ny - 1)));
-      const byte = buf.rgba[(iy * buf.nx + ix) * 4];
-      if (byte >= 255) return null;
-      let t = byte / 254;
-      if (spec.scale === 'sqrt') t = t * t;
-      return spec.lo + t * (spec.hi - spec.lo);
-    };
-
     const wind = this.sampleWindVector(lat, lon);
     return {
-      temperature: readScalar('temperature'),
-      anomaly: readScalar('anomaly'),
-      rain: readScalar('rain'),
-      pressure: readScalar('pressure'),
+      temperature: this._sampleScalarFast('temperature', lat, lon),
+      anomaly: this._sampleScalarFast('anomaly', lat, lon),
+      rain: this._sampleScalarFast('rain', lat, lon),
+      pressure: this._sampleScalarFast('pressure', lat, lon),
       windSpeed: wind ? wind.speed : null,
       windU: wind ? wind.u : 0,
       windV: wind ? wind.v : 0,
@@ -688,18 +823,45 @@ export class WeatherGlobe {
       this.autoSpin = false;
       this.flight = null;
     } else {
+      this.setTourFocusCallout(null);
       this.controls.target.set(0, 0, 0);
       this.camera.up.set(0, 1, 0);
       this.controls.update();
     }
   }
 
-  setTourCameraPose(lat, lon, distance, lookLat = lat, lookLon = lon) {
-    latLonToVec3(lat, lon, distance, this.camera.position);
-    // Subtle surface target shift gives a dynamic oblique Weather Channel sweep
-    const target = latLonToVec3(lookLat, lookLon, 0.22);
+  setTourCameraPose(focusLat, focusLon, distance, bearingDeg = 0, tiltDeg = 18) {
+    const vFocus = latLonToVec3(focusLat, focusLon, 1.0);
+    const upLocal = vFocus.clone().normalize();
+
+    const lam = focusLon * DEG2RAD;
+    const east = new THREE.Vector3(-Math.sin(lam), 0, -Math.cos(lam)).normalize();
+    const north = new THREE.Vector3().crossVectors(upLocal, east).normalize();
+
+    // Offset camera obliquely south-west / south-east of focus so continents show rich 3D curvature & motion
+    const bRad = bearingDeg * DEG2RAD;
+    const tiltRad = tiltDeg * DEG2RAD;
+    const backDir = north
+      .clone()
+      .multiplyScalar(-Math.cos(bRad))
+      .addScaledVector(east, -Math.sin(bRad))
+      .normalize();
+
+    const camDir = upLocal
+      .clone()
+      .multiplyScalar(Math.cos(tiltRad))
+      .addScaledVector(backDir, Math.sin(tiltRad))
+      .normalize();
+
+    this.camera.position.copy(camDir.multiplyScalar(distance));
     this.camera.up.set(0, 1, 0);
-    this.camera.lookAt(target);
+
+    // Frame the target in the upper-middle 58% of the screen, cleanly above the lower-third chyron
+    const lookTarget = vFocus
+      .clone()
+      .addScaledVector(north, -0.095 * Math.max(0.2, distance - 1.0))
+      .multiplyScalar(0.84);
+    this.camera.lookAt(lookTarget);
   }
 
   _bindEvents() {
@@ -721,10 +883,14 @@ export class WeatherGlobe {
       }
     });
 
-    dom.addEventListener('wheel', () => {
-      this.autoSpin = false;
-      this.flight = null;
-    }, { passive: true });
+    dom.addEventListener(
+      'wheel',
+      () => {
+        this.autoSpin = false;
+        this.flight = null;
+      },
+      { passive: true }
+    );
 
     dom.addEventListener('pointerup', e => {
       if (!pointerDownPos) return;
@@ -757,14 +923,26 @@ export class WeatherGlobe {
     const vHead = new THREE.Vector3();
     const vTail = new THREE.Vector3();
 
-    const speedScale = 0.24 * dt * 60; // degrees per frame at 1 m/s
+    const layer = this.currentLayer;
+    const modeSpeed = layer === 'wind' ? 1.55 : layer === 'rain' ? 1.2 : layer === 'pressure' ? 1.15 : 0.85;
+    const speedScale = 0.26 * modeSpeed * dt * 60;
+
+    const activeCount = this.focusRegion ? this.particleCount : this.globalParticleCount;
 
     for (let i = 0; i < this.particleCount; i++) {
+      if (i >= activeCount) {
+        const base = i * 6;
+        posArr[base] = posArr[base + 1] = posArr[base + 2] = 0;
+        posArr[base + 3] = posArr[base + 4] = posArr[base + 5] = 0;
+        continue;
+      }
+
       let lat = this.particles[i * 3];
       let lon = this.particles[i * 3 + 1];
       let age = this.particles[i * 3 + 2] + 1;
 
-      if (age > 95 || Math.abs(lat) > 84) {
+      const maxAge = i >= this.globalParticleCount ? 72 : 95;
+      if (age > maxAge || Math.abs(lat) > 84) {
         this._respawnParticle(i, false);
         lat = this.particles[i * 3];
         lon = this.particles[i * 3 + 1];
@@ -787,8 +965,8 @@ export class WeatherGlobe {
       this.particles[i * 3 + 1] = nextLon;
       this.particles[i * 3 + 2] = age;
 
-      // Tail extends backwards along wind vector proportionally to wind speed
-      const tailLen = Math.min(3.2, 0.22 + spd * 0.075);
+      const tailMult = layer === 'wind' ? 0.095 : layer === 'rain' ? 0.075 : 0.062;
+      const tailLen = Math.min(3.6, 0.2 + spd * tailMult);
       const tailLat = Math.max(-85, Math.min(85, nextLat - (wv / Math.max(1, spd)) * tailLen));
       const tailLon = nextLon - ((wu / Math.max(1, spd)) * tailLen) / cosLat;
 
@@ -803,17 +981,88 @@ export class WeatherGlobe {
       posArr[base + 4] = vHead.y;
       posArr[base + 5] = vHead.z;
 
-      const fade = Math.sin((age / 95) * Math.PI) * Math.min(1.0, spd / 8.0);
-      colArr[base] = 0.25 * fade;
-      colArr[base + 1] = 0.55 * fade;
-      colArr[base + 2] = 0.75 * fade;
-      colArr[base + 3] = 0.88 * fade;
-      colArr[base + 4] = 0.97 * fade;
-      colArr[base + 5] = 1.0 * fade;
+      let fade = Math.sin((age / maxAge) * Math.PI) * Math.min(1.0, spd / 7.5);
+      if (i >= this.globalParticleCount) fade *= 1.22;
+
+      // Variable-specific colour & intensity modulation
+      let hr = 0.88;
+      let hg = 0.97;
+      let hb = 1.0;
+      let tr = 0.22;
+      let tg = 0.56;
+      let tb = 0.78;
+
+      if (layer === 'wind') {
+        if (spd > 21) {
+          // Storm-force / gale streaks glow bright gold-white
+          hr = 1.0;
+          hg = 0.93;
+          hb = 0.45;
+          tr = 0.92;
+          tg = 0.44;
+          tb = 0.18;
+          fade = Math.min(1.0, fade * 1.3);
+        }
+      } else if (layer === 'rain') {
+        const rainMm = this._sampleScalarFast('rain', nextLat, nextLon) || 0;
+        const rainWeight = Math.min(1.0, 0.16 + rainMm / 14.0);
+        fade *= rainWeight;
+        hr = 0.68;
+        hg = 0.94;
+        hb = 1.0;
+        tr = 0.12;
+        tg = 0.45;
+        tb = 0.95;
+      } else if (layer === 'anomaly' || layer === 'temperature') {
+        const anom = this._sampleScalarFast('anomaly', nextLat, nextLon) || 0;
+        if (anom > 2.5) {
+          hr = 1.0;
+          hg = 0.86;
+          hb = 0.55;
+          tr = 0.85;
+          tg = 0.35;
+          tb = 0.15;
+        } else if (anom < -2.5) {
+          hr = 0.68;
+          hg = 0.92;
+          hb = 1.0;
+          tr = 0.18;
+          tg = 0.48;
+          tb = 0.92;
+        }
+      }
+
+      colArr[base] = tr * fade;
+      colArr[base + 1] = tg * fade;
+      colArr[base + 2] = tb * fade;
+      colArr[base + 3] = hr * fade;
+      colArr[base + 4] = hg * fade;
+      colArr[base + 5] = hb * fade;
     }
 
     posAttr.needsUpdate = true;
     colAttr.needsUpdate = true;
+  }
+
+  _updateFocusRings(dt) {
+    if (!this.focusCallout?.active) return;
+
+    // Smoothly glide the surface spotlight & callout when transitioning between sentence locations
+    this.focusCallout.currentVec.lerp(this.focusCallout.targetVec, Math.min(1, dt * 6.5));
+    this.focusCallout.currentVec.normalize().multiplyScalar(1.0045);
+
+    this.focusRingGroup.position.copy(this.focusCallout.currentVec);
+    const outward = this.focusCallout.currentVec.clone().normalize();
+    this.focusRingGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), outward);
+
+    const pA = (this._elapsedSec * 0.62) % 1;
+    const pB = (this._elapsedSec * 0.62 + 0.5) % 1;
+    const sA = 1.0 + pA * 3.8;
+    const sB = 1.0 + pB * 3.8;
+    this.focusRingA.scale.setScalar(sA);
+    this.focusRingB.scale.setScalar(sB);
+    this.focusRingMatA.opacity = (1.0 - pA) * 0.85;
+    this.focusRingMatB.opacity = (1.0 - pB) * 0.72;
   }
 
   _updateOverlayProjections() {
@@ -844,14 +1093,27 @@ export class WeatherGlobe {
       pin.el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
       pin.el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
     }
+
+    if (this.focusCallout?.active) {
+      const fv = this.focusCallout.currentVec;
+      if (fv.clone().normalize().dot(camDir) < 0.2) {
+        this.focusCallout.el.hidden = true;
+      } else {
+        proj.copy(fv).project(this.camera);
+        this.focusCallout.el.hidden = false;
+        this.focusCallout.el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
+        this.focusCallout.el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
+      }
+    }
   }
 
   _animate(now) {
     requestAnimationFrame(this._animate);
     const dt = Math.min(0.05, (now - this._lastFrame) / 1000);
     this._lastFrame = now;
+    this._elapsedSec += dt;
+    this.globeUniforms.uTime.value = this._elapsedSec;
 
-    // Layer shader cross-fade
     if (this.transition) {
       const t = Math.min(1, (now - this.transition.start) / this.transition.duration);
       this.globeUniforms.uMix.value = t * t * (3 - 2 * t);
@@ -863,6 +1125,10 @@ export class WeatherGlobe {
         this.globeUniforms.uMix.value = 0.0;
         this.transition = null;
       }
+    }
+
+    if (this.isobarMat && this.isobarGroup.visible) {
+      this.isobarMat.opacity = 0.5 + 0.14 * Math.sin(this._elapsedSec * 2.4);
     }
 
     if (this.flight) {
@@ -877,13 +1143,12 @@ export class WeatherGlobe {
       if (rawT >= 1) this.flight = null;
     } else if (!this.tourControlled) {
       if (this.autoSpin) {
-        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.035);
+        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), dt * 0.062);
         this.camera.position.applyQuaternion(q);
       }
       this.controls.update();
     }
 
-    // Keep sunlight subtly angled from camera upper-left so continents always read clearly
     const camRight = new THREE.Vector3().crossVectors(this.camera.up, this.camera.position).normalize();
     this.globeUniforms.uSunDir.value
       .copy(this.camera.position)
@@ -893,6 +1158,7 @@ export class WeatherGlobe {
       .normalize();
 
     this._stepParticles(dt);
+    this._updateFocusRings(dt);
     this._updateOverlayProjections();
     this.renderer.render(this.scene, this.camera);
   }

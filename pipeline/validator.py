@@ -108,6 +108,100 @@ def build_ticker_from_beats(beats: list[dict]) -> str:
     return "  ///  ".join(parts)
 
 
+def infer_cue_layer(text: str, fallback: str) -> str:
+    """Match the weather variable layer to the meteorological phenomenon discussed in a sentence."""
+    low = (text or "").lower()
+    if any(k in low for k in ("1940-1979", "warmed", "climate", "above normal", "below normal", "above seasonal")):
+        return "anomaly"
+    if any(k in low for k in ("hpa", "blocking high", "trough", "isobar", "depression")):
+        return "pressure"
+    if any(k in low for k in ("km/h", "mph", "m/s", "gust", "gale", "scirocco", "winds")):
+        return "wind"
+    if any(k in low for k in (" mm", "rain", "downpour", "deluge", "rivers", "flood")):
+        return "rain"
+    if "°c" in low or "degrees" in low:
+        return "temperature"
+    return fallback if fallback in VALID_LAYERS else "temperature"
+
+
+def clean_or_build_cues(
+    st: dict,
+    cleaned_beats: list[dict],
+    waypoints: list[dict],
+    primary_layer: str,
+    kicker: str,
+) -> list[dict]:
+    """Validate explicit sentence-level `cues` or synthesise them from beats + waypoints."""
+    raw_cues = st.get("cues")
+    default_bearings = [-24, 22, -18, 24, -20, 18]
+    cues_out: list[dict] = []
+
+    if isinstance(raw_cues, list) and len(raw_cues) >= 3:
+        for i, c in enumerate(raw_cues[:8]):
+            if not isinstance(c, dict):
+                continue
+            wp_fb = waypoints[min(i, len(waypoints) - 1)]
+            try:
+                lat = round(max(-82.0, min(82.0, float(c.get("lat", wp_fb["lat"])))), 2)
+                lon = round(((float(c.get("lon", wp_fb["lon"])) + 180.0) % 360.0) - 180.0, 2)
+                dist = round(max(1.36, min(2.6, float(c.get("distance", wp_fb["distance"])))), 2)
+                bearing = round(max(-45.0, min(45.0, float(c.get("bearing", default_bearings[i % len(default_bearings)])))), 1)
+            except (TypeError, ValueError):
+                lat, lon, dist = wp_fb["lat"], wp_fb["lon"], wp_fb["distance"]
+                bearing = default_bearings[i % len(default_bearings)]
+
+            spoken = sanitise_prose(str(c.get("spoken") or c.get("text") or ""))
+            ticker_part = auto_highlight_keywords(sanitise_prose(str(c.get("ticker") or spoken)))
+            raw_layer = str(c.get("layer") or "").strip().lower()
+            layer = raw_layer if raw_layer in VALID_LAYERS else infer_cue_layer(ticker_part, primary_layer)
+
+            entry: dict = {
+                "layer": layer,
+                "lat": lat,
+                "lon": lon,
+                "distance": dist,
+                "bearing": bearing,
+                "label": sanitise_prose(str(c.get("label") or kicker)).upper(),
+                "metric": sanitise_prose(str(c.get("metric") or "")),
+                "spoken": spoken,
+                "ticker": ticker_part,
+            }
+            if c.get("start_sec") is not None and c.get("end_sec") is not None:
+                try:
+                    entry["start_sec"] = round(max(0.0, float(c["start_sec"])), 2)
+                    entry["end_sec"] = round(max(entry["start_sec"] + 0.5, float(c["end_sec"])), 2)
+                except (TypeError, ValueError):
+                    pass
+            cues_out.append(entry)
+
+    if len(cues_out) >= 3:
+        return cues_out
+
+    # Fallback: construct sentence-synced cues from the 4 beats + dynamic waypoints
+    for i, beat in enumerate(cleaned_beats):
+        wp = waypoints[min(i, len(waypoints) - 1)]
+        b_txt = beat["text"]
+        b_layer = beat["layer"]
+        # Ensure consecutive cues vary layers when the prose discusses a secondary variable
+        inferred = infer_cue_layer(b_txt, b_layer)
+        if i > 0 and cues_out[-1]["layer"] == b_layer and inferred != b_layer:
+            b_layer = inferred
+        cues_out.append(
+            {
+                "layer": b_layer,
+                "lat": wp["lat"],
+                "lon": wp["lon"],
+                "distance": round(max(1.42, min(2.2, wp["distance"] - (0.14 if i in (1, 2) else 0.0))), 2),
+                "bearing": default_bearings[i % len(default_bearings)],
+                "label": (beat.get("title") or kicker)[:34].upper(),
+                "metric": beat.get("tag") or "",
+                "spoken": b_txt.replace("**", ""),
+                "ticker": auto_highlight_keywords(b_txt),
+            }
+        )
+    return cues_out
+
+
 def ensure_dynamic_waypoints(centre_lat: float, centre_lon: float, waypoints: list[dict] | None) -> list[dict]:
     """Ensure 4 smooth, moving camera waypoints spanning at least 450 km across the surface."""
     cleaned: list[dict] = []
@@ -209,10 +303,26 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 }
             )
 
+        dyn_waypoints = ensure_dynamic_waypoints(c_lat, c_lon, st.get("camera_waypoints"))
+        kicker_clean = sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper()
+        cleaned_cues = clean_or_build_cues(st, cleaned_beats, dyn_waypoints, primary_layer, kicker_clean)
+
         raw_ticker = sanitise_prose(str(st.get("ticker") or ""))
-        ticker = auto_highlight_keywords(raw_ticker) if len(raw_ticker) >= 60 else build_ticker_from_beats(cleaned_beats)
+        if len(raw_ticker) >= 60:
+            ticker = auto_highlight_keywords(raw_ticker)
+        else:
+            ticker = "  ///  ".join(c["ticker"] for c in cleaned_cues if c.get("ticker"))
+
         voice_script = sanitise_prose(str(st.get("voice_script") or ""))
+        if len(voice_script) < 40:
+            voice_script = " ".join(c["spoken"] for c in cleaned_cues if c.get("spoken"))
         audio_url = str(st.get("audio_url") or "").strip()
+        duration_sec = None
+        if st.get("duration_sec") is not None:
+            try:
+                duration_sec = round(max(5.0, float(st["duration_sec"])), 2)
+            except (TypeError, ValueError):
+                duration_sec = None
 
         cleaned_links: list[dict] = []
         for link in st.get("news_links") or []:
@@ -247,18 +357,20 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
             {
                 "id": re.sub(r"[^a-z0-9-]+", "-", str(st.get("id") or f"story-{idx}").lower()).strip("-"),
                 "rank": idx,
-                "kicker": sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper(),
+                "kicker": kicker_clean,
                 "headline": headline,
                 "ticker": ticker,
                 "voice_script": voice_script,
                 **({"audio_url": audio_url} if audio_url else {}),
+                **({"duration_sec": duration_sec} if duration_sec else {}),
                 "region": sanitise_prose(str(st.get("region") or "")),
                 "country": sanitise_prose(str(st.get("country") or "")),
                 "hazard": hazard,
                 "primary_layer": primary_layer,
                 "centre": {"lat": round(c_lat, 2), "lon": round(c_lon, 2)},
                 "stats": cleaned_stats,
-                "camera_waypoints": ensure_dynamic_waypoints(c_lat, c_lon, st.get("camera_waypoints")),
+                "camera_waypoints": dyn_waypoints,
+                "cues": cleaned_cues,
                 "beats": cleaned_beats,
                 "news_links": cleaned_links[:3],
             }

@@ -54,14 +54,73 @@ html, body {
   overflow: hidden;
 }
 
-/* Hide Explore chrome cleanly during the TV broadcast tour */
+/* Hide Explore interactive chrome during the TV broadcast tour while keeping the read-only variable legend in top-right */
 body.tour-active .top-left-bar,
-body.tour-active .layer-rail,
+body.tour-active .layer-buttons,
 body.tour-active .spot-card,
 body.tour-active .attribution,
 body.tour-active .story-pin {
   opacity: 0 !important;
   pointer-events: none !important;
+}
+
+body.tour-active .layer-buttons {
+  display: none !important;
+}
+
+body.tour-active .layer-rail {
+  top: 20px;
+  right: 22px;
+  transform: none;
+  width: 215px;
+  pointer-events: none;
+}
+
+/* On-Globe Broadcast Location & Metric Callout (Tracks each sentence cue) */
+.focus-callout {
+  position: absolute;
+  transform: translate(16px, -50%);
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 5px 11px;
+  border-radius: 5px;
+  background: rgba(6, 12, 24, 0.9);
+  border: 1.5px solid rgba(253, 224, 71, 0.75);
+  border-left: 4px solid var(--bbc-red-bright);
+  box-shadow: 0 10px 26px rgba(0, 0, 0, 0.72);
+  pointer-events: none;
+  white-space: nowrap;
+  transition: opacity 0.2s ease;
+}
+
+.focus-callout-dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--sky-yellow);
+  box-shadow: 0 0 8px var(--sky-yellow);
+  flex-shrink: 0;
+}
+
+.focus-callout-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.15;
+}
+
+.focus-callout-label {
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  color: #ffffff;
+  text-transform: uppercase;
+}
+
+.focus-callout-metric {
+  font-size: 11.5px;
+  font-weight: 700;
+  color: var(--sky-yellow);
 }
 
 /* --- Floating Globe Badges (Pressure H/L & Story Pins) --- */
@@ -575,6 +634,18 @@ body.tour-active .story-pin {
   border-color: #ffffff;
 }
 
+.chyron-btn-voice {
+  padding: 0 11px;
+  border-color: rgba(255, 255, 255, 0.48);
+  color: #cbd5e1;
+}
+
+.chyron-btn-voice.voice-on {
+  background: rgba(34, 197, 94, 0.24);
+  border-color: #4ade80;
+  color: #ffffff;
+}
+
 .chyron-btn-util {
   padding: 0 10px;
   border-color: rgba(255, 255, 255, 0.35);
@@ -669,6 +740,18 @@ body.tour-active .story-pin {
   display: inline-flex;
   align-items: center;
   flex-shrink: 0;
+}
+
+.ticker-cue {
+  display: inline-flex;
+  align-items: center;
+  opacity: 0.56;
+  transition: opacity 0.24s ease, color 0.24s ease;
+}
+
+.ticker-cue.active {
+  opacity: 1;
+  color: #ffffff;
 }
 
 .ticker-kw {
