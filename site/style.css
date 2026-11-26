@@ -593,8 +593,8 @@ body.tour-active .layer-rail {
 .script-word {
   opacity: 0;
   display: inline-block;
-  transform: translateY(3px);
-  transition: opacity 0.24s ease-out, transform 0.24s ease-out, color 0.2s ease;
+  transform: translateY(2px);
+  transition: opacity 0.15s ease-out, transform 0.15s ease-out, color 0.15s ease;
 }
 
 .script-word.spoken {

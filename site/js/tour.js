@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126k';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126m';
 
 const STORY_FLIGHT_MS = 1900;
 const FALLBACK_STORY_SEC = 47;
@@ -402,12 +402,12 @@ export class BroadcastTour {
       return;
     }
 
-    // Weight each word by syllable/character length + punctuation pause, finishing at 82% of cue so the full sentence holds cleanly
-    const weights = words.map(w => Math.max(2, w.length) + (/[.,;:]/.test(w) ? 3.5 : 0.8));
+    // Reveal words briskly over the first 52% of the cue, then hold the full sentence cleanly until the next cue
+    const weights = words.map(w => Math.max(2, w.length) + (/[.,;:]/.test(w) ? 2.5 : 0.7));
     const totalW = weights.reduce((a, b) => a + b, 0);
     let acc = 0;
     this.scriptWordThresholds = weights.map(w => {
-      const thresh = (acc / totalW) * 0.82;
+      const thresh = (acc / totalW) * 0.52;
       acc += w;
       return thresh;
     });
