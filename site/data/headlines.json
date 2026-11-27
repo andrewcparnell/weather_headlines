@@ -1,785 +1,790 @@
 {
   "version": 1,
-  "generated_utc": "2026-11-26T21:18:41Z",
-  "model_run_utc": "2026-11-26T12:00:00Z",
-  "valid_time_utc": "2026-11-26T21:00:00Z",
-  "edition_title": "BBC/Sky World Weather Bulletin - 26 November 2026, 20:30 UTC",
+  "generated_utc": "2026-11-27T02:22:48Z",
+  "model_run_utc": "2026-11-26T18:00:00Z",
+  "valid_time_utc": "2026-11-27T03:00:00Z",
+  "edition_title": "BBC/Sky World Weather Bulletin - 02:18 UTC, 27 November 2026",
   "generator": "anthropic:claude-sonnet-4-6",
   "stories": [
     {
       "id": "2026-11-iceland-bomb-cyclone",
       "rank": 1,
-      "kicker": "BREAKING WEATHER · ICELAND",
-      "headline": "Unprecedented 951 hPa bomb cyclone batters Iceland with 115 km/h gusts and landslide threat",
-      "ticker": "**BREAKING: Iceland bomb cyclone** - central pressure **951.5 hPa** - **#1 deepest in 87 years since 1940** /// Orange warnings across **north, east and southeast Iceland** - gusts near **35 m/s around Reykjavík**, up to **50 m/s east of Öræfi** /// Landslide and rockfall risk raised in Eastfjords after **10 of last 14 days** anomalously stormy /// Ring Road travel **not advised** in multiple regions tonight /// Climate shift: late-autumn severe gust frequency up from **3 events per decade** to **5 per decade** since the nineteen-eighties /// Unprecedented storm - **no comparable event since records began in 1940**",
-      "voice_script": "At the heart of the system, central pressure has plummeted to nine hundred and fifty-one point five hectopascals - the lowest ever recorded here in late November. Around the capital region, gusts of thirty-five metres per second are bringing structural damage and forcing road closures across the Faxaflói Bay area. Conditions are most extreme east of Öræfi in the southeast, where gusts of up to fifty metres per second have prompted orange warnings and advice to remain indoors. In the Eastfjords, heavy rain is falling on already-saturated soils, triggering a yellow landslide warning with rockfall and rapid river rises expected through Friday morning. Temperatures are running nearly two degrees above the seasonal normal across Iceland - a signal consistent with the broader warming of North Atlantic storm tracks over recent decades.",
-      "audio_url": "data/audio/story-1.mp3",
-      "duration_sec": 48.84,
-      "region": "Iceland, Reykjavík Capital Region, Southeast and Eastfjords",
+      "kicker": "BREAKING WEATHER · ICELAND AND NORTH ATLANTIC",
+      "headline": "Relentless 958 hPa cyclone lashes Iceland with 160 km/h gusts and blizzard chaos",
+      "ticker": "**BREAKING** A powerful North Atlantic cyclone, deepened to **958.4 hPa**, continues to batter Iceland with gusts forecast to reach **160 km/h** - the strongest on record for a November system in 87 years /// **#1 in 87 years since 1940** for peak wind intensity at this location /// Blizzard conditions have made travel **not advised** across North Iceland and the Eastfjords, with orange weather warnings in force /// The island has recorded **13 of the last 28 days** under storm-force anomalous wind conditions /// Total rainfall over 28 days has reached **140.3 mm** against a seasonal normal of just 9.1 mm per fortnight /// A warming climate has **almost doubled the frequency** of extreme November Atlantic cyclones - from 3 exceedances per decade in 1940-1979 to 5 in 1986-2025 /// Travel on the Ring Road remains severely disrupted.",
+      "voice_script": "At the heart of this relentless North Atlantic cyclone, central pressure has plunged to 958 hPa - an unprecedented reading for late November in 87 years of records. Across North Iceland tonight, orange weather warnings are in force with blizzard conditions and gusts reaching 160 kilometres per hour, making travel not advised. In the Eastfjords, 28-day rainfall has reached 140 millimetres - more than 15 times the seasonal average - as back-to-back storms drench the region through the weekend. Reykjavík has experienced 13 of the past 28 days under storm-force conditions, a persistence signal unprecedented in 87 years of records since 1940. A climate-warmed North Atlantic now produces nearly twice as many extreme November cyclones as it did in the mid-twentieth century, making this ferocious sequence far less surprising to scientists.",
+      "region": "Iceland, Reykjavík Capital Region, North Iceland, Eastfjords and Southeast",
       "country": "Iceland",
       "hazard": "cyclone",
       "primary_layer": "wind",
       "centre": {
-        "lat": 62.0,
-        "lon": -21.0
+        "lat": 63.5,
+        "lon": -20.5
       },
       "stats": {
-        "headline_metric": "951.5 hPa / 32.1 m/s gust",
-        "metric_label": "Gusts to 50 m/s east of Öræfi",
-        "era5_rank": "#1 in 87 years since 1940",
-        "persistence": "10 of last 14 days anomalously stormy"
+        "headline_metric": "34.3 m/s gusts / 958 hPa",
+        "metric_label": "Gusts forecast to 44 m/s in Eastfjords",
+        "era5_rank": "#1 for date since 1940",
+        "persistence": "13 of last 28 days storm-force anomalous"
       },
       "camera_waypoints": [
         {
-          "lat": 65.5,
-          "lon": -25.5,
-          "distance": 1.95
-        },
-        {
-          "lat": 64.0,
-          "lon": -22.0,
-          "distance": 1.75
+          "lat": 59.0,
+          "lon": -40.67,
+          "distance": 2.22
         },
         {
           "lat": 62.5,
-          "lon": -18.5,
-          "distance": 1.6
+          "lon": -25.54,
+          "distance": 1.84
         },
         {
-          "lat": 60.5,
-          "lon": -15.0,
-          "distance": 1.52
+          "lat": 66.0,
+          "lon": -11.42,
+          "distance": 1.78
+        },
+        {
+          "lat": 68.5,
+          "lon": -0.33,
+          "distance": 2.08
         }
       ],
       "cues": [
         {
           "layer": "pressure",
-          "lat": 62.0,
-          "lon": -21.0,
-          "distance": 1.8,
+          "lat": 63.5,
+          "lon": -20.5,
+          "distance": 1.9,
           "bearing": -8.0,
-          "label": "CYCLONE CENTRE",
-          "metric": "951.5 hPa",
-          "spoken": "At the heart of the system, central pressure has plummeted to nine hundred and fifty-one point five hectopascals - the lowest ever recorded here in late November.",
-          "ticker": "Central pressure **951.5 hPa** - **#1 deepest since 1940** for this date",
+          "label": "ICELAND LOW CENTRE",
+          "metric": "958.4 hPa",
+          "spoken": "At the heart of this relentless North Atlantic cyclone, central pressure has plunged to 958 hPa - an unprecedented reading for late November in 87 years of records.",
+          "ticker": "**958 hPa** low centre - **#1 since 1940** for November intensity",
           "start_sec": 0.0,
-          "end_sec": 9.43
+          "end_sec": 11.83
         },
         {
           "layer": "wind",
-          "lat": 64.0,
-          "lon": -22.0,
-          "distance": 1.7,
+          "lat": 65.8,
+          "lon": -18.1,
+          "distance": 1.78,
           "bearing": 5.0,
-          "label": "REYKJAVÍK AREA",
-          "metric": "35 m/s gusts",
-          "spoken": "Around the capital region, gusts of thirty-five metres per second are bringing structural damage and forcing road closures across the Faxaflói Bay area.",
-          "ticker": "Reykjavík gusts **35 m/s** - Ring Road travel **not advised**",
-          "start_sec": 9.43,
-          "end_sec": 18.43
+          "label": "NORTH ICELAND",
+          "metric": "160 km/h gusts",
+          "spoken": "Across North Iceland tonight, orange weather warnings are in force with blizzard conditions and gusts reaching 160 kilometres per hour, making travel not advised.",
+          "ticker": "North Iceland orange alert: **160 km/h gusts**, blizzard, **travel not advised**",
+          "start_sec": 11.83,
+          "end_sec": 22.27
         },
         {
-          "layer": "wind",
-          "lat": 63.9,
-          "lon": -18.0,
-          "distance": 1.6,
+          "layer": "rain",
+          "lat": 64.0,
+          "lon": -16.2,
+          "distance": 1.62,
           "bearing": 10.0,
-          "label": "ÖRÆFI SOUTHEAST",
-          "metric": "50 m/s gusts",
-          "spoken": "Conditions are most extreme east of Öræfi in the southeast, where gusts of up to fifty metres per second have prompted orange warnings and advice to remain indoors.",
-          "ticker": "Southeast Iceland gusts **up to 50 m/s** - **orange warning** in force",
-          "start_sec": 18.43,
-          "end_sec": 28.03
-        },
-        {
-          "layer": "rain",
-          "lat": 64.5,
-          "lon": -15.0,
-          "distance": 1.55,
-          "bearing": -4.0,
           "label": "EASTFJORDS",
-          "metric": "11.4 mm/24h + saturated",
-          "spoken": "In the Eastfjords, heavy rain is falling on already-saturated soils, triggering a yellow landslide warning with rockfall and rapid river rises expected through Friday morning.",
-          "ticker": "Eastfjords **landslide warning** - saturated ground, **rockfall risk** rising",
-          "start_sec": 28.03,
-          "end_sec": 38.59
-        },
-        {
-          "layer": "anomaly",
-          "lat": 63.0,
-          "lon": -20.0,
-          "distance": 1.65,
-          "bearing": 3.0,
-          "label": "ICELAND NATIONAL",
-          "metric": "+1.9°C anom",
-          "spoken": "Temperatures are running nearly two degrees above the seasonal normal across Iceland - a signal consistent with the broader warming of North Atlantic storm tracks over recent decades.",
-          "ticker": "Iceland temperatures **+1.9°C above normal** - storm track warming confirmed",
-          "start_sec": 38.59,
-          "end_sec": 48.84
-        }
-      ],
-      "beats": [
-        {
-          "tag": "LIVE HIGHLIGHT",
-          "title": "Bomb Cyclone Batters Iceland Tonight",
-          "layer": "wind",
-          "text": "A rapidly deepening bomb cyclone centred near Iceland at nine hundred and fifty-one point five hectopascals is driving the most violent late-November windstorm since ERA5 records began in nineteen forty. Orange warnings cover north, east and southeast Iceland, with gusts near one hundred and eighty kilometres an hour reported east of Öræfi. The Ring Road is closed in multiple sections, and the Icelandic Met Office is advising residents in the worst-affected areas to remain indoors."
-        },
-        {
-          "tag": "PERSISTENCE",
-          "title": "Ten of Fourteen Days Stormy",
-          "layer": "pressure",
-          "text": "This latest blast is not an isolated event. Ten of the last fourteen days have been anomalously stormy over the Iceland basin, with the two-week accumulated rainfall of eighty point four millimetres already nearly nine times the expected total. The repeated passage of deep lows has left ground across the southeast and Eastfjords fully saturated, amplifying the landslide and rockfall hazard with each new rainfall episode."
-        },
-        {
-          "tag": "HISTORICAL RANK",
-          "title": "Unprecedented: Number One in 87 Years",
-          "layer": "pressure",
-          "text": "The storm's central pressure ranks number one in the entire ERA5 archive for this date, covering eighty-seven years from nineteen forty to the present - an event at the ninety-ninth point four percentile. No late-November cyclone over Iceland has achieved a lower central pressure in the modern observational record, placing tonight's system in genuinely unprecedented meteorological territory."
-        },
-        {
-          "tag": "CLIMATE CONTEXT",
-          "title": "Warming Seas Fuelling Deeper Atlantic Lows",
-          "layer": "anomaly",
-          "text": "Local autumn warming of nearly one degree Celsius since the nineteen-forties baseline, combined with record-warm North Atlantic sea surface temperatures through two thousand and twenty-six, is providing the energy source for more intensely developing cyclones in this region. The frequency of extreme autumn gust events over Iceland has risen from three per decade in the nineteen-forties to nineteen-seventies period to five per decade in the most recent forty years - a near-doubling that is consistent with what climate models have projected for a warming Arctic margin."
-        }
-      ],
-      "news_links": [
-        {
-          "source": "Iceland Review",
-          "title": "Heavy Rain and Landslide Warning November 26 - Travel Disruption Across Iceland",
-          "url": "https://www.icelandreview.com/news/iceland-heavy-rain-landslide-warning-november-26-2026/"
-        },
-        {
-          "source": "Deep Arrival",
-          "title": "Iceland Wind Warnings Bring Ring Road Disruption Through Nov. 27",
-          "url": "https://deeparrival.com/news/iceland-gale-warnings-ring-road-november-26-27-2026/"
-        },
-        {
-          "source": "Iceland Review",
-          "title": "Orange Weather Warnings Issued Across North and East Iceland",
-          "url": "https://www.icelandreview.com/news/iceland-orange-weather-warnings-blizzard-november-2026/"
-        }
-      ]
-    },
-    {
-      "id": "2026-11-peru-coast-el-nino-heat-swells",
-      "rank": 2,
-      "kicker": "BREAKING WEATHER · PERU",
-      "headline": "El Niño heats Peru's sea by 8°C as giant swells close 96 ports and threaten Lima coast",
-      "ticker": "**Peru coast emergency** - Navy closes **96 ports** from Tumbes to Tacna through **Sunday Nov 29** /// El Niño sea surface anomaly reaches **+8°C** off Lima - **2nd highest in 87 years since 1940** /// Wave heights **two to three times normal** peaking **Friday afternoon to Saturday** around Lima and Paracas /// Coastal sea level **51.1 cm above normal** at Callao - infrastructure damage in Miraflores, San Isidro, Chorrillos /// **28 of last 28 days** have recorded above-normal coastal heat - anomaly persisting all month /// Climate signal: coastal El Niño heat events now **six times per decade** vs just **once per decade** in the nineteen-forties",
-      "voice_script": "Far offshore, the El Niño hotspot has pushed sea surface temperatures to seven and a half degrees above the seasonal normal - a reading that ranks second in eighty-seven years of records for this calendar date. Along the northern coast from Tumbes to Salaverry, moderate swells are building today, with the navy warning small vessels to remain in port as conditions deteriorate ahead of the weekend peak. At Lima and Callao, the sea level stands fifty-one centimetres above normal, and waves two to three times their usual height are battering coastal promenades, forcing the closure of the Costa Verde road. South of Lima, Paracas and the Ballestas Islands boat tour sector are under the strongest swell warning through Saturday, with all maritime access suspended. High pressure overhead is locking in hot, dry conditions on land whilst funnelling energy from the warm Pacific into the swell field - a classic El Niño Costero signature that Peruvian forecasters say has reached its highest intensity since this event began.",
-      "audio_url": "data/audio/story-2.mp3",
-      "duration_sec": 58.94,
-      "region": "Peruvian Pacific Coast, Lima, Callao and Paracas",
-      "country": "Peru",
-      "hazard": "heat",
-      "primary_layer": "anomaly",
-      "centre": {
-        "lat": -8.0,
-        "lon": -80.5
-      },
-      "stats": {
-        "headline_metric": "+7.5°C sea-surface anomaly",
-        "metric_label": "Waves 2–3× normal, 96 ports closed",
-        "era5_rank": "#2 for date since 1940 (98.3th percentile)",
-        "persistence": "28 of last 28 days above normal"
-      },
-      "camera_waypoints": [
-        {
-          "lat": -4.0,
-          "lon": -82.5,
-          "distance": 2.05
-        },
-        {
-          "lat": -7.0,
-          "lon": -80.5,
-          "distance": 1.8
-        },
-        {
-          "lat": -10.5,
-          "lon": -78.0,
-          "distance": 1.65
-        },
-        {
-          "lat": -14.0,
-          "lon": -76.5,
-          "distance": 1.55
-        }
-      ],
-      "cues": [
-        {
-          "layer": "anomaly",
-          "lat": -5.0,
-          "lon": -83.0,
-          "distance": 1.95,
-          "bearing": -6.0,
-          "label": "EL NIÑO HOTSPOT",
-          "metric": "+7.5°C anomaly",
-          "spoken": "Far offshore, the El Niño hotspot has pushed sea surface temperatures to seven and a half degrees above the seasonal normal - a reading that ranks second in eighty-seven years of records for this calendar date.",
-          "ticker": "Pacific El Niño hotspot **+7.5°C** - **#2 in 87 years since 1940**",
-          "start_sec": 0.0,
-          "end_sec": 11.66
+          "metric": "140.3 mm / 28 days",
+          "spoken": "In the Eastfjords, 28-day rainfall has reached 140 millimetres - more than 15 times the seasonal average - as back-to-back storms drench the region through the weekend.",
+          "ticker": "Eastfjords: **140 mm in 28 days** - **15x the seasonal average**",
+          "start_sec": 22.27,
+          "end_sec": 33.26
         },
         {
           "layer": "wind",
-          "lat": -8.0,
-          "lon": -80.0,
-          "distance": 1.75,
-          "bearing": 4.0,
-          "label": "NORTHERN COAST",
-          "metric": "Mod–Strong swells",
-          "spoken": "Along the northern coast from Tumbes to Salaverry, moderate swells are building today, with the navy warning small vessels to remain in port as conditions deteriorate ahead of the weekend peak.",
-          "ticker": "Northern Peru coast **ports closed** - swells building through **Friday**",
-          "start_sec": 11.66,
-          "end_sec": 22.66
-        },
-        {
-          "layer": "rain",
-          "lat": -12.0,
-          "lon": -77.0,
-          "distance": 1.65,
-          "bearing": -3.0,
-          "label": "LIMA AND CALLAO",
-          "metric": "Sea level +51.1 cm",
-          "spoken": "At Lima and Callao, the sea level stands fifty-one centimetres above normal, and waves two to three times their usual height are battering coastal promenades, forcing the closure of the Costa Verde road.",
-          "ticker": "Lima sea level **+51.1 cm** at Callao - Costa Verde road **closed**",
-          "start_sec": 22.66,
-          "end_sec": 34.58
+          "lat": 63.2,
+          "lon": -20.8,
+          "distance": 1.72,
+          "bearing": -4.0,
+          "label": "REYKJAVÍK REGION",
+          "metric": "13 of 28 days storm-force",
+          "spoken": "Reykjavík has experienced 13 of the past 28 days under storm-force conditions, a persistence signal unprecedented in 87 years of records since 1940.",
+          "ticker": "Reykjavík: **13 of last 28 days** storm-force - **unprecedented persistence**",
+          "start_sec": 33.26,
+          "end_sec": 43.85
         },
         {
           "layer": "anomaly",
-          "lat": -13.5,
-          "lon": -76.3,
-          "distance": 1.6,
+          "lat": 62.0,
+          "lon": -17.0,
+          "distance": 1.55,
           "bearing": 8.0,
-          "label": "PARACAS AND SOUTH",
-          "metric": "Strong swells Fri–Sat",
-          "spoken": "South of Lima, Paracas and the Ballestas Islands boat tour sector are under the strongest swell warning through Saturday, with all maritime access suspended.",
-          "ticker": "Paracas **all maritime access suspended** - peak swells **Friday to Saturday**",
-          "start_sec": 34.58,
-          "end_sec": 44.04
-        },
-        {
-          "layer": "pressure",
-          "lat": -9.5,
-          "lon": -78.5,
-          "distance": 1.7,
-          "bearing": 2.0,
-          "label": "CENTRAL PERU COAST",
-          "metric": "1008.8 hPa",
-          "spoken": "High pressure overhead is locking in hot, dry conditions on land whilst funnelling energy from the warm Pacific into the swell field - a classic El Niño Costero signature that Peruvian forecasters say has reached its highest intensity since this event began.",
-          "ticker": "El Niño Costero at **peak 2026 intensity** - warmest coastal seas since event began",
-          "start_sec": 44.04,
-          "end_sec": 58.94
+          "label": "SOUTHEAST COAST",
+          "metric": "+4.2°C anomaly",
+          "spoken": "A climate-warmed North Atlantic now produces nearly twice as many extreme November cyclones as it did in the mid-twentieth century, making this ferocious sequence far less surprising to scientists.",
+          "ticker": "**Climate shift**: extreme November cyclones **nearly doubled** since 1940-1979",
+          "start_sec": 43.85,
+          "end_sec": 55.34
         }
       ],
       "beats": [
         {
           "tag": "LIVE HIGHLIGHT",
-          "title": "Ninety-Six Ports Closed as Giant Swells Strike Lima",
+          "title": "Blizzard and 160 km/h Gusts Ground Travel Across Iceland",
           "layer": "wind",
-          "text": "Peru's navy has extended a national swell emergency through Sunday the twenty-ninth of November, with ninety-six ports and coves closed from Tumbes in the far north to Tacna on the Chilean border. Wave heights of two to three times normal are expected to peak along the Lima and Paracas coast on Friday afternoon and Saturday. Coastal infrastructure in the Miraflores, San Isidro and Chorrillos districts of Lima has already been damaged, and traffic on the Costa Verde seafront road has been suspended."
+          "text": "A North Atlantic cyclone with a central pressure of 958 hPa continues to pound Iceland this morning, generating gusts forecast to reach 160 km/h in the most exposed Eastfjord valleys. Orange weather warnings are in force across North Iceland and the Eastfjords, with travel explicitly not advised in the worst-affected corridors. The Icelandic Met Office has warned of gusts between 45 and 50 metres per second east of Öræfi. Flight connections and Ring Road access remain severely disrupted."
         },
         {
           "tag": "PERSISTENCE",
-          "title": "Twenty-Eight Consecutive Days of Coastal Heat",
-          "layer": "anomaly",
-          "text": "Every single one of the last twenty-eight days has recorded above-normal sea surface temperatures off the Peruvian coast. The fourteen-day rainfall total stands at just four millimetres against an expected twelve-point-eight millimetres, confirming the characteristic El Niño pattern of coastal heat without meaningful relief from rainfall. Peru's official El Niño monitoring commission ENFEN confirmed on the thirteenth of November that coastal ocean warming had reached its highest surface intensity since the current event began in March of this year."
+          "title": "Thirteen of the Last 28 Days Under Storm-Force Attack",
+          "layer": "wind",
+          "text": "This is not an isolated storm. ERA5 analysis shows that 13 of the last 28 days have registered anomalously high wind conditions at the cyclone's core location, with 11 of the past 14 days also flagged as anomalous. Total rainfall over 28 days has reached 140.3 mm against a seasonal normal of just 9.1 mm per fortnight - confirming an extraordinarily active and persistent North Atlantic storm track directing repeated systems at Iceland throughout this month."
         },
         {
           "tag": "HISTORICAL RANK",
-          "title": "Second Highest Sea Temperature Anomaly in 87 Years",
-          "layer": "anomaly",
-          "text": "The coastal sea surface temperature anomaly of seven and a half degrees Celsius ranks second in the ERA5 archive for this calendar date, covering eighty-seven years from nineteen forty. At the ninety-eighth point three percentile, this places the current event among the most extreme late-November coastal El Niño episodes ever recorded. NOAA forecasters have warned the event could reach historic strength during the two thousand and twenty-six to twenty-seven season."
+          "title": "Unprecedented: Number One in 87 Years Since 1940",
+          "layer": "pressure",
+          "text": "The cyclone's peak wind intensity at this location ranks first in the full ERA5 archive dating back to 1940 - 87 years of comparable observations. At the 99.4th percentile, this is a truly unprecedented event for the late November period. The 958 hPa central pressure rivals the strongest North Atlantic extratropical cyclones recorded in modern times, and several meteorologists have noted it may challenge historical pressure records for Iceland in October and November combined."
         },
         {
           "tag": "CLIMATE CONTEXT",
-          "title": "El Niño Coastal Extremes Multiplying With Climate Change",
+          "title": "A Warmer Atlantic Is Supercharging November Cyclones",
           "layer": "anomaly",
-          "text": "The local seasonal warming of zero point four degrees Celsius along the Peruvian coast since the nineteen-forties baseline appears modest, but the effect on extreme El Niño events is profound. The frequency of extreme coastal heat exceedances has increased from just once per decade in the nineteen-forties to nineteen-seventies period to six times per decade in the most recent forty years. Peru's emergency declaration covering nearly three-quarters of the country's districts reflects how vulnerable coastal communities now are to these compounding ocean-atmosphere extremes."
+          "text": "The local sea-surface temperature anomaly of +4.2°C above the seasonal mean is directly feeding the explosive deepening of this cyclone. Since 1940-1979, extreme wind exceedances above the 90th percentile in this region occurred around 3 times per decade. In the most recent period, 1986-2025, that figure has risen to 5 times per decade - a 67 percent increase that reflects the warmer, more energetic North Atlantic fuelling more powerful winter storm systems."
         }
       ],
       "news_links": [
         {
-          "source": "Al Jazeera",
-          "title": "Dozens of ports close as powerful waves damage Peru's coastline",
-          "url": "https://www.aljazeera.com/video/newsfeed/2026/11/25/dozens-of-ports-close-as-powerful-waves-damage-perus-coastline"
+          "source": "Iceland Review",
+          "title": "Travel Not Advised as Blizzard Hits North Iceland, Orange Warnings Spread to Eastfjords",
+          "url": "https://www.icelandreview.com/news/iceland-orange-weather-warnings-blizzard-november-2026/"
         },
         {
-          "source": "Particle News",
-          "title": "Peruvian Navy Warns Peak Anomalous Waves Will Hit Lima and Callao on Friday and Saturday",
-          "url": "https://particle.news/story/peruvian-navy-warns-peak-anomalous-waves-will-hit-lima-and-callao-on-friday-and-saturday"
+          "source": "Inkorr",
+          "title": "Powerful Cyclone Near Iceland: Storm Winds Up to 160 km/h in Europe, Frosts in Ukraine",
+          "url": "https://inkorr.com/en/potuznij-ciklon-nablizaetsa-do-islandii-u-evropi-stormovi-vitri-do-160-kmgod-v-ukraini-morozi-do-11-gradusiv-356492"
         },
         {
-          "source": "Deep Arrival",
-          "title": "Peru Port Closures Through Nov. 29 Hit Paracas Boat Tours",
-          "url": "https://deeparrival.com/news/peru-swell-port-closures-paracas-ballestas-tours-november-29-2026/"
+          "source": "Iceland Review",
+          "title": "Yellow Wind Warnings for November 25 - Gusts Above 40 m/s in Central Highlands",
+          "url": "https://www.icelandreview.com/news/iceland-yellow-wind-warnings-november-25-2026/"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-1.mp3",
+      "duration_sec": 55.34
     },
     {
-      "id": "2026-11-bolivia-amazon-el-nino-floods",
-      "rank": 3,
-      "kicker": "ALERT · BOLIVIAN AMAZON",
-      "headline": "Bolivia declares El Niño emergency as 163 mm Amazon downpour floods communities and roads",
-      "ticker": "**Bolivia El Niño emergency** declared by President Paz - **78,000 families** hit by drought across **six departments** /// Amazon headwaters receive **163 mm in 24 hours** - **#7 in 87 years since 1940** for this date, 92nd percentile /// **127 mm** of rain has fallen in just **28 days** vs an expected total of under **12 mm** /// Flooded roads and rivers cutting off communities across **Beni, Pando and La Paz** departments /// El Niño combining **flood and drought simultaneously** across different Bolivian regions /// **GDACS Orange Alert** - drought affecting Aruba through Venezuela corridor since **September 2022**",
-      "voice_script": "In the Amazon headwaters region of western Bolivia, one hundred and sixty-three millimetres of rain has fallen in twenty-four hours - nearly fourteen times the November daily average and the seventh highest reading for this date in eighty-seven years. In the Pando department - Bolivia's northernmost Amazon territory - rivers are rising rapidly, with wet-season flooding beginning to restrict road and air access to remote communities. In the Beni lowlands, below-normal temperatures and persistent heavy rain are flooding the Llanos de Moxos wetlands well ahead of their typical peak, compounding the emergency declared by the government. An elevated pressure pattern over the Andes foothills is channelling moisture-laden air from the Amazon basin into the highlands, triggering landslides and flash flooding on roads that connect La Paz with the tropical lowlands. Further south in the Santa Cruz region, the twenty-eight-day rainfall total has reached one hundred and twenty-seven millimetres against an expected figure of under twelve millimetres - more than ten times the climatological average for this period.",
-      "audio_url": "data/audio/story-3.mp3",
-      "duration_sec": 61.82,
-      "region": "Bolivian Western Amazon, Beni and Pando Departments",
-      "country": "Bolivia",
+      "id": "2026-11-ecuador-el-nino-floods",
+      "rank": 2,
+      "kicker": "BREAKING WEATHER · ECUADOR AND THE PACIFIC COAST",
+      "headline": "El Niño swamps Guayaquil again as 182 mm torrent sets an 87-year rain record",
+      "ticker": "**BREAKING** El Niño floods have struck Guayaquil for at least **four separate days this month** alone, with the latest deluge on the night of **25 November** inundating **41 points** across Ecuador's largest city just days before national elections /// Tonight's 24-hour rainfall total of **181.9 mm** is **#1 in 87 years since 1940** at this location - more than **40 times** the seasonal daily norm /// **27 of the last 28 days** have recorded anomalously high rainfall, with a cumulative 28-day total of **971.4 mm** against a normal of just 5 mm per fortnight /// Copernicus satellite imagery confirms extensive flooding across the Los Ríos and Guayas provinces, with **12,000 people exposed** in Milagro alone /// El Niño has now claimed **at least 14 lives** in Ecuador since August /// A warming Pacific has raised the frequency of extreme rainfall events from 4 to 5 exceedances per decade.",
+      "voice_script": "In Guayaquil, the Pacific coast's biggest port city, 181.9 millimetres of rain fell in a single 24-hour period - an intensity ranking first in 87 years of records since 1940. In nearby Milagro, 172 millimetres fell overnight in November, flooding entire city sectors after the Milagro River burst its banks, leaving some 12,000 residents directly exposed to floodwaters. Across Los Ríos province, 28-day cumulative rainfall has reached 971 millimetres - nearly 100 times the seasonal norm - with landslides in Quevedo claiming lives this month. A combination of El Niño-warmed sea surface temperatures and an exceptionally high 4.5-metre tide on 25 November compounded the city's flooding, overwhelming coastal drainage systems entirely. The scale of this event is historic: 27 of the last 28 days have been anomalously wet here, and a 1-degree warming of Pacific waters since the mid-twentieth century is amplifying every El Niño rainfall surge.",
+      "region": "Guayaquil, Milagro, Los Ríos and Guayas Province, Coastal Ecuador",
+      "country": "Ecuador",
       "hazard": "rain",
       "primary_layer": "rain",
       "centre": {
-        "lat": -11.0,
-        "lon": -67.0
+        "lat": -2.0,
+        "lon": -79.5
       },
       "stats": {
-        "headline_metric": "163.3 mm / 24 h",
-        "metric_label": "127 mm in last 28 days vs 12 mm expected",
-        "era5_rank": "#7 for date since 1940 (92.5th percentile)",
-        "persistence": "2 of last 14 days anomalously wet, intense bursts"
+        "headline_metric": "181.9 mm / 24 h",
+        "metric_label": "971.4 mm accumulated in 28 days",
+        "era5_rank": "#1 for date since 1940",
+        "persistence": "27 of last 28 days anomalously wet"
       },
       "camera_waypoints": [
         {
-          "lat": -8.5,
-          "lon": -69.5,
-          "distance": 2.1
+          "lat": -6.5,
+          "lon": -88.51,
+          "distance": 2.22
         },
         {
-          "lat": -10.0,
-          "lon": -67.5,
-          "distance": 1.85
+          "lat": -3.0,
+          "lon": -81.75,
+          "distance": 1.84
         },
         {
-          "lat": -12.5,
-          "lon": -65.5,
-          "distance": 1.65
+          "lat": 0.5,
+          "lon": -75.45,
+          "distance": 1.78
         },
         {
-          "lat": -15.5,
-          "lon": -64.0,
-          "distance": 1.52
+          "lat": 3.0,
+          "lon": -70.49,
+          "distance": 2.08
         }
       ],
       "cues": [
         {
           "layer": "rain",
-          "lat": -11.0,
-          "lon": -67.0,
-          "distance": 1.9,
-          "bearing": -7.0,
-          "label": "AMAZON HEADWATERS",
-          "metric": "163 mm/24h",
-          "spoken": "In the Amazon headwaters region of western Bolivia, one hundred and sixty-three millimetres of rain has fallen in twenty-four hours - nearly fourteen times the November daily average and the seventh highest reading for this date in eighty-seven years.",
-          "ticker": "Amazon headwaters **163 mm in 24 hours** - **#7 in 87 years since 1940**",
+          "lat": -6.5,
+          "lon": -88.51,
+          "distance": 2.22,
+          "bearing": -6.0,
+          "label": "GUAYAQUIL PORT",
+          "metric": "181.9 mm / 24 h",
+          "spoken": "In Guayaquil, the Pacific coast's biggest port city, 181.9 millimetres of rain fell in a single 24-hour period - an intensity ranking first in 87 years of records since 1940.",
+          "ticker": "Guayaquil: **181.9 mm in 24 hours** - **#1 since 1940** El Niño deluge",
           "start_sec": 0.0,
-          "end_sec": 13.46
-        },
-        {
-          "layer": "wind",
-          "lat": -9.5,
-          "lon": -65.0,
-          "distance": 1.75,
-          "bearing": 6.0,
-          "label": "PANDO DEPARTMENT",
-          "metric": "Rivers rising fast",
-          "spoken": "In the Pando department - Bolivia's northernmost Amazon territory - rivers are rising rapidly, with wet-season flooding beginning to restrict road and air access to remote communities.",
-          "ticker": "Pando department rivers **rising rapidly** - road access **restricted**",
-          "start_sec": 13.46,
-          "end_sec": 24.41
-        },
-        {
-          "layer": "anomaly",
-          "lat": -13.0,
-          "lon": -65.0,
-          "distance": 1.65,
-          "bearing": -4.0,
-          "label": "BENI LOWLANDS",
-          "metric": "-2.8°C anom (cool/wet)",
-          "spoken": "In the Beni lowlands, below-normal temperatures and persistent heavy rain are flooding the Llanos de Moxos wetlands well ahead of their typical peak, compounding the emergency declared by the government.",
-          "ticker": "Beni lowlands **flooding early** - Llanos de Moxos wetlands **inundated**",
-          "start_sec": 24.41,
-          "end_sec": 35.86
-        },
-        {
-          "layer": "pressure",
-          "lat": -12.0,
-          "lon": -68.5,
-          "distance": 1.72,
-          "bearing": 3.0,
-          "label": "LA PAZ FOOTHILLS",
-          "metric": "1010 hPa",
-          "spoken": "An elevated pressure pattern over the Andes foothills is channelling moisture-laden air from the Amazon basin into the highlands, triggering landslides and flash flooding on roads that connect La Paz with the tropical lowlands.",
-          "ticker": "La Paz to Amazon roads **hit by landslides** - Andes foothills on alert",
-          "start_sec": 35.86,
-          "end_sec": 48.38
+          "end_sec": 13.37
         },
         {
           "layer": "rain",
-          "lat": -16.0,
-          "lon": -64.5,
-          "distance": 1.58,
-          "bearing": 8.0,
-          "label": "SANTA CRUZ REGION",
-          "metric": "127 mm / 28 days",
-          "spoken": "Further south in the Santa Cruz region, the twenty-eight-day rainfall total has reached one hundred and twenty-seven millimetres against an expected figure of under twelve millimetres - more than ten times the climatological average for this period.",
-          "ticker": "Santa Cruz region **127 mm in 28 days** - over **10× the seasonal average**",
-          "start_sec": 48.38,
-          "end_sec": 61.82
-        }
-      ],
-      "beats": [
-        {
-          "tag": "LIVE HIGHLIGHT",
-          "title": "National Emergency as Amazon Floods Cut Off Communities",
-          "layer": "rain",
-          "text": "President Rodrigo Paz declared a national state of emergency on the thirty-first of October, with rescue teams deployed across Bolivia as El Niño simultaneously produces catastrophic flooding in the Amazon north and devastating drought across six Andean and southern departments. One hundred and sixty-three millimetres of rain has fallen in twenty-four hours in the western Amazon headwaters. Roads connecting the Amazon lowlands to La Paz have been closed by landslides, and river crossings in Beni and Pando departments are impassable in many areas tonight."
-        },
-        {
-          "tag": "PERSISTENCE",
-          "title": "Twenty-Eight-Day Deluge More Than Ten Times Normal",
-          "layer": "rain",
-          "text": "Although the wettest days have been concentrated in intense bursts rather than a sustained wet spell, the cumulative impact has been severe. The twenty-eight-day rainfall total in the Amazon headwaters stands at one hundred and twenty-seven millimetres - more than ten times the expected figure of under twelve millimetres for this period. Bolivia's annual rainy season typically begins in November, but the scale and violence of this year's onset, amplified by El Niño, is exceptional by historical standards."
-        },
-        {
-          "tag": "HISTORICAL RANK",
-          "title": "Seventh Heaviest Daily Rain in 87 Years",
-          "layer": "rain",
-          "text": "The twenty-four-hour rainfall total of one hundred and sixty-three point three millimetres ranks seventh in the ERA5 archive for this exact calendar date at the western Amazon headwaters location, placing it at the ninety-second point five percentile. The seasonal normal for a full day's rain in November here is just eleven point eight millimetres, meaning this single storm delivered more than thirteen times the climatological daily expectation."
-        },
-        {
-          "tag": "CLIMATE CONTEXT",
-          "title": "El Niño and Warming Accelerate Bolivia's Flood-Drought Paradox",
-          "layer": "anomaly",
-          "text": "Local warming of one point seven degrees Celsius since the nineteen-forties baseline, combined with the ongoing El Niño event that NOAA has flagged as potentially heading toward historic strength, is intensifying the flood-drought paradox that Bolivia now faces each wet season. The government's emergency decree acknowledges the growing frequency and severity of this pattern, covering risks including droughts, floods, frosts, hailstorms, forest fires and river overflows through the two thousand and twenty-six to twenty-seven El Niño period."
-        }
-      ],
-      "news_links": [
-        {
-          "source": "Al Jazeera",
-          "title": "Bolivia declares state of emergency over El Nino weather pattern",
-          "url": "https://www.aljazeera.com/news/2026/11/1/bolivia-declares-state-of-emergency-over-el-nino-weather-pattern"
-        },
-        {
-          "source": "Yahoo News Australia",
-          "title": "Bolivia declares national emergency over El Niño as drought hits over 78,000 families",
-          "url": "https://au.news.yahoo.com/bolivia-declares-national-emergency-over-102909693.html"
-        },
-        {
-          "source": "UPI",
-          "title": "Peru declares emergency across much of country over El Niño",
-          "url": "https://www.upi.com/Top_News/World-News/2026/11/03/latam-peru-emergency-floods/5321793724627/"
-        }
-      ]
-    },
-    {
-      "id": "2026-11-chad-sahel-heat-dome",
-      "rank": 4,
-      "kicker": "UNPRECEDENTED HEAT · CENTRAL AFRICA",
-      "headline": "Chad and Sahel bake in historic 30°C heat dome - seven degrees above normal for four weeks",
-      "ticker": "**Chad and central Africa heat emergency** - temperatures **30.4°C** - **+7.3°C above November normal** /// **Unprecedented: #1 in 87 years since 1940** for this date across the region, **99.4th percentile** /// **28 of 28 days** have been anomalously hot - **not a single cool day** in four weeks /// **Zero rainfall** in last 14 days against an expected **12.9 mm** - Sahel drought deepening /// GDACS **Orange Drought Alert** active - East and Central Africa impacted since **May 2026** /// Climate shift: regional heat extremes now **seven times per decade** vs just **twice per decade** in the nineteen-forties",
-      "voice_script": "At the core of the heat dome, centred over central Chad, temperatures are running seven point three degrees Celsius above the late-November seasonal normal - a reading that has never been exceeded in eighty-seven years of records for this date. Around the shrinking Lake Chad basin, temperatures of thirty degrees Celsius or above have been recorded every single day for the past four weeks, accelerating evaporation at a lake that has already lost vast surface area over recent decades. Not a single millimetre of rain has fallen across central Chad in the past fourteen days, against an expected total of nearly thirteen millimetres. The ground is baked dry, and livestock and agriculture face severe stress. A persistent high-pressure cell at the surface is suppressing any convection and locking the region in heat, preventing the formation of the cloud cover that might otherwise provide some overnight relief. To the south, the GDACS Orange Drought Alert covers a vast arc from Cameroon and the Central African Republic through to South Sudan, Kenya and Uganda, with the heat dome now extending the impact zone further north into the Sahel.",
-      "audio_url": "data/audio/story-4.mp3",
-      "duration_sec": 65.5,
-      "region": "Chad, Lake Chad Basin, Central African Sahel",
-      "country": "Chad",
-      "hazard": "heat",
-      "primary_layer": "anomaly",
-      "centre": {
-        "lat": 10.5,
-        "lon": 18.5
-      },
-      "stats": {
-        "headline_metric": "+7.3°C above seasonal normal",
-        "metric_label": "30.4°C with zero rain in 14 days",
-        "era5_rank": "#1 in 87 years since 1940 (unprecedented)",
-        "persistence": "28 of last 28 days above normal"
-      },
-      "camera_waypoints": [
-        {
-          "lat": 15.5,
-          "lon": 14.0,
-          "distance": 2.15
-        },
-        {
-          "lat": 12.5,
-          "lon": 17.0,
-          "distance": 1.9
-        },
-        {
-          "lat": 10.0,
-          "lon": 19.5,
-          "distance": 1.65
-        },
-        {
-          "lat": 7.5,
-          "lon": 22.0,
-          "distance": 1.52
-        }
-      ],
-      "cues": [
-        {
-          "layer": "anomaly",
-          "lat": 10.5,
-          "lon": 18.5,
-          "distance": 1.95,
-          "bearing": -5.0,
-          "label": "CHAD HEAT DOME CORE",
-          "metric": "+7.3°C anomaly",
-          "spoken": "At the core of the heat dome, centred over central Chad, temperatures are running seven point three degrees Celsius above the late-November seasonal normal - a reading that has never been exceeded in eighty-seven years of records for this date.",
-          "ticker": "Chad heat dome core **+7.3°C** - **unprecedented in 87 years since 1940**",
-          "start_sec": 0.0,
-          "end_sec": 12.94
-        },
-        {
-          "layer": "temperature",
-          "lat": 12.5,
-          "lon": 15.0,
-          "distance": 1.8,
-          "bearing": 7.0,
-          "label": "LAKE CHAD BASIN",
-          "metric": "30.4°C",
-          "spoken": "Around the shrinking Lake Chad basin, temperatures of thirty degrees Celsius or above have been recorded every single day for the past four weeks, accelerating evaporation at a lake that has already lost vast surface area over recent decades.",
-          "ticker": "Lake Chad basin **30°C+ every day for 4 weeks** - evaporation accelerating",
-          "start_sec": 12.94,
-          "end_sec": 27.05
-        },
-        {
-          "layer": "rain",
-          "lat": 9.0,
-          "lon": 20.0,
-          "distance": 1.7,
-          "bearing": -8.0,
-          "label": "CENTRAL CHAD",
-          "metric": "0.0 mm / 14 days",
-          "spoken": "Not a single millimetre of rain has fallen across central Chad in the past fourteen days, against an expected total of nearly thirteen millimetres. The ground is baked dry, and livestock and agriculture face severe stress.",
-          "ticker": "Central Chad **zero rainfall in 14 days** - Sahel drought **deepening rapidly**",
-          "start_sec": 27.05,
-          "end_sec": 40.92
-        },
-        {
-          "layer": "pressure",
-          "lat": 13.5,
-          "lon": 20.5,
-          "distance": 1.75,
+          "lat": -3.88,
+          "lon": -83.44,
+          "distance": 1.94,
           "bearing": 4.0,
-          "label": "SAHEL PRESSURE DOME",
-          "metric": "1009.5 hPa",
-          "spoken": "A persistent high-pressure cell at the surface is suppressing any convection and locking the region in heat, preventing the formation of the cloud cover that might otherwise provide some overnight relief.",
-          "ticker": "Sahel high pressure **blocking all rainfall** - convection **completely suppressed**",
-          "start_sec": 40.92,
-          "end_sec": 51.89
+          "label": "MILAGRO",
+          "metric": "12,000 people exposed",
+          "spoken": "In nearby Milagro, 172 millimetres fell overnight in November, flooding entire city sectors after the Milagro River burst its banks, leaving some 12,000 residents directly exposed to floodwaters.",
+          "ticker": "Milagro River overflows: **12,000 people exposed** after **172 mm overnight**",
+          "start_sec": 13.37,
+          "end_sec": 26.69
+        },
+        {
+          "layer": "rain",
+          "lat": -1.25,
+          "lon": -78.6,
+          "distance": 1.81,
+          "bearing": -10.0,
+          "label": "LOS RÍOS PROVINCE",
+          "metric": "971.4 mm / 28 days",
+          "spoken": "Across Los Ríos province, 28-day cumulative rainfall has reached 971 millimetres - nearly 100 times the seasonal norm - with landslides in Quevedo claiming lives this month.",
+          "ticker": "Los Ríos: **971 mm in 28 days** - nearly **100x seasonal norm**",
+          "start_sec": 26.69,
+          "end_sec": 39.17
+        },
+        {
+          "layer": "pressure",
+          "lat": 1.12,
+          "lon": -74.21,
+          "distance": 1.85,
+          "bearing": 8.0,
+          "label": "GULF OF GUAYAQUIL",
+          "metric": "1014.1 hPa / 4.5 m tide",
+          "spoken": "A combination of El Niño-warmed sea surface temperatures and an exceptionally high 4.5-metre tide on 25 November compounded the city's flooding, overwhelming coastal drainage systems entirely.",
+          "ticker": "El Niño sea warmth meets **4.5 m high tide** - drainage overwhelmed",
+          "start_sec": 39.17,
+          "end_sec": 51.55
         },
         {
           "layer": "anomaly",
-          "lat": 7.5,
-          "lon": 17.5,
-          "distance": 1.6,
-          "bearing": 10.0,
-          "label": "CENTRAL AFRICAN BORDER",
-          "metric": "GDACS Orange Drought",
-          "spoken": "To the south, the GDACS Orange Drought Alert covers a vast arc from Cameroon and the Central African Republic through to South Sudan, Kenya and Uganda, with the heat dome now extending the impact zone further north into the Sahel.",
-          "ticker": "GDACS **Orange Drought Alert** - Cameroon to Uganda, **millions affected**",
-          "start_sec": 51.89,
-          "end_sec": 65.5
+          "lat": 3.0,
+          "lon": -70.49,
+          "distance": 2.08,
+          "bearing": -3.0,
+          "label": "COASTAL ECUADOR",
+          "metric": "27 of 28 days wet",
+          "spoken": "The scale of this event is historic: 27 of the last 28 days have been anomalously wet here, and a 1-degree warming of Pacific waters since the mid-twentieth century is amplifying every El Niño rainfall surge.",
+          "ticker": "**27 of 28 days** anomalously wet - **El Niño + climate shift** driving extremes",
+          "start_sec": 51.55,
+          "end_sec": 64.78
         }
       ],
       "beats": [
         {
           "tag": "LIVE HIGHLIGHT",
-          "title": "Unprecedented Heat Locks Chad and Sahel in Record Warmth",
-          "layer": "temperature",
-          "text": "An extraordinary heat dome is delivering temperatures of thirty point four degrees Celsius across central Chad tonight - a reading seven point three degrees above the November seasonal normal and the highest anomaly ever recorded here for this date in eighty-seven years of ERA5 data. The heat has been entirely unbroken for a full calendar month, with not a single day of cooler conditions and virtually no rainfall. The Lake Chad basin, already under severe ecological stress from decades of shrinkage, is experiencing accelerated evaporation as a result."
+          "title": "Guayaquil Flooded for the Fourth Time This Month on Election Eve",
+          "layer": "rain",
+          "text": "Heavy rain combined with an unusually high 4.5-metre tide struck Guayaquil on the evening of 25 November, with the city's emergency agency counting 41 inundated points by 21:00 local time. It was at least the fourth major flood event to hit Ecuador's largest city this month alone, following events on 2, 13 and 18 November. The deluge arrives just days before Ecuador's local elections on 29 November, raising serious concerns about access to polling stations and humanitarian conditions in low-lying districts. El Niño-fuelled rains have now claimed at least 14 lives in Ecuador since the national alert was declared in late August."
         },
         {
           "tag": "PERSISTENCE",
-          "title": "Twenty-Eight Days Without Relief - Zero Rain in a Fortnight",
-          "layer": "anomaly",
-          "text": "Every one of the past twenty-eight days has been anomalously hot across the central Chad region, an unbroken streak that ranks as one of the most sustained temperature anomalies ever recorded in the ERA5 archive for this part of the Sahel. No rain whatsoever has fallen in the past fourteen days against an expected total of nearly thirteen millimetres. The combined heat and rainfall deficit is driving acute food and water stress, compounding the GDACS Orange Drought Alert that has been in force across the broader central and eastern African region since May."
+          "title": "27 of the Last 28 Days Drenched - 971 mm and Counting",
+          "layer": "rain",
+          "text": "ERA5 analysis confirms that 27 of the last 28 days have recorded anomalously high rainfall at the core of this event near Guayaquil and Milagro. The 28-day cumulative total has reached 971.4 mm against a seasonal expected figure of around 5 mm per fortnight - making this sustained wet spell almost incomprehensibly far outside the historical norm. The Copernicus Emergency Mapping Service was activated in mid-November to map flood extent across Guayas and Los Ríos provinces, confirming widespread inundation along the Babahoyo, Catarama and San Pablo river systems."
         },
         {
           "tag": "HISTORICAL RANK",
-          "title": "Number One - Never Been This Hot on This Date",
-          "layer": "anomaly",
-          "text": "The current temperature anomaly ranks number one in the full ERA5 archive at the ninety-ninth point four percentile - truly unprecedented for late November across this region. By comparison, the previous record for extreme late-November heat exceedances across the central African Sahel stood at two events per decade in the nineteen-forties to nineteen-seventies baseline period. That figure has now risen to seven events per decade in the most recent forty years, a more than three-fold increase in extreme heat frequency."
+          "title": "Number One in 87 Years: The Heaviest Day of Rain on Record for This Date",
+          "layer": "rain",
+          "text": "The 24-hour rainfall total of 181.9 mm recorded near this location ranks first in the full ERA5 archive since 1940 - 87 years of comparable data - placing it at the 99.4th percentile. The seasonal daily normal at this time of year is just 4.5 mm, meaning tonight's reading is more than 40 times the expected amount. This is not simply an El Niño rainfall event: it is an event of a magnitude never before recorded in the modern observational record for late November on Ecuador's Pacific coast."
         },
         {
           "tag": "CLIMATE CONTEXT",
-          "title": "Sahel Heat Extremes Multiplying as Rainfall Becomes Less Predictable",
-          "layer": "temperature",
-          "text": "Local seasonal warming across central Chad has been modest at around zero point zero three degrees Celsius since the nineteen-forties baseline - but the frequency of extreme heat exceedances tells a starkly different story, with the region now seeing seven hot events per decade compared to just two in the earlier period. The Intergovernmental Panel on Climate Change scenarios for the Lake Chad region project worsening climatic instability, including increasingly severe heat episodes and erratic rainfall patterns, with predictions of a further rise of up to four point four degrees Celsius in mean annual temperatures by the end of this century."
+          "title": "A Warmer Pacific Is Priming El Niño Events to Hit Harder",
+          "layer": "anomaly",
+          "text": "Local sea-surface temperatures along the Ecuadorian coast are running approximately 1.7°C above the seasonal mean, consistent with the strong El Niño currently building in the central and eastern Pacific. Regional warming of 1.04°C since the 1940-1979 baseline period means that every El Niño event now operates on a warmer background state, intensifying both peak rainfall rates and the duration of wet spells. The frequency of extreme rainfall exceedances above the 90th percentile has risen from 4 times per decade in 1940-1979 to 5 times per decade in 1986-2025."
         }
       ],
       "news_links": [
         {
-          "source": "GDACS",
-          "title": "Orange Drought Alert - Burundi, DRC, Central African Republic, Cameroon, Ethiopia, Kenya, Uganda and neighbouring states",
-          "url": "https://www.gdacs.org/report.aspx?eventid=1027450&episodeid=14&eventtype=DR"
+          "source": "Rio Times Online",
+          "title": "Heavy Rain Floods Guayaquil Before Vote - 41 Points Inundated on 25 November 2026",
+          "url": "https://www.riotimesonline.com/guayaquil-rain-floods-streets-25-november/"
         },
         {
-          "source": "SIPRI",
-          "title": "Climate, Peace and Security Fact Sheet: Lake Chad 2026",
-          "url": "https://www.sipri.org/sites/default/files/2026-06/sipri-nupi_fact_sheet_lake_chad.pdf"
+          "source": "The Watchers",
+          "title": "El Niño floods kill 2 in Guayaquil as 172.8 mm of rain swamps Milagro, Ecuador's toll rises to 14",
+          "url": "https://watchers.news/2026/11/16/el-nino-floods-guayaquil-milagro-ecuador-death-toll-14-november-2026/"
+        },
+        {
+          "source": "Copernicus Emergency Management Service",
+          "title": "Flood in Ecuador - EMSR936 Rapid Mapping Activation, Guayas and Los Ríos Provinces",
+          "url": "https://mapping.emergency.copernicus.eu/news/flood-in-ecuador-emsr936/"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-2.mp3",
+      "duration_sec": 64.78
     },
     {
-      "id": "2026-11-west-siberia-kazakhstan-heat-dome",
-      "rank": 5,
-      "kicker": "RECORD HEAT · WEST SIBERIA AND KAZAKHSTAN",
-      "headline": "West Siberia shatters all records as 21°C heat anomaly grips region for an entire month",
-      "ticker": "**West Siberia heat record smashed** - anomaly **+21.2°C above November normal** - **unprecedented #1 in 87 years since 1940** /// Actual temperature **-2.1°C** where the November normal is **-20.1°C** - a staggering positive departure /// **28 of 28 days** anomalously warm - not a single cold day in **four weeks** /// Novosibirsk reports **warmest November on record** - rain instead of snow across Siberia /// West Siberia regional warming of **1.49°C since the 1940s** - but extreme warm events now **5 per decade** vs just **3 per decade** in the nineteen-forties /// Polar Vortex split in early November linked to this **record warm Siberian ridge**",
-      "voice_script": "At the heart of the ridge, temperatures across western Siberia are running more than twenty-one degrees Celsius above the November seasonal normal - the highest anomaly ever recorded here in eighty-seven years, ranking number one in the entire ERA5 archive. In Novosibirsk, the mercury is hovering around minus two degrees Celsius - nearly eighteen degrees warmer than the late-November norm. Meteorologists say this is the warmest November on record for the city, with rain falling where snow would usually lie thick on the ground. Across northern Kazakhstan, rainfall in the past fortnight has reached nearly fourteen millimetres, nearly three times the expected total, as the warm ridge drives moisture into a region that should be in deep winter freeze. An anomalously strong upper-level ridge is locked across western Siberia, suppressing the normal southward plunge of Arctic air and deflecting the polar vortex into two separate cores - a pattern linked to the earliest recorded stratospheric warming event of the entire satellite era. Further south into eastern Kazakhstan, the anomaly remains at nearly sixteen degrees above normal, reinforcing the signal that this is a vast, locked warm ridge covering millions of square kilometres of central Eurasia.",
-      "audio_url": "data/audio/story-5.mp3",
-      "duration_sec": 71.69,
-      "region": "West Siberia, Novosibirsk, Omsk and Northern Kazakhstan",
+      "id": "2026-11-west-siberia-heat-dome",
+      "rank": 3,
+      "kicker": "RECORD HEAT · WEST SIBERIA AND NOVOSIBIRSK",
+      "headline": "Novosibirsk shatters century-old records as +23°C anomaly grips Siberia for a full month",
+      "ticker": "**RECORD HEAT** West Siberia is baking in an anomaly of **+23.1°C above the seasonal norm** - the largest temperature departure ever recorded at this location in **87 years since 1940** /// Novosibirsk has seen daily averages running **10 to 12°C above normal** for several consecutive days, with no snow on the ground in what should be deep winter /// The region has endured **28 of the last 28 days** of anomalous warmth - a continuous month of record heat with **not a single day** returning to normal /// Temperatures expected this late November should average around **-22°C** - instead, readings are hovering near **zero** /// This November is shaping up to be **the warmest in nearly 100 years** of Novosibirsk weather records /// Arctic cyclones from the Atlantic have blocked all polar air from entering the region, trapping a heat dome that now **doubles the pre-1980 warming rate** /// Winter refuses to arrive.",
+      "voice_script": "Across the West Siberian Plain, the temperature anomaly has reached plus 23.1 degrees Celsius above the seasonal normal - the largest departure ever recorded here in 87 years of data since 1940. In Novosibirsk, temperatures are hovering near zero degrees Celsius - more than 20 degrees warmer than the late-November average of minus 22 degrees - with no meaningful snowfall and an entirely absent winter. Siberian forecasters confirm that daily mean temperatures in Novosibirsk have beaten the daily record on multiple consecutive days this week, with readings running 10 to 12 degrees above normal. Across Omsk and the southern West Siberian Plain, every single one of the last 28 days has registered an anomalous temperature - a continuous month of record warmth with no cold interruption whatsoever. Scientists warn that this extraordinary warmth is accelerating permafrost thaw across the broader region, with the local warming trend of nearly 2 degrees since the mid-twentieth century amplifying the intensity of every heat event.",
+      "region": "West Siberia, Novosibirsk Oblast, Omsk and Western Siberian Plain",
       "country": "Russia",
       "hazard": "heat",
       "primary_layer": "anomaly",
       "centre": {
-        "lat": 50.0,
-        "lon": 79.5
+        "lat": 65.0,
+        "lon": 87.0
       },
       "stats": {
-        "headline_metric": "+21.2°C above seasonal normal",
-        "metric_label": "-2.1°C where normal is -20.1°C",
-        "era5_rank": "#1 in 87 years since 1940 (unprecedented)",
-        "persistence": "28 of last 28 days above normal"
+        "headline_metric": "+23.1°C anomaly",
+        "metric_label": "Actual temp -1.7°C vs normal -22.3°C",
+        "era5_rank": "#1 for date since 1940",
+        "persistence": "28 of last 28 days anomalously warm"
       },
       "camera_waypoints": [
         {
-          "lat": 56.0,
-          "lon": 72.0,
+          "lat": 69.0,
+          "lon": 80.0,
           "distance": 2.1
         },
         {
-          "lat": 54.0,
-          "lon": 77.5,
-          "distance": 1.85
+          "lat": 67.0,
+          "lon": 83.5,
+          "distance": 1.95
         },
         {
-          "lat": 51.0,
-          "lon": 81.0,
-          "distance": 1.65
+          "lat": 64.5,
+          "lon": 87.0,
+          "distance": 1.8
         },
         {
-          "lat": 48.0,
-          "lon": 85.5,
-          "distance": 1.52
+          "lat": 61.0,
+          "lon": 90.0,
+          "distance": 1.6
         }
       ],
       "cues": [
         {
           "layer": "anomaly",
-          "lat": 54.0,
-          "lon": 79.5,
+          "lat": 65.0,
+          "lon": 87.0,
           "distance": 1.9,
-          "bearing": -6.0,
-          "label": "WEST SIBERIA CORE",
-          "metric": "+21.2°C anomaly",
-          "spoken": "At the heart of the ridge, temperatures across western Siberia are running more than twenty-one degrees Celsius above the November seasonal normal - the highest anomaly ever recorded here in eighty-seven years, ranking number one in the entire ERA5 archive.",
-          "ticker": "West Siberia anomaly **+21.2°C** - **#1 in 87 years since 1940** - unprecedented",
+          "bearing": -5.0,
+          "label": "WEST SIBERIAN PLAIN",
+          "metric": "+23.1°C anomaly",
+          "spoken": "Across the West Siberian Plain, the temperature anomaly has reached plus 23.1 degrees Celsius above the seasonal normal - the largest departure ever recorded here in 87 years of data since 1940.",
+          "ticker": "West Siberia: **+23.1°C anomaly** - **#1 in 87 years since 1940**",
           "start_sec": 0.0,
-          "end_sec": 14.71
+          "end_sec": 12.96
         },
         {
           "layer": "temperature",
           "lat": 55.0,
-          "lon": 83.0,
-          "distance": 1.8,
-          "bearing": 8.0,
-          "label": "NOVOSIBIRSK",
-          "metric": "-2.1°C vs normal -20°C",
-          "spoken": "In Novosibirsk, the mercury is hovering around minus two degrees Celsius - nearly eighteen degrees warmer than the late-November norm. Meteorologists say this is the warmest November on record for the city, with rain falling where snow would usually lie thick on the ground.",
-          "ticker": "Novosibirsk **warmest November on record** - rain where snow should be",
-          "start_sec": 14.71,
-          "end_sec": 30.79
-        },
-        {
-          "layer": "rain",
-          "lat": 52.5,
-          "lon": 76.5,
-          "distance": 1.72,
-          "bearing": -4.0,
-          "label": "NORTHERN KAZAKHSTAN",
-          "metric": "13.8 mm/14d vs 5.0 expected",
-          "spoken": "Across northern Kazakhstan, rainfall in the past fortnight has reached nearly fourteen millimetres, nearly three times the expected total, as the warm ridge drives moisture into a region that should be in deep winter freeze.",
-          "ticker": "Northern Kazakhstan **rainfall 3× above expected** - warm ridge driving moisture",
-          "start_sec": 30.79,
-          "end_sec": 43.32
-        },
-        {
-          "layer": "pressure",
-          "lat": 57.5,
-          "lon": 73.0,
+          "lon": 82.9,
           "distance": 1.65,
-          "bearing": 5.0,
-          "label": "OMSK AND TYUMEN",
-          "metric": "1012.8 hPa",
-          "spoken": "An anomalously strong upper-level ridge is locked across western Siberia, suppressing the normal southward plunge of Arctic air and deflecting the polar vortex into two separate cores - a pattern linked to the earliest recorded stratospheric warming event of the entire satellite era.",
-          "ticker": "Siberian ridge **deflecting polar vortex** - linked to **earliest SSW on record**",
-          "start_sec": 43.32,
-          "end_sec": 58.94
+          "bearing": 7.0,
+          "label": "NOVOSIBIRSK CITY",
+          "metric": "-1.7°C vs normal -22°C",
+          "spoken": "In Novosibirsk, temperatures are hovering near zero degrees Celsius - more than 20 degrees warmer than the late-November average of minus 22 degrees - with no meaningful snowfall and an entirely absent winter.",
+          "ticker": "Novosibirsk: near **0°C** in late November - normal is **-22°C**",
+          "start_sec": 12.96,
+          "end_sec": 25.51
         },
         {
           "layer": "anomaly",
-          "lat": 49.0,
-          "lon": 83.0,
-          "distance": 1.6,
-          "bearing": 10.0,
-          "label": "EAST KAZAKHSTAN",
-          "metric": "+15.8°C anomaly",
-          "spoken": "Further south into eastern Kazakhstan, the anomaly remains at nearly sixteen degrees above normal, reinforcing the signal that this is a vast, locked warm ridge covering millions of square kilometres of central Eurasia.",
-          "ticker": "East Kazakhstan **+15.8°C above normal** - warm ridge covers **millions of km²**",
-          "start_sec": 58.94,
-          "end_sec": 71.69
+          "lat": 55.0,
+          "lon": 82.9,
+          "distance": 1.72,
+          "bearing": -8.0,
+          "label": "NOVOSIBIRSK RECORDS",
+          "metric": "10-12°C above daily average",
+          "spoken": "Siberian forecasters confirm that daily mean temperatures in Novosibirsk have beaten the daily record on multiple consecutive days this week, with readings running 10 to 12 degrees above normal.",
+          "ticker": "Novosibirsk: **10-12°C above daily norm** - consecutive records broken",
+          "start_sec": 25.51,
+          "end_sec": 36.94
+        },
+        {
+          "layer": "wind",
+          "lat": 60.0,
+          "lon": 73.4,
+          "distance": 1.85,
+          "bearing": 5.0,
+          "label": "OMSK REGION",
+          "metric": "28 of 28 days warm",
+          "spoken": "Across Omsk and the southern West Siberian Plain, every single one of the last 28 days has registered an anomalous temperature - a continuous month of record warmth with no cold interruption whatsoever.",
+          "ticker": "**28 of 28 days** anomalously warm - **unbroken month** of record heat",
+          "start_sec": 36.94,
+          "end_sec": 49.1
+        },
+        {
+          "layer": "anomaly",
+          "lat": 65.0,
+          "lon": 87.0,
+          "distance": 2.0,
+          "bearing": -3.0,
+          "label": "SIBERIAN PERMAFROST ZONE",
+          "metric": "1.87°C shift since 1940-1979",
+          "spoken": "Scientists warn that this extraordinary warmth is accelerating permafrost thaw across the broader region, with the local warming trend of nearly 2 degrees since the mid-twentieth century amplifying the intensity of every heat event.",
+          "ticker": "**+1.87°C local warming** since 1940-1979 amplifies every Siberian heat extreme",
+          "start_sec": 49.1,
+          "end_sec": 62.28
         }
       ],
       "beats": [
         {
           "tag": "LIVE HIGHLIGHT",
-          "title": "Western Siberia Records Its Warmest November in History",
+          "title": "Winter Has Not Arrived: No Snow, No Frost - Just Record Heat",
           "layer": "temperature",
-          "text": "An extraordinary warm ridge is delivering temperatures of minus two degrees Celsius across western Siberia and northern Kazakhstan tonight - regions where the November average is around minus twenty degrees. Russian meteorologists in Novosibirsk describe this as the most anomalously warm November on record, with rainfall instead of snow, and not a single frosty day in the past four weeks. The anomaly of twenty-one point two degrees Celsius above normal represents the highest figure ever recorded here in eighty-seven years of ERA5 data for this calendar date."
+          "text": "Novosibirsk, the largest city in Siberia, is experiencing its most anomalously warm November in nearly a century of weather records. Daily mean temperatures have been running 10 to 12 degrees Celsius above the seasonal normal for multiple consecutive days this week, with the West Siberian hydrometeorological service confirming that the first and second decades of November have both broken records. There is no meaningful snow cover, rain is falling where blizzards would normally rage, and forecasters say the late-month cold snap, when it finally arrives, could be sharp and sudden."
         },
         {
           "tag": "PERSISTENCE",
-          "title": "Twenty-Eight Consecutive Days of Unprecedented Warmth",
+          "title": "Every Single Day of the Past 28 Days Has Been Anomalously Warm",
           "layer": "anomaly",
-          "text": "Every single one of the past twenty-eight days has been anomalously warm across western Siberia and northern Kazakhstan, an unbroken streak of exceptional warmth that is entirely without precedent in the modern observational record for this region and season. The fourteen-day rainfall total stands at thirteen point eight millimetres against an expected five millimetres, confirming that the warm ridge is also carrying moisture that would normally have been locked out by frozen air masses. Russian synoptic meteorologists attribute the heat to warm air masses flowing northward from Central Asia, locked in place by an unusually persistent atmospheric circulation pattern."
+          "text": "ERA5 analysis shows a perfect persistence score: all 28 of the last 28 days have recorded anomalously warm temperatures across this region of West Siberia. The 28-day accumulated rainfall total of 36.6 mm reflects an autumn-like pattern far outside the November norm. Siberian forecasters, quoted by Novosibirsk regional media, say Atlantic cyclones have been continuously funnelling warm air into the region throughout the entire autumn, preventing any Arctic air mass from penetrating southward - a pattern they describe as more typical of August and September than late November."
         },
         {
           "tag": "HISTORICAL RANK",
-          "title": "Number One in 87 Years - Genuinely Unprecedented",
+          "title": "Unprecedented: Number One for Any Late-November Day Since 1940",
           "layer": "anomaly",
-          "text": "The temperature anomaly of twenty-one point two degrees Celsius ranks number one at the ninety-ninth point four percentile in the full ERA5 archive - a figure that is genuinely unprecedented for late November across western Siberia. The seasonal normal for the region is minus twenty point one degrees Celsius; the actual observed temperature of minus two degrees represents the largest positive departure from normal ever recorded here at any point in the eighty-seven-year archive. This event has also been linked by forecasters to the earliest sudden stratospheric warming on record in the polar vortex, which split into two separate cores in early November."
+          "text": "The +23.1°C temperature anomaly recorded at the core of this heat event ranks first in the ERA5 archive stretching back to 1940, placing it at the 99.4th percentile of all late-November observations at this location. The seasonal normal for this date in West Siberia is minus 22.3°C; the actual temperature has been near minus 1.7°C. This gap of more than 20 degrees between reality and climatological expectation is, by any measure, extraordinary. The Sibdepo regional news outlet has confirmed that this is the warmest November start in Novosibirsk records in nearly a century."
         },
         {
           "tag": "CLIMATE CONTEXT",
-          "title": "Siberian Warming Accelerating Arctic Amplification",
-          "layer": "temperature",
-          "text": "Local seasonal warming of one point four nine degrees Celsius since the nineteen-forties baseline reflects the broader process of Arctic amplification, by which the high-latitude regions are warming two to three times faster than the global average. The frequency of extreme warm events across western Siberia has risen from three per decade in the nineteen-forties to nineteen-seventies period to five per decade in the most recent forty years. Scientists have long identified western Siberia as one of the fastest-warming regions on Earth, with consequences including thawing permafrost, methane release, and the disruption of the jet stream patterns that govern weather across the entire Northern Hemisphere."
+          "title": "Siberia Is Warming Almost Twice as Fast as the Global Average",
+          "layer": "anomaly",
+          "text": "The local seasonal warming trend across this part of West Siberia has reached 1.87°C since the 1940-1979 baseline - faster than the global average warming rate. This amplified Arctic warming, partly driven by declining sea-ice cover in the adjacent Kara and Laptev Seas, makes episodes like this November heat dome more likely and more intense. The frequency of extreme warm-temperature exceedances above the 90th percentile has increased from 7 occasions per decade in 1940-1979 to a projected higher rate in the current climate - though the most recent period shows the broader polar vortex disruption, itself consistent with a warming Arctic, as the proximate driver of this event."
         }
       ],
       "news_links": [
         {
-          "source": "Pogoda Mail (Russian)",
-          "title": "Ноябрь-2026 оказался аномально тёплым для Новосибирска (November 2026 anomalously warm for Novosibirsk)",
-          "url": "https://pogoda.mail.ru/news/73050149/"
+          "source": "NGS.ru (Novosibirsk)",
+          "title": "Records Broken: Anomalous November Is Preventing the Arrival of Winter - Temperatures 10-12°C Above Normal",
+          "url": "https://ngs.ru/text/autumn/2026/11/26/76790804/"
         },
         {
-          "source": "NSK OM1 (Russian)",
-          "title": "Вместо морозов - дожди: синоптики объяснили аномально тёплый ноябрь в Сибири (Instead of frosts, rain: forecasters explain anomalously warm November in Siberia)",
+          "source": "NSK OM1 (Novosibirsk)",
+          "title": "Instead of Frosts, Rain: Forecasters Explain the Anomalously Warm November in Siberia",
           "url": "https://www.nsk.om1.ru/news/pogoda/441908-vmesto_morozov__dozhdi_sinoptiki_objasnili_anomalno_tjoplyjj_nojabr_v_sibiri/"
         },
         {
-          "source": "Severe Weather Europe",
-          "title": "Polar Vortex Split Forecast: The Earliest Stratospheric Warming on Record Is Coming",
-          "url": "https://www.severe-weather.eu/global-weather/polar-vortex-split-record-early-stratospheric-warming-event-november-2026-united-states-canada-europe-fa/"
+          "source": "Sibdepo",
+          "title": "A November Like This Has Not Been Seen in Almost 100 Years - What Has Surprised the Weather in Novosibirsk",
+          "url": "https://sibdepo.ru/news/takogo-noyabrya-ne-bylo-pochti-sto-let-chem-udivila-pogoda-v-novosibirske.html"
         }
-      ]
+      ],
+      "audio_url": "data/audio/story-3.mp3",
+      "duration_sec": 62.28
+    },
+    {
+      "id": "2026-11-central-vietnam-floods",
+      "rank": 4,
+      "kicker": "BREAKING WEATHER · CENTRAL VIETNAM",
+      "headline": "Central Vietnam braces for 600 mm deluge as back-to-back floods raise landslide alarm",
+      "ticker": "**BREAKING** A second consecutive spell of torrential rain is bearing down on central Vietnam from **27 to 30 November**, with rainfall forecast to exceed **600 mm** in some areas of Hue and Da Nang /// Tonight's 24-hour rainfall total of **121 mm** ranks **2nd in 87 years since 1940** for this date - only **2nd in 87 years** /// Rivers from Quang Tri to Dak Lak province are at **high risk of flooding** as sodden ground offers no further capacity for absorption /// **28-day cumulative rainfall has reached 490 mm** against a 14-day normal of just 5 mm /// Authorities have activated emergency evacuation plans in **six localities** as back-to-back storms stack up without pause /// Landslides on Highway 15D in Quang Tri and along the North-South Expressway in Dak Lak have already severed key transport links this week /// A warming regional climate is producing **more concentrated and intense** rainfall episodes.",
+      "voice_script": "In Hue City tonight, the National Hydrometeorological Forecasting Centre is warning that rainfall could exceed 600 millimetres over just four days from 27 to 30 November as a second storm spell arrives. Da Nang has recorded 121 millimetres in the past 24 hours, ranking second in 87 years of ERA5 observations for this exact date - an extraordinary reading for a city already overwhelmed by this month's repeated flood events. In southern Quang Tri Province, heavy rain has already triggered a landslide on National Highway 15D, closing a key road artery and demonstrating the acute landslide risk building across the increasingly waterlogged mountain flanks. Across Quang Ngai, 28-day cumulative rainfall has reached 490 millimetres - nearly 100 times the seasonal norm - with rivers already running high before this latest and most intense pulse of rain arrives. A regional warming trend of 1.25 degrees Celsius since the mid-twentieth century means that tropical moisture converging onto Vietnam's central coast is now more intense and persistent than at any time in the historical record.",
+      "region": "Central Vietnam, Hue, Da Nang, Quang Ngai, Quang Tri and Central Highlands",
+      "country": "Vietnam",
+      "hazard": "rain",
+      "primary_layer": "rain",
+      "centre": {
+        "lat": 14.5,
+        "lon": 109.0
+      },
+      "stats": {
+        "headline_metric": "121 mm / 24 h",
+        "metric_label": "600 mm forecast 27-30 November",
+        "era5_rank": "#2 for date since 1940",
+        "persistence": "28-day total 490.4 mm vs 5 mm norm"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 10.0,
+          "lon": 99.7,
+          "distance": 2.22
+        },
+        {
+          "lat": 13.5,
+          "lon": 106.68,
+          "distance": 1.84
+        },
+        {
+          "lat": 17.0,
+          "lon": 113.18,
+          "distance": 1.78
+        },
+        {
+          "lat": 19.5,
+          "lon": 118.3,
+          "distance": 2.08
+        }
+      ],
+      "cues": [
+        {
+          "layer": "rain",
+          "lat": 16.5,
+          "lon": 107.6,
+          "distance": 1.85,
+          "bearing": -7.0,
+          "label": "HUE CITY",
+          "metric": "600 mm forecast 27-30 Nov",
+          "spoken": "In Hue City tonight, the National Hydrometeorological Forecasting Centre is warning that rainfall could exceed 600 millimetres over just four days from 27 to 30 November as a second storm spell arrives.",
+          "ticker": "Hue: **600 mm forecast** in just **4 days** - emergency evacuations ordered",
+          "start_sec": 0.0,
+          "end_sec": 13.22
+        },
+        {
+          "layer": "rain",
+          "lat": 16.07,
+          "lon": 108.22,
+          "distance": 1.72,
+          "bearing": 6.0,
+          "label": "DA NANG",
+          "metric": "121 mm / 24 h",
+          "spoken": "Da Nang has recorded 121 millimetres in the past 24 hours, ranking second in 87 years of ERA5 observations for this exact date - an extraordinary reading for a city already overwhelmed by this month's repeated flood events.",
+          "ticker": "Da Nang: **121 mm in 24 hours** - **2nd highest in 87 years** for this date",
+          "start_sec": 13.22,
+          "end_sec": 28.49
+        },
+        {
+          "layer": "wind",
+          "lat": 16.7,
+          "lon": 107.2,
+          "distance": 1.9,
+          "bearing": -4.0,
+          "label": "QUANG TRI",
+          "metric": "Highway 15D landslide",
+          "spoken": "In southern Quang Tri Province, heavy rain has already triggered a landslide on National Highway 15D, closing a key road artery and demonstrating the acute landslide risk building across the increasingly waterlogged mountain flanks.",
+          "ticker": "Quang Tri: landslide closes **National Highway 15D** - mountains saturated",
+          "start_sec": 28.49,
+          "end_sec": 42.07
+        },
+        {
+          "layer": "rain",
+          "lat": 15.0,
+          "lon": 108.7,
+          "distance": 1.65,
+          "bearing": 9.0,
+          "label": "QUANG NGAI",
+          "metric": "490.4 mm / 28 days",
+          "spoken": "Across Quang Ngai, 28-day cumulative rainfall has reached 490 millimetres - nearly 100 times the seasonal norm - with rivers already running high before this latest and most intense pulse of rain arrives.",
+          "ticker": "Quang Ngai: **490 mm in 28 days** - rivers already swollen before next storm",
+          "start_sec": 42.07,
+          "end_sec": 55.42
+        },
+        {
+          "layer": "anomaly",
+          "lat": 13.5,
+          "lon": 109.2,
+          "distance": 1.58,
+          "bearing": 5.0,
+          "label": "KHANH HOA COAST",
+          "metric": "+1.25°C regional warming",
+          "spoken": "A regional warming trend of 1.25 degrees Celsius since the mid-twentieth century means that tropical moisture converging onto Vietnam's central coast is now more intense and persistent than at any time in the historical record.",
+          "ticker": "**+1.25°C regional warming** intensifies tropical moisture over Vietnam coast",
+          "start_sec": 55.42,
+          "end_sec": 68.52
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Six Localities on Emergency Alert as 600 mm Four-Day Event Begins",
+          "layer": "rain",
+          "text": "Central Vietnam is bracing tonight for the second in a pair of back-to-back torrential rain events, with the National Civil Defence Steering Committee placing six localities - Hue, Da Nang, Quang Ngai, Gia Lai, Dak Lak and Khanh Hoa - on a state of emergency readiness from 27 to 30 November. Rainfall exceeding 600 mm is forecast in the most exposed areas, with landslide alerts already in force on the windward slopes of Ngang Pass and Hai Van Pass. Landslides on National Highway 15D in Quang Tri have already severed road access, while flooding has closed schools and displaced families in Dak Lak."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "490 mm Over 28 Days Leaves Saturated Ground With Nowhere to Drain",
+          "layer": "rain",
+          "text": "ERA5 analysis confirms that 28-day cumulative rainfall at the core of this event has reached 490.4 mm against a seasonal norm of around 5 mm per fortnight. Three of the last 14 days have individually registered anomalously high rainfall. The critical concern is soil saturation: with ground conditions already at or beyond field capacity from weeks of repeated rainfall, the forecast 600 mm event over just four days poses an extreme landslide and flash-flood risk in the mountainous provinces of Gia Lai and Dak Lak, where steep slopes and narrow river valleys dramatically amplify the hydrological response."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Second Highest 24-Hour Total in 87 Years for This Exact Date",
+          "layer": "rain",
+          "text": "The 24-hour rainfall figure of 121 mm recorded at the event's core near Da Nang and Quang Ngai ranks second in the ERA5 archive since 1940 for this precise calendar date, placing it at the 98.3rd percentile of all late-November observations. The seasonal normal for this date is just 6 mm per day, meaning today's reading is roughly 20 times the expected amount. The imminent 27-30 November event, if it delivers its forecast 600 mm total to the most exposed slopes, would likely far exceed even this ranking."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Vietnam's Rainy Season Is Intensifying as the Regional Climate Warms",
+          "layer": "anomaly",
+          "text": "Central Vietnam has warmed by approximately 1.25°C since the 1940-1979 baseline period, and atmospheric moisture content scales rapidly with temperature. The result is a tendency for rainfall events, when they occur, to deliver heavier totals in shorter windows - a pattern consistent with this month's sequence of back-to-back extreme rainfall episodes. Vietnam's vulnerability is well established from recent history: the country's central provinces are repeatedly battered by late-season rain events driven by cold air masses interacting with warm South China Sea moisture - and that moisture is now measurably more abundant than it was in the mid-twentieth century."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "VietnamNet",
+          "title": "Central Vietnam braces for torrential rain exceeding 600mm as six localities prepare evacuations",
+          "url": "https://vietnamnet.vn/en/central-vietnam-braces-for-torrential-rain-exceeding-600mm-2578703.html"
+        },
+        {
+          "source": "VietnamNet",
+          "title": "Central Vietnam faces back-to-back heavy rains and worsening flood risks through 30 November",
+          "url": "https://vietnamnet.vn/en/central-vietnam-faces-back-to-back-heavy-rains-and-worsening-flood-risks-2578331.html"
+        },
+        {
+          "source": "Dan Tri News (Dantri.com.vn)",
+          "title": "Central Vietnam braces for torrential rain, flash floods - 27 to 30 November 2026",
+          "url": "https://dtinews.dantri.com.vn/vietnam-today/central-vietnam-braces-for-torrential-rain-flash-floods-20261126111657740.htm"
+        }
+      ],
+      "audio_url": "data/audio/story-4.mp3",
+      "duration_sec": 68.52
+    },
+    {
+      "id": "2026-11-global-heat-record-pamir",
+      "rank": 5,
+      "kicker": "CLIMATE EMERGENCY · GLOBAL HEAT RECORD AND PAMIR PLATEAU",
+      "headline": "Earth logs its hottest anomaly ever recorded as Pamir plateau shatters the November cold",
+      "ticker": "**CLIMATE EMERGENCY** Earth's global daily temperature anomaly reached a record **+2.23°C above pre-industrial levels** on 22 November 2026 - the highest value ever measured, confirmed by **EU Copernicus** data /// This shatters the previous record of **+2.07°C** set in November 2023 - broken and broken again in a single week /// At the same time, the Pamir Plateau of Tajikistan is registering a temperature anomaly of **+14.4°C above its seasonal norm** - **#1 in 87 years since 1940** /// The Pamir plateau, which should average **-7.6°C** in late November, is instead recording readings close to **zero** /// All **28 of the last 28 days** have been anomalously warm here, with the warming background state making such extreme departures **7 times more frequent** than in the mid-twentieth century /// El Niño continues to build, and climate scientists warn **more record global temperature anomaly days** are expected into early 2027.",
+      "voice_script": "On the Pamir Plateau of Tajikistan, temperatures are running 14.4 degrees Celsius above the seasonal norm - an anomaly ranking first in 87 years of records since 1940, unprecedented for this location in late November. At high-altitude weather stations across Gorno-Badakhshan, the actual temperature is reading around minus 7 degrees Celsius - but the seasonal norm here should be minus 7.6 degrees below zero, and anomalies of plus 14 degrees make this near-record warming utterly unprecedented. Across Central Asia, every one of the last 28 days has registered an anomalously warm temperature at this high-altitude location - a full calendar month of unbroken warmth on the roof of the world. The frequency of extreme warm days above the 90th percentile in this region has risen from just once per decade in 1940-1979 to 7 times per decade today - a sevenold increase that exposes the accelerating pace of warming across Central Asia's mountain zones. This local Pamir heat is part of the broader picture: on 22 November, Copernicus confirmed Earth set an all-time daily temperature anomaly record of plus 2.23 degrees Celsius above pre-industrial levels, the highest ever measured in the observational record.",
+      "region": "Global - Pamir Plateau Focus, Tajikistan and Eastern Central Asia",
+      "country": "Tajikistan",
+      "hazard": "heat",
+      "primary_layer": "anomaly",
+      "centre": {
+        "lat": 38.0,
+        "lon": 74.5
+      },
+      "stats": {
+        "headline_metric": "+14.4°C anomaly",
+        "metric_label": "Global daily record +2.23°C on 22 Nov",
+        "era5_rank": "#1 for date since 1940",
+        "persistence": "28 of last 28 days anomalously warm"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 41.5,
+          "lon": 69.0,
+          "distance": 2.15
+        },
+        {
+          "lat": 40.0,
+          "lon": 72.0,
+          "distance": 2.0
+        },
+        {
+          "lat": 38.5,
+          "lon": 74.5,
+          "distance": 1.8
+        },
+        {
+          "lat": 36.5,
+          "lon": 77.0,
+          "distance": 1.6
+        }
+      ],
+      "cues": [
+        {
+          "layer": "anomaly",
+          "lat": 38.0,
+          "lon": 74.5,
+          "distance": 1.85,
+          "bearing": -6.0,
+          "label": "PAMIR PLATEAU",
+          "metric": "+14.4°C anomaly",
+          "spoken": "On the Pamir Plateau of Tajikistan, temperatures are running 14.4 degrees Celsius above the seasonal norm - an anomaly ranking first in 87 years of records since 1940, unprecedented for this location in late November.",
+          "ticker": "Pamir Plateau: **+14.4°C anomaly** - **#1 in 87 years** for late November",
+          "start_sec": 0.0,
+          "end_sec": 14.47
+        },
+        {
+          "layer": "temperature",
+          "lat": 38.5,
+          "lon": 74.0,
+          "distance": 1.72,
+          "bearing": 8.0,
+          "label": "GORNO-BADAKHSHAN",
+          "metric": "-7.7°C vs normal -7.6°C shifted",
+          "spoken": "At high-altitude weather stations across Gorno-Badakhshan, the actual temperature is reading around minus 7 degrees Celsius - but the seasonal norm here should be minus 7.6 degrees below zero, and anomalies of plus 14 degrees make this near-record warming utterly unprecedented.",
+          "ticker": "Gorno-Badakhshan: **+14.4°C above normal** - glacier melt risk elevated",
+          "start_sec": 14.47,
+          "end_sec": 30.86
+        },
+        {
+          "layer": "anomaly",
+          "lat": 39.5,
+          "lon": 70.5,
+          "distance": 1.9,
+          "bearing": -4.0,
+          "label": "CENTRAL ASIA REGION",
+          "metric": "28 of 28 days warm",
+          "spoken": "Across Central Asia, every one of the last 28 days has registered an anomalously warm temperature at this high-altitude location - a full calendar month of unbroken warmth on the roof of the world.",
+          "ticker": "**28 of 28 days** anomalously warm - **unbroken month** on the Pamir plateau",
+          "start_sec": 30.86,
+          "end_sec": 42.65
+        },
+        {
+          "layer": "temperature",
+          "lat": 36.0,
+          "lon": 75.0,
+          "distance": 1.65,
+          "bearing": 10.0,
+          "label": "KARAKORAM BORDER ZONE",
+          "metric": "7x more frequent extremes",
+          "spoken": "The frequency of extreme warm days above the 90th percentile in this region has risen from just once per decade in 1940-1979 to 7 times per decade today - a sevenold increase that exposes the accelerating pace of warming across Central Asia's mountain zones.",
+          "ticker": "Extreme warm days: **7x more frequent** now vs 1940-1979 baseline",
+          "start_sec": 42.65,
+          "end_sec": 59.11
+        },
+        {
+          "layer": "pressure",
+          "lat": 37.5,
+          "lon": 73.0,
+          "distance": 1.78,
+          "bearing": -5.0,
+          "label": "GLOBAL CONTEXT",
+          "metric": "+2.23°C global daily record",
+          "spoken": "This local Pamir heat is part of the broader picture: on 22 November, Copernicus confirmed Earth set an all-time daily temperature anomaly record of plus 2.23 degrees Celsius above pre-industrial levels, the highest ever measured in the observational record.",
+          "ticker": "**22 November 2026**: Earth sets **all-time daily record** at **+2.23°C** above pre-industrial",
+          "start_sec": 59.11,
+          "end_sec": 75.26
+        }
+      ],
+      "beats": [
+        {
+          "tag": "LIVE HIGHLIGHT",
+          "title": "Earth Breaks Its Own Daily Temperature Record for the Third Time in a Week",
+          "layer": "anomaly",
+          "text": "The European Union's Copernicus Climate Change Service has confirmed that 22 November 2026 set a new all-time record for the global daily surface air temperature anomaly, reaching +2.23 degrees Celsius above the 1850-1900 pre-industrial baseline. This eclipses the previous record of +2.12°C set just two days earlier on 20 November, which had itself smashed the previous all-time record of +2.07°C set in November 2023. US climatologist Zeke Hausfather has noted that Copernicus forecast models suggest the anomaly could approach +2.3°C in coming days, as an exceptionally powerful El Niño continues to inject heat from the tropical Pacific into the atmosphere."
+        },
+        {
+          "tag": "PERSISTENCE",
+          "title": "A Full Month of Unbroken Warmth on the Pamir Plateau",
+          "layer": "anomaly",
+          "text": "ERA5 data shows that all 28 of the last 28 days have been anomalously warm on the Pamir Plateau - a perfect persistence score with not a single day returning to climatological norms. The 28-day rainfall total of 18.8 mm against a fortnight norm of 5 mm reflects the altered atmospheric circulation driving this warmth. Scientists studying Pamir glaciers note that such sustained warmth, particularly at elevations above 4,000 metres, threatens to accelerate ice loss across a mountain system that supplies freshwater to millions across Afghanistan, Tajikistan, Pakistan and China."
+        },
+        {
+          "tag": "HISTORICAL RANK",
+          "title": "Number One in 87 Years: Never Seen Before on the Pamir in Late November",
+          "layer": "anomaly",
+          "text": "The +14.4°C temperature anomaly on the Pamir Plateau ranks first in the full ERA5 archive since 1940, at the 99.4th percentile - a reading described as unprecedented for this calendar date in 87 years of comparable observations. The z-score of +2.9 - nearly 3 standard deviations above the mean - confirms this is a statistical extreme of the highest order. The seasonal normal for this date on the plateau is minus 7.6°C; with the actual temperature near minus 7.7°C, the apparent near-normal actual reading masks an anomaly of extraordinary magnitude because the baseline itself has shifted dramatically due to climate change."
+        },
+        {
+          "tag": "CLIMATE CONTEXT",
+          "title": "Global Record Heat and Accelerating Central Asian Warming",
+          "layer": "anomaly",
+          "text": "The local warming trend across the Pamir Plateau has reached +1.51°C since the 1940-1979 period. More strikingly, the frequency of extreme warm-temperature exceedances above the 90th percentile has risen from just 1 occasion per decade in 1940-1979 to 7 occasions per decade in 1986-2025 - a sevenfold increase that reflects the profound transformation of Central Asia's high-altitude climate. This occurs within the context of a planet now routinely exceeding +2°C daily anomalies above pre-industrial levels: since 20 November, the global daily temperature anomaly has set successive all-time records. Copernicus's annual model projects the full year 2026 could tie with 2024 as the warmest on record."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "Sparknify / Copernicus",
+          "title": "Earth Logs Its Most Abnormally Hot Day on Record as El Niño Builds - +2.12°C on 20 November 2026",
+          "url": "https://www.sparknify.com/post/20261123-record-heat-no-deal-en"
+        },
+        {
+          "source": "UA News / Anadolu Agency",
+          "title": "Daily global temperature anomaly reached a record 2.23°C above pre-industrial level on 22 November 2026",
+          "url": "https://ua.news/en/dovkolo-svitu/dobova-globalna-temperaturna-anomaliia-siagnula-rekordnikh-2-23degc-anadolu-agency"
+        },
+        {
+          "source": "Technology.org",
+          "title": "Earth Logs a Record 2.12°C Daily Temperature Anomaly as El Niño Strengthens",
+          "url": "https://www.technology.org/2026/11/23/earth-record-daily-temperature-anomaly-2-12c-copernicus-el-nino/"
+        }
+      ],
+      "audio_url": "data/audio/story-5.mp3",
+      "duration_sec": 75.26
     }
   ],
   "voice": "en-GB-SoniaNeural"
