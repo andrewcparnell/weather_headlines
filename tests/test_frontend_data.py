@@ -87,11 +87,12 @@ def test_section5_simplified_tour_ui_legend_accessibility_and_performance():
     tour_js = (SITE_DIR / "js" / "tour.js").read_text()
     globe_js = (SITE_DIR / "js" / "globe.js").read_text()
 
-    # 1. Dual-speed scrolling tickers (STORY + IN THE NEWS) with accessible inert clones & inline SVGs (no emoji)
+    # 1. Dual-speed scrolling tickers (STORY + IN THE NEWS, stopping on hover) & inline SVGs (no emoji)
     assert "tourTextBtn" not in html and "Text On" not in html
     assert 'id="tickerViewport"' in html and 'id="tickerTrack"' in html and ">STORY<" in html
     assert 'id="linksViewport"' in html and 'id="tourNewsLinks"' in html and ">IN THE NEWS<" in html
     assert "STORY_TICKER_SPEED" in tour_js and "LINKS_TICKER_SPEED" in tour_js
+    assert "if (this.linksHovered) return;" in tour_js
     assert 'aria-hidden="true" inert' in tour_js
     assert 'id="voiceScriptOverlay"' in html
     for forbidden_emoji in ("🔊", "🔇", "📝", "◀", "▶", "✕"):

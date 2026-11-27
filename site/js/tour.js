@@ -1,11 +1,11 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=c499fb13';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=8595d78b';
 
 const STORY_FLIGHT_MS = 1850;
 const FALLBACK_STORY_SEC = 47;
 const SILENT_CLOCK_PACE = 0.82;
-const STORY_TICKER_SPEED = 46; // px/sec smooth story findings scroll
-const LINKS_TICKER_SPEED = 26; // px/sec independent CNN-style news links scroll
+const STORY_TICKER_SPEED = 54; // px/sec smooth summary findings scroll beneath headline
+const LINKS_TICKER_SPEED = 28; // px/sec independent reputable news links scroll (stops on hover)
 const TOUR_TILT_DEG = 14.5;
 
 const LAYER_LABELS = {
@@ -700,8 +700,10 @@ export class BroadcastTour {
     if (this.dom.linksBar && this.dom.newsLinks) {
       if (linksHtml) {
         this.dom.linksBar.hidden = false;
+        this.linksOffsetPx = 0;
         this.dom.newsLinks.innerHTML =
           `<div class="links-copy">${linksHtml}</div>` +
+          `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
           `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
           `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
           `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
@@ -714,20 +716,12 @@ export class BroadcastTour {
     }
 
     this.cueSpans = [];
-    this.displayStoryPx = -65;
+    this.displayStoryPx = 0;
 
     requestAnimationFrame(() => {
       const firstStoryCopy = this.dom.tickerTrack?.querySelector('.ticker-copy');
       if (firstStoryCopy && firstStoryCopy.offsetWidth > 100) {
         this.storySingleWidth = firstStoryCopy.offsetWidth;
-        const cueEls = Array.from(firstStoryCopy.querySelectorAll('.ticker-cue'));
-        let runningLeft = 0;
-        this.cueSpans = cueEls.map(el => {
-          const w = Math.max(40, el.offsetWidth);
-          const span = { leftPx: runningLeft, widthPx: w };
-          runningLeft += w;
-          return span;
-        });
       }
       const firstLinksCopy = this.dom.newsLinks?.querySelector('.links-copy');
       if (firstLinksCopy && firstLinksCopy.offsetWidth > 80) {
@@ -749,11 +743,20 @@ export class BroadcastTour {
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
     this.dom.exitBtn?.addEventListener('click', () => this.stop({ completed: false }));
 
-    this.dom.linksViewport?.addEventListener('mouseenter', () => {
+    const linksHoverTarget = this.dom.linksBar || this.dom.linksViewport;
+    linksHoverTarget?.addEventListener('mouseenter', () => {
       this.linksHovered = true;
     });
-    this.dom.linksViewport?.addEventListener('mouseleave', () => {
+    linksHoverTarget?.addEventListener('mouseleave', () => {
       this.linksHovered = false;
+    });
+    linksHoverTarget?.addEventListener('focusin', () => {
+      this.linksHovered = true;
+    });
+    linksHoverTarget?.addEventListener('focusout', e => {
+      if (!linksHoverTarget.contains(e.relatedTarget)) {
+        this.linksHovered = false;
+      }
     });
 
     document.addEventListener('keydown', e => {
@@ -772,17 +775,15 @@ export class BroadcastTour {
 
   _updateLinksTicker(dtSec) {
     if (this.reducedMotion || !this.dom.newsLinks || this.dom.linksBar?.hidden) return;
-    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.22 : LINKS_TICKER_SPEED;
-    this.linksOffsetPx = (this.linksOffsetPx + linkSpeed * dtSec) % Math.max(1, this.linksSingleWidth);
+    if (this.linksHovered) return;
+    this.linksOffsetPx = (this.linksOffsetPx + LINKS_TICKER_SPEED * dtSec) % Math.max(1, this.linksSingleWidth);
     this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
   }
 
-  _applyStoryTickerOffset(rawPx) {
+  _updateStoryTicker(dtSec) {
     if (this.reducedMotion || !this.dom.tickerTrack) return;
-    const leadInPx = 28;
-    const w = Math.max(1, this.storySingleWidth);
-    const wrapped = (((rawPx - leadInPx) % w) + w) % w;
-    this.dom.tickerTrack.style.transform = `translate3d(${-wrapped.toFixed(1)}px, 0, 0)`;
+    this.displayStoryPx = (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
+    this.dom.tickerTrack.style.transform = `translate3d(${-this.displayStoryPx.toFixed(1)}px, 0, 0)`;
   }
 
   _tick(now) {
@@ -793,6 +794,7 @@ export class BroadcastTour {
 
     if (!this.active || !this.stories.length || !this.cues.length) return;
 
+    this._updateStoryTicker(dtSec);
     this._updateLinksTicker(dtSec);
 
     if (this.phase === 'flight' && this.flightState) {
@@ -815,9 +817,6 @@ export class BroadcastTour {
 
       const { lat, lon } = vec3ToLatLon(this._flightDir);
       this.globe.setTourCameraPose(lat, lon, dist, bearing, tilt);
-
-      this.displayStoryPx = THREE.MathUtils.lerp(-65, 0, ease);
-      this._applyStoryTickerOffset(this.displayStoryPx);
 
       if (t >= 1) {
         this._beginCuesPhase();
@@ -863,22 +862,6 @@ export class BroadcastTour {
     const cueU = Math.max(0, Math.min(1, cueElapsedSec / cueDur));
 
     this._updateScriptWordsProgress(cueElapsedSec, cueU);
-
-    if (!this.reducedMotion) {
-      if (this.cueSpans.length === this.cues.length) {
-        const span = this.cueSpans[this.cueIndex];
-        const targetPx = span.leftPx + cueU * span.widthPx;
-        if (Math.abs(targetPx - this.displayStoryPx) > this.storySingleWidth * 0.5) {
-          this.displayStoryPx = targetPx;
-        } else {
-          this.displayStoryPx += (targetPx - this.displayStoryPx) * Math.min(1, dtSec * 6.5);
-        }
-      } else {
-        this.displayStoryPx =
-          (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
-      }
-      this._applyStoryTickerOffset(this.displayStoryPx);
-    }
 
     if (this.storyFinishedAt !== null && now - this.storyFinishedAt >= 800) {
       this.goToStory(this.storyIndex + 1, { playSting: true });
