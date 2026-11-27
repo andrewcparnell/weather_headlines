@@ -128,7 +128,7 @@ def run_pipeline(
                 )
             else:
                 print("[build] Building fresh ERA5-grounded fallback bulletin.", file=sys.stderr)
-                bulletin = build_deterministic_bulletin(weather, enriched, warnings)
+                bulletin = build_deterministic_bulletin(weather, enriched, warnings, fetch_live_rss=True)
     elif skip_headlines_if_no_key and _is_recent_valid_bulletin(previous_bulletin, max_age_hours=18.0):
         print(
             "[build] ANTHROPIC_API_KEY not set; keeping recent headlines.json while updating live globe layers.",
@@ -146,7 +146,7 @@ def run_pipeline(
             "[build] ANTHROPIC_API_KEY not set; building ERA5-grounded fallback bulletin.",
             file=sys.stderr,
         )
-        bulletin = build_deterministic_bulletin(weather, enriched, warnings)
+        bulletin = build_deterministic_bulletin(weather, enriched, warnings, fetch_live_rss=True)
 
     # 6. Synthesise neural British female newsreader MP3s for newly authored stories
     if need_audio_synth:

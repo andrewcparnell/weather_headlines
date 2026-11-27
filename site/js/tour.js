@@ -1,9 +1,11 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=6b5d14ab';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=c499fb13';
 
 const STORY_FLIGHT_MS = 1850;
 const FALLBACK_STORY_SEC = 47;
 const SILENT_CLOCK_PACE = 0.82;
+const STORY_TICKER_SPEED = 46; // px/sec smooth story findings scroll
+const LINKS_TICKER_SPEED = 26; // px/sec independent CNN-style news links scroll
 const TOUR_TILT_DEG = 14.5;
 
 const LAYER_LABELS = {
@@ -52,6 +54,28 @@ export function safeHttpUrl(rawUrl) {
   return null;
 }
 
+export function formatTickerClauseHtml(rawClause) {
+  const escaped = escapeHtml(rawClause);
+  const withHighlights = escaped.replace(/\*\*(.+?)\*\*/g, '<mark class="ticker-kw">$1</mark>');
+  return withHighlights + '<span class="ticker-sep" aria-hidden="true">◆</span>';
+}
+
+function formatLinksCopyHtml(links) {
+  const valid = (links || []).filter(lk => lk && safeHttpUrl(lk.url));
+  return valid
+    .map(link => {
+      const href = safeHttpUrl(link.url);
+      return (
+        `<a class="news-article-link" href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer">` +
+        `<span class="news-outlet-badge">${escapeHtml(link.source)}</span>` +
+        `<span>${escapeHtml(link.title)}</span>` +
+        `<span aria-hidden="true">↗</span>` +
+        `</a><span class="links-sep" aria-hidden="true">•</span>`
+      );
+    })
+    .join('');
+}
+
 function normaliseStoryCues(story) {
   const totalDur = Number(story.duration_sec) > 8 ? Number(story.duration_sec) : FALLBACK_STORY_SEC;
   const rawCues = Array.isArray(story.cues) && story.cues.length >= 2 ? story.cues : null;
@@ -80,6 +104,7 @@ function normaliseStoryCues(story) {
         startSec: hasExplicitTimes ? Number(c.start_sec) : propStart,
         endSec: hasExplicitTimes ? Number(c.end_sec) : propEnd,
         spoken: c.spoken || String(c.ticker || '').replace(/\*\*/g, ''),
+        ticker: c.ticker || c.spoken || '',
       };
     });
   }
@@ -104,6 +129,7 @@ function normaliseStoryCues(story) {
       startSec: (idx / count) * totalDur,
       endSec: ((idx + 1) / count) * totalDur,
       spoken: String(b.text || '').replace(/\*\*/g, ''),
+      ticker: b.text || '',
     };
   });
 }
@@ -142,6 +168,7 @@ export class BroadcastTour {
 
     this.active = false;
     this.voiceEnabled = false;
+    this.linksHovered = false;
     this.storyIndex = 0;
     this.cueIndex = -1;
     this.cues = [];
@@ -153,6 +180,11 @@ export class BroadcastTour {
     this.phaseElapsedMs = 0;
     this.storyFinishedAt = null;
 
+    this.cueSpans = [];
+    this.storySingleWidth = 1800;
+    this.displayStoryPx = 0;
+    this.linksOffsetPx = 0;
+    this.linksSingleWidth = 1100;
     this.scriptWordEls = [];
     this.fastFlowSec = [];
     this.spokenCueFracs = [];
@@ -248,7 +280,6 @@ export class BroadcastTour {
       return;
     }
     if (this.active) {
-      // Queue mid-tour bulletin updates cleanly for the next story boundary instead of interrupting mid-sentence
       this._queuedBulletin = bulletin;
       return;
     }
@@ -302,7 +333,6 @@ export class BroadcastTour {
       window.speechSynthesis.cancel();
     }
 
-    // Save the user's pre-tour layer so we restore it cleanly when the tour finishes
     this._preTourLayer = this.globe.currentLayer;
 
     const camNow = this.globe.getCurrentCameraGeo();
@@ -423,7 +453,6 @@ export class BroadcastTour {
       return;
     }
 
-    // End the tour cleanly after Story 5 rather than looping forever
     if (index >= this.stories.length) {
       this.stop({ completed: true });
       return;
@@ -445,10 +474,10 @@ export class BroadcastTour {
     this.storyElapsedSec = 0;
     this.storyFinishedAt = null;
     this.cueIndex = -1;
+    this.linksOffsetPx = 0;
 
     this.globe.highlightStoryPin(this.storyIndex);
 
-    // Lazy-load story MP3 only when sound is turned on
     if (this.voiceEnabled) {
       this._ensureStoryAudioLoaded(story, this.storyIndex);
       try {
@@ -526,6 +555,12 @@ export class BroadcastTour {
       metric: `${cue.metric ? cue.metric + ' · ' : ''}${LAYER_LABELS[cue.layer] || cue.layer.toUpperCase()}`,
       layer: cue.layer,
     });
+
+    if (this.dom.tickerTrack) {
+      this.dom.tickerTrack.querySelectorAll('.ticker-cue').forEach(el => {
+        el.classList.toggle('active', Number(el.dataset.cue) === cueIdx);
+      });
+    }
 
     if (this.reducedMotion) {
       this.currentFocusVec.copy(latLonToVec3(cue.lat, cue.lon, 1).normalize());
@@ -635,24 +670,70 @@ export class BroadcastTour {
 
   _renderChyron(story) {
     this.dom.counter.textContent = `${this.storyIndex + 1} / ${this.stories.length}`;
+    if (this.dom.kicker) {
+      this.dom.kicker.textContent = story.kicker || story.country || story.region || 'WORLD WEATHER';
+    }
     this.dom.headline.textContent = story.headline || '';
     this.dom.progressBar.style.width = '0%';
     if (this.dom.prevBtn) {
       this.dom.prevBtn.disabled = this.storyIndex === 0;
     }
 
-    // Static "Read more: <source>" link validated strictly for http:/https:
-    const validLink = (story.news_links || []).find(lk => lk && safeHttpUrl(lk.url));
-    if (validLink && this.dom.readMoreWrap && this.dom.readMoreLink) {
-      const cleanHref = safeHttpUrl(validLink.url);
-      const sourceName = String(validLink.source || 'Source').trim();
-      this.dom.readMoreLink.href = cleanHref;
-      this.dom.readMoreLink.textContent = `Read more: ${sourceName} ↗`;
-      this.dom.readMoreLink.title = validLink.title || sourceName;
-      this.dom.readMoreWrap.hidden = false;
-    } else if (this.dom.readMoreWrap) {
-      this.dom.readMoreWrap.hidden = true;
+    const copyInner = this.cues
+      .map(
+        (c, idx) =>
+          `<span class="ticker-cue${idx === 0 ? ' active' : ''}" data-cue="${idx}">` +
+          formatTickerClauseHtml(c.ticker) +
+          `</span>`
+      )
+      .join('');
+
+    if (this.dom.tickerTrack) {
+      this.dom.tickerTrack.innerHTML =
+        `<div class="ticker-copy">${copyInner}</div>` +
+        `<div class="ticker-copy" aria-hidden="true" inert>${copyInner}</div>` +
+        `<div class="ticker-copy" aria-hidden="true" inert>${copyInner}</div>` +
+        `<div class="ticker-copy" aria-hidden="true" inert>${copyInner}</div>`;
     }
+
+    const linksHtml = formatLinksCopyHtml(story.news_links || []);
+    if (this.dom.linksBar && this.dom.newsLinks) {
+      if (linksHtml) {
+        this.dom.linksBar.hidden = false;
+        this.dom.newsLinks.innerHTML =
+          `<div class="links-copy">${linksHtml}</div>` +
+          `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
+          `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
+          `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>` +
+          `<div class="links-copy" aria-hidden="true" inert>${linksHtml}</div>`;
+        this.dom.newsLinks.style.transform = 'translate3d(0px, 0, 0)';
+      } else {
+        this.dom.linksBar.hidden = true;
+        this.dom.newsLinks.innerHTML = '';
+      }
+    }
+
+    this.cueSpans = [];
+    this.displayStoryPx = -65;
+
+    requestAnimationFrame(() => {
+      const firstStoryCopy = this.dom.tickerTrack?.querySelector('.ticker-copy');
+      if (firstStoryCopy && firstStoryCopy.offsetWidth > 100) {
+        this.storySingleWidth = firstStoryCopy.offsetWidth;
+        const cueEls = Array.from(firstStoryCopy.querySelectorAll('.ticker-cue'));
+        let runningLeft = 0;
+        this.cueSpans = cueEls.map(el => {
+          const w = Math.max(40, el.offsetWidth);
+          const span = { leftPx: runningLeft, widthPx: w };
+          runningLeft += w;
+          return span;
+        });
+      }
+      const firstLinksCopy = this.dom.newsLinks?.querySelector('.links-copy');
+      if (firstLinksCopy && firstLinksCopy.offsetWidth > 80) {
+        this.linksSingleWidth = firstLinksCopy.offsetWidth;
+      }
+    });
   }
 
   _bindControls() {
@@ -668,6 +749,13 @@ export class BroadcastTour {
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
     this.dom.exitBtn?.addEventListener('click', () => this.stop({ completed: false }));
 
+    this.dom.linksViewport?.addEventListener('mouseenter', () => {
+      this.linksHovered = true;
+    });
+    this.dom.linksViewport?.addEventListener('mouseleave', () => {
+      this.linksHovered = false;
+    });
+
     document.addEventListener('keydown', e => {
       if (!this.active || document.activeElement?.tagName === 'INPUT') return;
       if (e.key === 'Escape') {
@@ -682,6 +770,21 @@ export class BroadcastTour {
     });
   }
 
+  _updateLinksTicker(dtSec) {
+    if (this.reducedMotion || !this.dom.newsLinks || this.dom.linksBar?.hidden) return;
+    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.22 : LINKS_TICKER_SPEED;
+    this.linksOffsetPx = (this.linksOffsetPx + linkSpeed * dtSec) % Math.max(1, this.linksSingleWidth);
+    this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
+  }
+
+  _applyStoryTickerOffset(rawPx) {
+    if (this.reducedMotion || !this.dom.tickerTrack) return;
+    const leadInPx = 28;
+    const w = Math.max(1, this.storySingleWidth);
+    const wrapped = (((rawPx - leadInPx) % w) + w) % w;
+    this.dom.tickerTrack.style.transform = `translate3d(${-wrapped.toFixed(1)}px, 0, 0)`;
+  }
+
   _tick(now) {
     requestAnimationFrame(this._tick);
     const dtSec = Math.min(0.08, (now - this._lastTick) / 1000);
@@ -689,6 +792,8 @@ export class BroadcastTour {
     this._lastTick = now;
 
     if (!this.active || !this.stories.length || !this.cues.length) return;
+
+    this._updateLinksTicker(dtSec);
 
     if (this.phase === 'flight' && this.flightState) {
       this.phaseElapsedMs += dtMs;
@@ -710,6 +815,9 @@ export class BroadcastTour {
 
       const { lat, lon } = vec3ToLatLon(this._flightDir);
       this.globe.setTourCameraPose(lat, lon, dist, bearing, tilt);
+
+      this.displayStoryPx = THREE.MathUtils.lerp(-65, 0, ease);
+      this._applyStoryTickerOffset(this.displayStoryPx);
 
       if (t >= 1) {
         this._beginCuesPhase();
@@ -755,6 +863,22 @@ export class BroadcastTour {
     const cueU = Math.max(0, Math.min(1, cueElapsedSec / cueDur));
 
     this._updateScriptWordsProgress(cueElapsedSec, cueU);
+
+    if (!this.reducedMotion) {
+      if (this.cueSpans.length === this.cues.length) {
+        const span = this.cueSpans[this.cueIndex];
+        const targetPx = span.leftPx + cueU * span.widthPx;
+        if (Math.abs(targetPx - this.displayStoryPx) > this.storySingleWidth * 0.5) {
+          this.displayStoryPx = targetPx;
+        } else {
+          this.displayStoryPx += (targetPx - this.displayStoryPx) * Math.min(1, dtSec * 6.5);
+        }
+      } else {
+        this.displayStoryPx =
+          (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
+      }
+      this._applyStoryTickerOffset(this.displayStoryPx);
+    }
 
     if (this.storyFinishedAt !== null && now - this.storyFinishedAt >= 800) {
       this.goToStory(this.storyIndex + 1, { playSting: true });

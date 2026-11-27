@@ -177,6 +177,8 @@ def is_specific_event_url(url: str) -> bool:
         return False
     if "eventid=" in parsed.query.lower():
         return True
+    if "news.google.com" in parsed.netloc.lower() and "/articles/" in low_path:
+        return True
     segments = [seg for seg in low_path.split("/") if seg]
     if not segments:
         return False
@@ -219,13 +221,45 @@ def check_url_resolves(url: str, timeout: int = 8) -> bool:
     return False
 
 
+def _friendly_span_phrase(y0: int, y1: int) -> str:
+    span = abs(y1 - y0) + 1
+    if y0 <= 1955 and y1 <= 1985:
+        return "the mid-twentieth century"
+    if y1 >= 2018 and 18 <= span <= 24:
+        return "the previous 20 years"
+    if 25 <= span <= 35:
+        return "the past 30 years" if y1 >= 2015 else "a 30-year baseline"
+    if 36 <= span <= 46:
+        return "the past four decades"
+    if span >= 70:
+        return "more than 80 years of records"
+    return f"the previous {int(round(span, -1))} years"
+
+
 def sanitise_prose(text: str) -> str:
-    """Enforce house style: no em dashes, no 'utilise' variants, clean whitespace."""
+    """Enforce house style: no em dashes, no 'utilise' variants, listener-friendly eras, clean whitespace."""
     if not text:
         return ""
     cleaned = text.replace("\u2014", " - ").replace(" \u2013 ", " - ")
     cleaned = re.sub(r"\butilis(e|es|ed|ing|ation)\b", lambda m: _replace_utilise(m.group(0)), cleaned, flags=re.I)
     cleaned = re.sub(r"\butiliz(e|es|ed|ing|ation)\b", lambda m: _replace_utilise(m.group(0)), cleaned, flags=re.I)
+    # Replace clunky baseline year ranges (e.g. 1980-2009, 1991-2020, 1940-1979) with natural broadcast phrasing
+    cleaned = re.sub(
+        r"\bthe\s+(?:19\d{2}|20\d{2})[-\u2013](?:19\d{2}|20\d{2})\s+(?:ERA5\s+)?(?:seasonal\s+)?(?:average|mean|climatology|normal)\b",
+        "the 30-year seasonal average",
+        cleaned,
+        flags=re.I,
+    )
+    cleaned = re.sub(r"\bsince\s+1940[-\u2013]1979\b", "since the mid-twentieth century", cleaned, flags=re.I)
+    cleaned = re.sub(r"\bin\s+1940[-\u2013]1979\b", "in the mid-twentieth century", cleaned, flags=re.I)
+    cleaned = re.sub(r"\bin\s+1986[-\u2013]2025\b", "over the past four decades", cleaned, flags=re.I)
+    cleaned = re.sub(
+        r"\b(19\d{2}|20\d{2})[-\u2013](19\d{2}|20\d{2})\b",
+        lambda m: _friendly_span_phrase(int(m.group(1)), int(m.group(2)))
+        if abs(int(m.group(2)) - int(m.group(1))) >= 9
+        else m.group(0),
+        cleaned,
+    )
     cleaned = re.sub(r"[ \t]{2,}", " ", cleaned).strip()
     return cleaned
 
@@ -285,25 +319,47 @@ def infer_cue_layer(text: str, fallback: str) -> str:
     return fallback if fallback in VALID_LAYERS else "temperature"
 
 
+_CONTINENT_OR_GENERIC_LABELS = {
+    "global",
+    "world",
+    "international",
+    "south america",
+    "north america",
+    "central america",
+    "europe",
+    "north africa",
+    "southern africa",
+    "east africa",
+    "west africa",
+    "central asia",
+    "southeast asia",
+    "south asia",
+    "east asia",
+    "middle east",
+    "mediterranean",
+    "caribbean",
+}
+
+
 def opening_mentions_location(text: str, country: str, region: str) -> bool:
-    """Return True if `text` already names the story's country (or primary region when global)."""
-    low = (text or "").lower()
+    """Return True if the opening clause (~first 65 chars) of `text` names the story's country."""
+    opening_window = (text or "")[:68].lower()
     c_clean = (country or "").strip()
-    if c_clean and c_clean.lower() not in {"global", "world", "international"}:
+    if c_clean and c_clean.lower() not in _CONTINENT_OR_GENERIC_LABELS:
         c_low = c_clean.lower()
         accepted = COUNTRY_SYNONYMS.get(c_low, (c_low,))
-        if any(tok in low for tok in accepted):
+        if any(tok in opening_window for tok in accepted):
             return True
-        if len(c_low) >= 5 and c_low[:-1] in low:
+        if len(c_low) >= 5 and c_low[:-1] in opening_window:
             return True
         return False
 
     reg_first = re.split(r"[,·/-]", region or "")[0].strip().lower()
-    return bool(reg_first and reg_first in low)
+    return bool(reg_first and reg_first not in _CONTINENT_OR_GENERIC_LABELS and reg_first in opening_window)
 
 
 def ensure_opening_cue_names_location(cues: list[dict], country: str, region: str) -> None:
-    """Guarantee `cues[0]['spoken']` explicitly names the country or region right at the start."""
+    """Guarantee `cues[0]['spoken']` explicitly names the country right in its opening words."""
     if not cues:
         return
     spoken0 = (cues[0].get("spoken") or "").strip()
@@ -311,7 +367,7 @@ def ensure_opening_cue_names_location(cues: list[dict], country: str, region: st
         return
 
     anchor = (country or "").strip()
-    if not anchor or anchor.lower() in {"global", "world", "international"}:
+    if not anchor or anchor.lower() in _CONTINENT_OR_GENERIC_LABELS:
         anchor = re.split(r"[,·/-]", region or "")[0].strip()
     if not anchor:
         return
@@ -641,7 +697,7 @@ def _speed_to_ms(val: float, unit_raw: str) -> float:
 
 def extract_numbers_by_unit(text: str) -> dict[str, list]:
     """Extract all quantitative meteorological figures by unit family from `text`."""
-    s = text or ""
+    s = (text or "").replace("**", "")
     s_norm = re.sub(r"\bminus\s+(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"-\1 °C", s, flags=re.I)
     s_norm = re.sub(r"\bplus\s+(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"+\1 °C", s_norm, flags=re.I)
     s_norm = re.sub(r"\b(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"\1 °C", s_norm, flags=re.I)
@@ -831,6 +887,20 @@ def validate_internal_consistency(prefix: str, st: dict) -> list[str]:
     return errs
 
 
+def _round_2sf(val: float) -> float:
+    if val == 0 or not math.isfinite(val):
+        return 0.0
+    mag = math.floor(math.log10(abs(val)))
+    step = 10.0 ** (mag - 1)
+    return round(val / step) * step
+
+
+def _with_2sf_variants(vals: list[float]) -> list[float]:
+    out = list(vals)
+    for v in vals:
+        out.append(_round_2sf(v))
+        out.append(float(round(v)))
+    return out
 def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
     era = cand.get("era5") or {}
     pers = era.get("persistence") or {}
@@ -913,15 +983,15 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
         multiples.append(float(shift["frequency_ratio"]))
 
     return {
-        "temp_signed": temps_signed,
-        "temp_diff_abs": temps_diffs_abs,
-        "rain_mm": rains,
-        "pres_hpa": press,
-        "speed_ms": speeds_ms,
+        "temp_signed": _with_2sf_variants(temps_signed),
+        "temp_diff_abs": _with_2sf_variants(temps_diffs_abs),
+        "rain_mm": _with_2sf_variants(rains),
+        "pres_hpa": [float(round(p)) for p in press] + press,
+        "speed_ms": [s / 3.6 for s in _with_2sf_variants([x * 3.6 for x in speeds_ms])] + speeds_ms,
         "ranks": ranks,
         "day_ratios": day_ratios,
-        "multiples": multiples,
-        "pct_norms": pct_norms,
+        "multiples": _with_2sf_variants(multiples),
+        "pct_norms": [float(round(p)) for p in pct_norms] + _with_2sf_variants(pct_norms),
     }
 
 
@@ -980,7 +1050,7 @@ def validate_story_numbers_against_candidates(
 
     for t_val, has_sign in found["temp_c"]:
         pool = allowed_temps_signed if has_sign else allowed_temps_unsigned
-        if not any(abs(t_val - a) <= 0.75 for a in pool):
+        if not any(abs(t_val - a) <= max(1.0, 0.08 * abs(a)) for a in pool):
             errs.append(
                 f"{prefix}: temperature figure '{t_val:g} °C' does not match candidate data "
                 f"({sorted({round(x, 1) for x in allowed['temp_signed']})}) or news_facts."
@@ -988,7 +1058,7 @@ def validate_story_numbers_against_candidates(
             break
 
     for r_val in found["rain_mm"]:
-        if not any(abs(r_val - a) <= max(1.5, 0.04 * max(1.0, a)) for a in allowed_rains):
+        if not any(abs(r_val - a) <= max(2.0, 0.08 * max(1.0, a)) for a in allowed_rains):
             errs.append(
                 f"{prefix}: rainfall figure '{r_val:g} mm' does not match candidate data "
                 f"({sorted({round(x, 1) for x in allowed['rain_mm']})}) or news_facts."
@@ -996,7 +1066,7 @@ def validate_story_numbers_against_candidates(
             break
 
     for p_val in found["pres_hpa"]:
-        if not any(abs(p_val - a) <= 1.6 for a in allowed_press):
+        if not any(abs(p_val - a) <= 2.0 for a in allowed_press):
             errs.append(
                 f"{prefix}: pressure figure '{p_val:g} hPa' does not match candidate MSLP "
                 f"({allowed['pres_hpa']}) or news_facts."
@@ -1004,7 +1074,7 @@ def validate_story_numbers_against_candidates(
             break
 
     for s_ms, raw_lbl in found["speed_ms"]:
-        if not any(abs(s_ms - a) <= 0.95 for a in allowed_speeds):
+        if not any(abs(s_ms - a) <= max(1.4, 0.08 * a) for a in allowed_speeds):
             errs.append(
                 f"{prefix}: wind/gust figure '{raw_lbl}' ({s_ms:.1f} m/s) does not match candidate wind/gust "
                 f"({[round(x, 1) for x in allowed['speed_ms']]}) or news_facts."

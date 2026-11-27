@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Weather Headlines · Aimsir Live Global Weather</title>
-  <meta name="description" content="Explore live global ECMWF weather forecasts on an interactive 3D Earth and watch a 6-hourly tour of the world's top 5 weather stories.">
+  <meta name="description" content="Explore live global ECMWF weather forecasts on an interactive 3D Earth and watch a 6-hourly broadcast tour of the world's top 5 weather stories.">
   <link rel="canonical" href="https://headlines.aimsir.org/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Aimsir · Weather Headlines">
   <meta property="og:title" content="Weather Headlines · Live Global Weather">
-  <meta property="og:description" content="Interactive 3D live global weather explorer and 6-hourly tour of the world's top 5 weather events.">
+  <meta property="og:description" content="Interactive 3D live global weather explorer and 6-hourly broadcast tour of the world's top 5 weather events.">
   <meta property="og:url" content="https://headlines.aimsir.org/">
   <meta property="og:image" content="https://headlines.aimsir.org/icon-512.png">
   <meta name="theme-color" content="#050b14">
@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link rel="stylesheet" href="style.css?v=6b5d14ab">
+  <link rel="stylesheet" href="style.css?v=c499fb13">
   <script type="importmap">
     {
       "imports": {
@@ -33,9 +33,9 @@
   <link rel="modulepreload" href="./vendor/three.module.js">
   <link rel="modulepreload" href="./vendor/three.core.min.js">
   <link rel="modulepreload" href="./vendor/OrbitControls.js">
-  <link rel="modulepreload" href="./js/globe.js?v=6b5d14ab">
-  <link rel="modulepreload" href="./js/tour.js?v=6b5d14ab">
-  <link rel="modulepreload" href="./js/search.js?v=6b5d14ab">
+  <link rel="modulepreload" href="./js/globe.js?v=c499fb13">
+  <link rel="modulepreload" href="./js/tour.js?v=c499fb13">
+  <link rel="modulepreload" href="./js/search.js?v=c499fb13">
 </head>
 <body>
   <!-- Full-screen interactive 3D Globe -->
@@ -174,28 +174,15 @@
     <div id="voiceScriptText" class="voice-script-text"></div>
   </aside>
 
-  <!-- Simple Tour Bar: One Headline Line + Static Read-More Link + Single Row of Controls -->
+  <!-- Broadcast Lower-Third Chyron: Controls + Headline + Dual-Speed STORY & IN THE NEWS Scrolling Tickers -->
   <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines">
     <div class="chyron-plate">
-      <div class="strap-progress" aria-hidden="true">
-        <div id="tourProgressBar" class="strap-progress-fill"></div>
-      </div>
-
-      <div class="chyron-headline-box">
-        <span id="tourCounter" class="strap-live">1 / 5</span>
-        <h1 id="tourHeadline" class="chyron-headline"></h1>
-      </div>
-
-      <div class="chyron-controls-row">
-        <div id="tourReadMoreWrap" class="read-more-wrap" hidden>
-          <a
-            id="tourReadMoreLink"
-            class="read-more-link"
-            href="#"
-            target="_blank"
-            rel="noopener noreferrer"
-          ></a>
-        </div>
+      <div class="chyron-strap">
+        <span class="strap-live">
+          <span class="strap-dot" aria-hidden="true"></span>
+          <span id="tourCounter">1 / 5</span>
+        </span>
+        <span id="tourKicker" class="strap-location">WORLD WEATHER</span>
 
         <div class="chyron-actions">
           <button id="tourPrev" class="chyron-btn" type="button" aria-label="Previous story">
@@ -237,15 +224,40 @@
             <span>Close</span>
           </button>
         </div>
+
+        <div class="strap-progress" aria-hidden="true">
+          <div id="tourProgressBar" class="strap-progress-fill"></div>
+        </div>
+      </div>
+
+      <!-- Broadcast Headline Banner -->
+      <div class="chyron-headline-box">
+        <h1 id="tourHeadline" class="chyron-headline"></h1>
+      </div>
+
+      <!-- Scrolling Bar 1: Key Findings with Highlighted Figures -->
+      <div class="chyron-ticker-bar">
+        <div class="ticker-tag">STORY</div>
+        <div id="tickerViewport" class="ticker-viewport">
+          <div id="tickerTrack" class="ticker-track"></div>
+        </div>
+      </div>
+
+      <!-- Scrolling Bar 2: Independent-Speed Clickable News Links -->
+      <div id="linksBar" class="chyron-links-bar">
+        <div class="links-tag">IN THE NEWS</div>
+        <div id="linksViewport" class="ticker-viewport">
+          <div id="tourNewsLinks" class="links-track"></div>
+        </div>
       </div>
     </div>
   </section>
 
   <!-- Subtle Data Attribution (Explore mode) -->
   <footer class="attribution" id="attribFooter">
-    <span>Forecast: © ECMWF CC BY 4.0 · Climatology: Copernicus ERA5 · Guidance only</span>
+    <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=6b5d14ab"></script>
+  <script type="module" src="js/main.js?v=c499fb13"></script>
 </body>
 </html>

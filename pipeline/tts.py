@@ -26,8 +26,21 @@ def normalise_for_newsreader(text: str) -> str:
     s = re.sub(r"\s*///\s*", ". ", s)
     s = s.replace("\u2014", ", ").replace(" - ", ", ")
 
-    # Year ranges: 1940-1979 -> 1940 to 1979
-    s = re.sub(r"\b(19\d{2}|20\d{2})\s*[-–]\s*(19\d{2}|20\d{2})\b", r"\1 to \2", s)
+    # Replace any remaining multi-year ranges with listener-friendly spoken phrasing
+    s = re.sub(r"\b199[01]\s*[-–]\s*20(?:19|20)\b", "the past 30 years", s)
+    s = re.sub(r"\b198\d\s*[-–]\s*200\d\b", "the previous three decades", s)
+    s = re.sub(r"\b1940\s*[-–]\s*1979\b", "the mid-twentieth century", s)
+    s = re.sub(r"\b1986\s*[-–]\s*2025\b", "the past four decades", s)
+    s = re.sub(
+        r"\b(19\d{2}|20\d{2})\s*[-–]\s*(19\d{2}|20\d{2})\b",
+        lambda m: f"the previous {int(round(abs(int(m.group(2)) - int(m.group(1))) + 1, -1))} years"
+        if abs(int(m.group(2)) - int(m.group(1))) >= 9
+        else f"{m.group(1)} to {m.group(2)}",
+        s,
+    )
+    # Strip any stray technical data-source acronyms from spoken audio
+    s = re.sub(r"\bECMWF\s+guidance\b", "The latest forecast", s, flags=re.I)
+    s = re.sub(r"\b(?:ECMWF|ERA5)\b\s*", "", s)
 
     # Signed temperatures: +16.4 °C -> 16.4 degrees Celsius, -25 °C -> minus 25 degrees Celsius
     s = re.sub(r"\+(\d+(?:\.\d+)?)\s*°C\+?", r"\1 degrees Celsius", s)

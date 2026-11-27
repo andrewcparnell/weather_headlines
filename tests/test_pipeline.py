@@ -162,15 +162,89 @@ def test_generic_hub_urls_rejected_and_specific_articles_accepted():
 
 
 def test_newsreader_speech_normalisation():
-    raw = "Met Eireann warns of **139 mm / 24 h** and +16.4 °C (#1 in 1940-1979) during El Nino."
+    raw = "Met Eireann warns of **139 mm / 24 h** and +16 °C (#1 in 1940-1979, vs 1980-2009) during El Nino."
     spoken = normalise_for_newsreader(raw)
     assert "**" not in spoken
     assert "Met Air-uhn" in spoken
     assert "El Neen-yo" in spoken
     assert "139 millimetres in 24 hours" in spoken
-    assert "16.4 degrees Celsius" in spoken
+    assert "16 degrees Celsius" in spoken
     assert "number 1" in spoken
-    assert "1940 to 1979" in spoken
+    assert "mid-twentieth century" in spoken
+    assert "previous three decades" in spoken
+    assert "1980" not in spoken and "1979" not in spoken
+
+
+def test_broadcast_style_country_lead_2sf_and_no_data_jargon():
+    from pipeline.news_agent import build_deterministic_bulletin, fmt_2sf, fmt_pct
+
+    # 2 significant figures for measurements, nearest integer for percentages
+    assert fmt_2sf(196.3) == "200"
+    assert fmt_2sf(102.4) == "100"
+    assert fmt_2sf(37.0) == "37"
+    assert fmt_2sf(7.46, signed=True) == "+7.5"
+    assert fmt_2sf(7.04, signed=True) == "+7"
+    assert fmt_pct(98.6) == 99
+    assert fmt_pct(157.4) == 157
+
+    now = datetime(2026, 11, 27, 12, tzinfo=timezone.utc)
+    lats = np.linspace(90.0, -90.0, 721, dtype=np.float32)
+    lons = (np.arange(1440, dtype=np.float32) * 0.25) - 180.0
+    zeros = np.zeros((721, 1440), dtype=np.float32)
+    wf = LiveWeatherFields(
+        run_time=now,
+        valid_time=now,
+        step_hours=6,
+        rain_window_hours=(0, 24),
+        lats=lats,
+        lons=lons,
+        t2m_c=zeros + 15.0,
+        u10=zeros + 5.0,
+        v10=zeros,
+        wind_speed=zeros + 5.0,
+        gust_max=zeros + 25.0,
+        rain_24h_mm=zeros,
+        mslp_hpa=zeros + 1005.0,
+    )
+    coords = [
+        ("rain", -4.5, -80.5),     # Peru / Ecuador (never "South America")
+        ("heat", 15.0, 19.0),      # Chad (never "North Africa")
+        ("rain", 16.0, 108.0),     # Vietnam (never "Southeast Asia")
+        ("cyclone", 64.5, -24.0),  # Iceland
+        ("cold", 61.0, 95.0),      # Russia
+    ]
+    enriched = [
+        {
+            "id": f"c-{i}",
+            "kind": kind,
+            "primary_layer": "wind" if kind == "cyclone" else ("rain" if kind == "rain" else "anomaly"),
+            "lat": lat,
+            "lon": lon,
+            "t2m_c": 37.0 if kind == "heat" else (-23.4 if kind == "cold" else 22.0),
+            "anom_c": 7.46 if kind != "cold" else -11.4,
+            "rain_24h_mm": 196.3,
+            "wind_ms": 18.9,
+            "gust_ms": 28.4,
+            "mslp_hpa": 961.2,
+            "era5": {
+                "rank_since_1940": 2,
+                "years_compared": 86,
+                "percentile": 98.6,
+                "persistence": {"anomalous_days_last_14": 7, "anomalous_days_last_28": 12, "rain_14d_mm": 143.2},
+                "climate_shift": {"local_seasonal_warming_c_since_1940_1979": 1.38},
+            },
+        }
+        for i, (kind, lat, lon) in enumerate(coords, start=1)
+    ]
+    bulletin = build_deterministic_bulletin(wf, enriched, warnings=[], fetch_live_rss=False)
+    forbidden_continents = {"south america", "north africa", "southeast asia", "europe", "global"}
+    for st in bulletin["stories"]:
+        assert st["country"].lower() not in forbidden_continents
+        spoken_all = " ".join(c["spoken"] for c in st["cues"])
+        assert st["cues"][0]["spoken"].startswith(f"{st['country']}:")
+        for jargon in ("ECMWF", "ERA5", "grid box", "grid point", "1990-2019", "1991-2020", "1940-1979", "1980-2009"):
+            assert jargon.lower() not in spoken_all.lower(), f"Found {jargon!r} in {spoken_all!r}"
+        assert "196.3" not in spoken_all and "98.6" not in spoken_all and "37.0" not in spoken_all
 
 
 def test_deterministic_bulletin_satisfies_all_cue_and_layer_invariants():

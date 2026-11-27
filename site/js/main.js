@@ -1,6 +1,6 @@
-import { WeatherGlobe, sampleLayerColourAtValue } from './globe.js?v=6b5d14ab';
-import { LocationSearch } from './search.js?v=6b5d14ab';
-import { BroadcastTour } from './tour.js?v=6b5d14ab';
+import { WeatherGlobe, sampleLayerColourAtValue } from './globe.js?v=c499fb13';
+import { LocationSearch } from './search.js?v=c499fb13';
+import { BroadcastTour } from './tour.js?v=c499fb13';
 
 const $ = id => document.getElementById(id);
 
@@ -219,10 +219,14 @@ async function init() {
       iconSoundOn: $('iconSoundOn'),
       exitBtn: $('tourExit'),
       counter: $('tourCounter'),
+      kicker: $('tourKicker'),
       progressBar: $('tourProgressBar'),
       headline: $('tourHeadline'),
-      readMoreWrap: $('tourReadMoreWrap'),
-      readMoreLink: $('tourReadMoreLink'),
+      tickerViewport: $('tickerViewport'),
+      tickerTrack: $('tickerTrack'),
+      linksBar: $('linksBar'),
+      linksViewport: $('linksViewport'),
+      newsLinks: $('tourNewsLinks'),
       scriptOverlay: $('voiceScriptOverlay'),
       scriptText: $('voiceScriptText'),
     },
