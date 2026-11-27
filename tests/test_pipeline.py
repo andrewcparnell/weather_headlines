@@ -276,3 +276,44 @@ def test_validator_filters_secondary_hub_link_when_valid_event_link_exists():
     assert "irishtimes.com" in cleaned["stories"][0]["news_links"][0]["url"]
 
 
+def test_opening_cue_automatically_anchors_country_when_omitted():
+    base_beat = "Central pressure has plunged to 958 hPa across the storm centre right now."
+    story = {
+        "id": "iceland-storm",
+        "headline": "Relentless 958 hPa cyclone lashes Iceland with blizzard chaos",
+        "region": "Iceland and North Atlantic",
+        "country": "Iceland",
+        "primary_layer": "pressure",
+        "hazard": "cyclone",
+        "centre": {"lat": 63.5, "lon": -20.5},
+        "cues": [
+            {
+                "layer": "pressure",
+                "lat": 63.5,
+                "lon": -20.5,
+                "spoken": "At the heart of this relentless North Atlantic cyclone, central pressure has plunged to 958 hPa.",
+                "ticker": "**958 hPa** low centre",
+            },
+            {"layer": "wind", "lat": 65.8, "lon": -18.1, "spoken": "Gales are sweeping North Iceland tonight.", "ticker": "Gales **160 km/h**"},
+            {"layer": "rain", "lat": 64.0, "lon": -16.2, "spoken": "Heavy rain is drenching the Eastfjords.", "ticker": "Rain **140 mm**"},
+            {"layer": "wind", "lat": 63.2, "lon": -20.8, "spoken": "Storm-force winds have persisted for two weeks.", "ticker": "Storms **13 days**"},
+            {"layer": "anomaly", "lat": 60.0, "lon": -12.0, "spoken": "Warmer Atlantic waters are intensifying winter lows.", "ticker": "**+4.2 °C** anomaly"},
+        ],
+        "beats": [{"tag": f"B{j}", "title": "Beat", "layer": "wind", "text": base_beat} for j in range(4)],
+        "news_links": [
+            {
+                "source": "Iceland Review",
+                "title": "Blizzard warnings across North Iceland",
+                "url": "https://www.icelandreview.com/news/iceland-orange-weather-warnings-blizzard-november-2026/",
+            }
+        ],
+    }
+    cleaned, errors = validate_and_clean_bulletin(
+        {"stories": [dict(story, id=f"s-{i}") for i in range(5)]}
+    )
+    assert errors == []
+    assert cleaned["stories"][0]["cues"][0]["spoken"].startswith(
+        "Iceland: at the heart of this relentless North Atlantic cyclone,"
+    )
+
+

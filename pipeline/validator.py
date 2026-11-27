@@ -129,6 +129,88 @@ def infer_cue_layer(text: str, fallback: str) -> str:
     return fallback if fallback in VALID_LAYERS else "temperature"
 
 
+COUNTRY_SYNONYMS: dict[str, tuple[str, ...]] = {
+    "united states": ("united states", "u.s.", "america"),
+    "united kingdom": ("united kingdom", "u.k.", "britain", "british", "england", "scotland", "wales", "northern ireland"),
+    "russia": ("russia", "russian"),
+    "new zealand": ("new zealand",),
+    "south africa": ("south africa",),
+}
+
+LOWERCASE_LEAD_WORDS = {
+    "a",
+    "an",
+    "the",
+    "at",
+    "in",
+    "on",
+    "off",
+    "over",
+    "across",
+    "along",
+    "around",
+    "near",
+    "from",
+    "throughout",
+    "beneath",
+    "amid",
+    "heavy",
+    "torrential",
+    "fierce",
+    "relentless",
+    "extreme",
+    "record",
+    "intense",
+    "severe",
+    "powerful",
+    "deep",
+    "unprecedented",
+    "continental",
+    "polar",
+    "tropical",
+}
+
+
+def opening_mentions_location(text: str, country: str, region: str) -> bool:
+    """Return True if `text` already names the story's country (or primary region when global)."""
+    low = (text or "").lower()
+    c_clean = (country or "").strip()
+    if c_clean and c_clean.lower() not in {"global", "world", "international"}:
+        c_low = c_clean.lower()
+        accepted = COUNTRY_SYNONYMS.get(c_low, (c_low,))
+        if any(tok in low for tok in accepted):
+            return True
+        # Also accept adjectival stem for countries like Iceland -> Icelandic, Peru -> Peruvian
+        if len(c_low) >= 5 and c_low[:-1] in low:
+            return True
+        return False
+
+    reg_first = re.split(r"[,·/-]", region or "")[0].strip().lower()
+    return bool(reg_first and reg_first in low)
+
+
+def ensure_opening_cue_names_location(cues: list[dict], country: str, region: str) -> None:
+    """Guarantee `cues[0]['spoken']` explicitly names the country or region right at the start."""
+    if not cues:
+        return
+    spoken0 = (cues[0].get("spoken") or "").strip()
+    if not spoken0 or opening_mentions_location(spoken0, country, region):
+        return
+
+    anchor = (country or "").strip()
+    if not anchor or anchor.lower() in {"global", "world", "international"}:
+        anchor = re.split(r"[,·/-]", region or "")[0].strip()
+    if not anchor:
+        return
+
+    first_word = spoken0.split()[0].rstrip(",:;")
+    if first_word.lower() in LOWERCASE_LEAD_WORDS and not first_word.isupper():
+        rest = spoken0[0].lower() + spoken0[1:]
+    else:
+        rest = spoken0
+    cues[0]["spoken"] = sanitise_prose(f"{anchor}: {rest}")
+
+
 HAZARD_LAYER_PALETTE: dict[str, list[str]] = {
     "heat": ["temperature", "anomaly", "pressure", "wind"],
     "cold": ["temperature", "anomaly", "pressure", "wind"],
@@ -442,9 +524,13 @@ def validate_and_clean_bulletin(payload: dict) -> tuple[dict, list[str]]:
                 }
             )
 
+        region_clean = sanitise_prose(str(st.get("region") or ""))
+        country_clean = sanitise_prose(str(st.get("country") or ""))
+
         dyn_waypoints = ensure_dynamic_waypoints(c_lat, c_lon, st.get("camera_waypoints"))
-        kicker_clean = sanitise_prose(str(st.get("kicker") or st.get("region") or "WORLD WEATHER")).upper()
+        kicker_clean = sanitise_prose(str(st.get("kicker") or region_clean or "WORLD WEATHER")).upper()
         cleaned_cues = clean_or_build_cues(st, cleaned_beats, dyn_waypoints, primary_layer, kicker_clean, hazard=hazard)
+        ensure_opening_cue_names_location(cleaned_cues, country_clean, region_clean)
 
         raw_ticker = sanitise_prose(str(st.get("ticker") or ""))
         if len(raw_ticker) >= 60:

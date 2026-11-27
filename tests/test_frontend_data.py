@@ -106,11 +106,15 @@ def test_broadcast_chyron_hidden_and_dual_speed_tickers():
 
 def test_every_story_has_multi_layer_multi_location_synced_cues():
     from pipeline.scanner import haversine_km
+    from pipeline.validator import opening_mentions_location
 
     payload = json.loads((DATA_DIR / "headlines.json").read_text())
     for st in payload["stories"]:
         cues = st.get("cues") or []
         assert len(cues) >= 5, f"{st['id']} must have >= 5 sentence cues"
+        assert opening_mentions_location(cues[0]["spoken"], st.get("country", ""), st.get("region", "")), (
+            f"{st['id']} first cue must clearly name country/region, got: {cues[0]['spoken']!r}"
+        )
         layers_used = {c["layer"] for c in cues}
         assert len(layers_used) >= 3, f"{st['id']} cues should switch across >= 3 variables, got {layers_used}"
 
