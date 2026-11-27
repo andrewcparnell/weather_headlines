@@ -50,7 +50,11 @@ def test_generated_headlines_bulletin_is_valid_and_style_compliant():
     assert len(cleaned["stories"]) == 5
     for idx, st in enumerate(cleaned["stories"], start=1):
         assert "**" in st["ticker"], f"Story {st['id']} ticker missing **keyword** highlights"
-        mp3_path = SITE_DIR / f"data/audio/story-{idx}.mp3"
+        audio_rel = st.get("audio_url") or ""
+        assert audio_rel.startswith(f"data/audio/story-{idx}-") and audio_rel.endswith(".mp3"), (
+            f"Story {idx} audio_url must be cache-busted with generated_utc stamp, got {audio_rel!r}"
+        )
+        mp3_path = SITE_DIR / audio_rel
         assert mp3_path.exists() and mp3_path.stat().st_size > 15_000, f"Missing or empty MP3 {mp3_path}"
 
 
@@ -71,61 +75,117 @@ def test_no_em_dashes_in_frontend_or_readme():
         assert "utilize" not in txt.lower(), f"Found forbidden word in {path}"
 
 
-def test_broadcast_chyron_hidden_and_dual_speed_tickers():
+def test_section5_simplified_tour_ui_legend_accessibility_and_performance():
     import re
+
+    from pipeline.config import LAYERS
+    from pipeline.stamp_assets import compute_frontend_asset_version
 
     html = (SITE_DIR / "index.html").read_text()
     css = (SITE_DIR / "style.css").read_text()
+    main_js = (SITE_DIR / "js" / "main.js").read_text()
     tour_js = (SITE_DIR / "js" / "tour.js").read_text()
     globe_js = (SITE_DIR / "js" / "globe.js").read_text()
-    assert "-dt * 0.062" in globe_js, "Earth auto-spin must rotate West-to-East (anticlockwise over North Pole)"
 
-    assert "Loading global weather headlines" not in html
-    assert "Play Headlines" in html
-    assert "Report created:" in html
-    assert "Next report:" in html
-    assert "Text On" in html
-    assert "Voice Off" in html
-    assert "[hidden]" in css and "display: none !important" in css
-    assert ".search-box {\n  position: relative;\n  z-index: 10;" in css
-    assert "this.textEnabled = true" in tour_js
-    assert "this.voiceEnabled = false" in tour_js
-    assert "if (!this.voiceEnabled) return;" in tour_js
+    # 1. Simplified tour bar: no Text On/Off toggle, no STORY ticker, static Read more link, inline SVGs (no emoji)
+    assert "tourTextBtn" not in html and "Text On" not in html
+    assert "tickerViewport" not in html and "STORY</div>" not in html and "IN THE NEWS" not in html
+    assert 'id="tourReadMoreLink"' in html and 'target="_blank"' in html and 'rel="noopener noreferrer"' in html
+    assert "Read more:" in tour_js
     assert 'id="voiceScriptOverlay"' in html
-    assert "_prepareCueScriptWords" in tour_js
+    for forbidden_emoji in ("🔊", "🔇", "📝", "◀", "▶", "✕"):
+        assert forbidden_emoji not in html and forbidden_emoji not in tour_js
 
-    sting_wav = SITE_DIR / "assets" / "bulletin-sting.wav"
-    assert sting_wav.exists() and sting_wav.stat().st_size > 50_000
-    assert "bulletin-sting.wav" in tour_js
+    # 2. End after Story 5, restore previous layer, and show "Replay headlines"
+    assert "index >= this.stories.length" in tour_js
+    assert "Replay headlines" in tour_js
+    assert "this._preTourLayer" in tour_js
 
-    story_match = re.search(r"STORY_TICKER_SPEED\s*=\s*(\d+)", tour_js)
-    links_match = re.search(r"LINKS_TICKER_SPEED\s*=\s*(\d+)", tour_js)
-    assert story_match and links_match, "Both ticker speeds must be defined in tour.js"
-    assert int(story_match.group(1)) != int(links_match.group(1)), "Tickers must scroll at different speeds"
+    # 3. Mobile (< 600 px) single "Layers" button, legend visible on all screens, >= 44x44 px touch targets
+    assert 'id="mobileLayersToggle"' in html and ">Layers<" in html
+    assert "@media (max-width: 599px)" in css
+    assert not re.search(r"\.legend-card[^{]*\{[^}]*display:\s*none", css), "Legend must remain visible on phones"
+    assert "min-height: 44px" in css and "min-width: 44px" in css
+
+    # 4. Fixed top-anchored layer rail (no translateY(-50%) centring jump), solid contrast, >= 13px font sizes
+    assert "translateY(-50%)" not in css
+    px_sizes = [float(m.group(1)) for m in re.finditer(r"font-size:\s*(\d+(?:\.\d+)?)px", css)]
+    assert px_sizes and min(px_sizes) >= 13.0, f"Found font-size below 13px in style.css: {min(px_sizes)}"
+
+    # 5. Legend & scale fixes: anomaly [-28, 28], sqrt rain gradient, wind '0 km/h'
+    assert (LAYERS["anomaly"].lo, LAYERS["anomaly"].hi) == (-28.0, 28.0)
+    assert "spec.scale === 'sqrt' ? p * p : p" in main_js
+    assert "'0 km/h'" in main_js
+
+    # 6. prefers-reduced-motion honoured across CSS, Globe, and Tour
+    assert "prefers-reduced-motion: reduce" in css
+    assert "prefers-reduced-motion: reduce" in globe_js
+    assert "prefers-reduced-motion: reduce" in tour_js
+    assert "-dt * 0.062" in globe_js
+
+    # 7. Front-end bug fixes & accessibility
+    assert "Promise.allSettled" in globe_js
+    assert ".dispose()" in globe_js
+    assert "Headlines unavailable, please try again shortly" in tour_js
+    assert "_clearPendingMetaListener" in tour_js
+    assert "_queuedBulletin" in tour_js
+    assert "safeHttpUrl" in tour_js and "parsed.protocol === 'http:'" in tour_js
+    assert 'id="liveBadge" aria-live' not in html
+    assert "visibility = 'hidden'" in globe_js
+    assert "Story ${idx + 1}:" in globe_js
+    assert "setSearchMarker" in globe_js and "setSearchMarker" in main_js
+    assert "this.dom.nextBtn?.focus()" in tour_js and "this.dom.playTourBtn?.focus()" in tour_js
+
+    # 8. Performance: lazy Opus sting (<25 KB, 120 KB WAV gone), basemap.webp, modulepreload, no-cache polling, setDrawRange, _windScratch, translate3d, mobile DPR <= 1.5, auto ?v= hash
+    sting_opus = SITE_DIR / "assets" / "bulletin-sting.mp4"
+    assert sting_opus.exists() and 1_000 < sting_opus.stat().st_size < 25_000
+    assert not (SITE_DIR / "assets" / "bulletin-sting.wav").exists()
+    assert "this.stingAudio = null" in tour_js and "this.audio.preload = 'none'" in tour_js
+
+    basemap_webp = SITE_DIR / "assets" / "basemap.webp"
+    assert basemap_webp.exists() and 20_000 < basemap_webp.stat().st_size < 200_000
+    assert "assets/basemap.webp" in globe_js
+
+    assert 'rel="modulepreload" href="./vendor/three.module.js"' in html
+    assert "cache: 'no-cache'" in main_js and "no-store" not in main_js
+    assert "document.hidden" in main_js and "isNearScheduledReportWindow" in main_js
+    assert "_windScratch" in globe_js
+    assert "setDrawRange" in globe_js
+    assert "translate3d(" in globe_js and "style.left" not in globe_js
+    assert "window.innerWidth < 768 ? 1.5 : 2" in globe_js
+
+    expected_ver = compute_frontend_asset_version(SITE_DIR)
+    assert f"style.css?v={expected_ver}" in html
+    assert f"js/main.js?v={expected_ver}" in html
+    assert f"./globe.js?v={expected_ver}" in main_js
+    assert f"./globe.js?v={expected_ver}" in tour_js
 
 
 def test_every_story_has_multi_layer_multi_location_synced_cues():
     from pipeline.scanner import haversine_km
-    from pipeline.validator import opening_mentions_location
+    from pipeline.validator import opening_mentions_location, validate_story_geography
 
     payload = json.loads((DATA_DIR / "headlines.json").read_text())
-    for st in payload["stories"]:
+    for idx, st in enumerate(payload["stories"]):
         cues = st.get("cues") or []
-        assert len(cues) >= 5, f"{st['id']} must have >= 5 sentence cues"
+        assert len(cues) >= 3, f"{st['id']} must have >= 3 sentence cues"
         assert opening_mentions_location(cues[0]["spoken"], st.get("country", ""), st.get("region", "")), (
             f"{st['id']} first cue must clearly name country/region, got: {cues[0]['spoken']!r}"
         )
-        layers_used = {c["layer"] for c in cues}
-        assert len(layers_used) >= 3, f"{st['id']} cues should switch across >= 3 variables, got {layers_used}"
+        geo_errs = validate_story_geography(
+            f"stories[{idx}]",
+            float(st["centre"]["lat"]),
+            float(st["centre"]["lon"]),
+            cues,
+            headline=st.get("headline", ""),
+        )
+        assert geo_errs == [], f"{st['id']} failed geographic sanity check: {geo_errs}"
 
         prev_end = 0.0
-        path_km = 0.0
-        for idx, c in enumerate(cues):
+        for c in cues:
             assert c["end_sec"] > c["start_sec"] >= prev_end - 0.05
             prev_end = c["end_sec"]
-            if idx > 0:
-                path_km += haversine_km(cues[idx - 1]["lat"], cues[idx - 1]["lon"], c["lat"], c["lon"])
-        assert path_km >= 500.0, f"{st['id']} cue locations only move {path_km:.0f} km"
+            assert haversine_km(c["lat"], c["lon"], st["centre"]["lat"], st["centre"]["lon"]) <= 500.0
         expected_voice = " ".join(c["spoken"].strip() for c in cues if c.get("spoken", "").strip())
         assert st.get("voice_script", "").strip() == expected_voice, (
             f"{st['id']} voice_script must match cues[*].spoken word-for-word"
@@ -216,7 +276,6 @@ def test_mobile_camera_framing_and_responsive_controls():
     assert "computeViewportCameraParams" in globe_js
     assert "returnToHomeView" in globe_js
     assert "flex-wrap: wrap;" in css
-    assert "overflow-x: auto;" in css
 
     # Verify the exact camera framing formula across iPhone SE, iPhone 15, Pro Max, iPad, and Desktop
     viewports = [

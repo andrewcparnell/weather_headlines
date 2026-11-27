@@ -15,6 +15,7 @@ from .news_agent import build_deterministic_bulletin, generate_headlines_with_cl
 from .opendata import fetch_live_weather
 from .pack_globe import package_globe_layers
 from .scanner import detect_global_candidates
+from .stamp_assets import stamp_frontend_assets
 from .tts import build_bulletin_audio
 from .validator import validate_and_clean_bulletin
 from .warnings_feed import fetch_global_warnings
@@ -58,9 +59,14 @@ def run_pipeline(
     # 1. Fetch live global 0.25 deg ECMWF Open Data
     weather = fetch_live_weather()
 
-    # 2. Load 1940-2025 ARCO-ERA5 archive + WMO 1991-2020 global 2t climatology & scan global hotspots
-    climo_mean_c, climo_std_c, climo_source, era5_cube = load_era5_historical_context(weather.valid_time)
-    candidates, anom_025_c, _ = detect_global_candidates(weather, climo_mean_c, climo_std_c, max_candidates=12)
+    # 2. Load precomputed ±7-day ERA5 climatology (with 6.5 C/km lapse-rate adjustment) & scan hotspots
+    climo_mean_c, climo_std_c, climo_source, era5_climo = load_era5_historical_context(
+        weather.valid_time, ifs_elev_m=weather.ifs_elev_m
+    )
+    era5_elev = era5_climo.era5_elev_025_m if era5_climo is not None else None
+    candidates, anom_025_c, _ = detect_global_candidates(
+        weather, climo_mean_c, climo_std_c, max_candidates=9, era5_elev_025_m=era5_elev
+    )
 
     # 3. Pack all 5 global 0.5 deg WebP layers + isobars + H/L centres
     manifest = package_globe_layers(weather, anom_025_c, climo_source, out_dir)
@@ -70,9 +76,9 @@ def run_pipeline(
         file=sys.stderr,
     )
 
-    # 4. Enrich candidate hotspots with 1940-present ERA5 rankings, 28-day persistence & fetch GDACS alerts
-    print(f"[build] Computing 1940-present ERA5 rankings & 28-day persistence for {len(candidates)} hotspots...", file=sys.stderr)
-    enriched = enrich_all_candidates(candidates, weather, era5_cube)
+    # 4. Enrich candidate hotspots with ±7-day 1940-present ERA5 24h rankings & 28-day persistence
+    print(f"[build] Computing ±7-day 1940-present ERA5 rankings & 28-day persistence for {len(candidates)} hotspots...", file=sys.stderr)
+    enriched = enrich_all_candidates(candidates, weather, era5_climo)
     warnings = fetch_global_warnings(days_back=7)
 
     if dump_candidates_path is not None:
@@ -113,10 +119,13 @@ def run_pipeline(
                     file=sys.stderr,
                 )
                 bulletin = dict(previous_bulletin)
-                bulletin["generated_utc"] = now_iso
                 bulletin["model_run_utc"] = run_iso
                 bulletin["valid_time_utc"] = valid_iso
-                need_audio_synth = False
+                # Re-synthesise if stamped MP3 files referenced in previous_bulletin are not on disk (e.g. restored from orphan data branch)
+                need_audio_synth = not all(
+                    st.get("audio_url") and (out_dir.parent / str(st["audio_url"])).exists()
+                    for st in (bulletin.get("stories") or [])
+                )
             else:
                 print("[build] Building fresh ERA5-grounded fallback bulletin.", file=sys.stderr)
                 bulletin = build_deterministic_bulletin(weather, enriched, warnings)
@@ -126,10 +135,12 @@ def run_pipeline(
             file=sys.stderr,
         )
         bulletin = dict(previous_bulletin)
-        bulletin["generated_utc"] = now_iso
         bulletin["model_run_utc"] = run_iso
         bulletin["valid_time_utc"] = valid_iso
-        need_audio_synth = False
+        need_audio_synth = not all(
+            st.get("audio_url") and (out_dir.parent / str(st["audio_url"])).exists()
+            for st in (bulletin.get("stories") or [])
+        )
     else:
         print(
             "[build] ANTHROPIC_API_KEY not set; building ERA5-grounded fallback bulletin.",
@@ -147,7 +158,11 @@ def run_pipeline(
     tmp = headlines_path.with_suffix(".tmp.json")
     tmp.write_text(json.dumps(bulletin, indent=2, ensure_ascii=False))
     tmp.replace(headlines_path)
-    print(f"[build] Published {len(bulletin['stories'])} weather headlines to {headlines_path}.", file=sys.stderr)
+    asset_ver = stamp_frontend_assets()
+    print(
+        f"[build] Published {len(bulletin['stories'])} weather headlines to {headlines_path} (asset version ?v={asset_ver}).",
+        file=sys.stderr,
+    )
     return 0
 
 

@@ -6,3 +6,6 @@ __pycache__/
 .env
 .DS_Store
 pipeline_cache/
+
+# Generated 6-hourly weather layers & audio (deployed directly via Pages artifact)
+site/data/

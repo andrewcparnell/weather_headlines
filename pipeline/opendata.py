@@ -47,14 +47,20 @@ class LiveWeatherFields:
     rain_window_hours: tuple[int, int]
     lats: np.ndarray  # (721,) 90.0 down to -90.0
     lons: np.ndarray  # (1440,) -180.0 up to 179.75
-    t2m_c: np.ndarray  # 2 m temperature in deg C
+    t2m_c: np.ndarray  # 2 m temperature in deg C at valid_time
     u10: np.ndarray  # 10 m zonal wind in m/s
     v10: np.ndarray  # 10 m meridional wind in m/s
     wind_speed: np.ndarray  # 10 m wind speed in m/s
-    gust_max: np.ndarray  # max 10 m wind gust in m/s over window
+    gust_max: np.ndarray  # max 10 m wind gust in m/s over 24 h window
     rain_24h_mm: np.ndarray  # 24 h accumulated precipitation in mm
     mslp_hpa: np.ndarray  # mean sea level pressure in hPa
     lsm: np.ndarray | None = None  # land-sea mask (0..1)
+    t2m_max_24h_c: np.ndarray | None = None  # max 2 m temperature in deg C over 24 h window
+    t2m_min_24h_c: np.ndarray | None = None  # min 2 m temperature in deg C over 24 h window
+    ifs_elev_m: np.ndarray | None = None  # IFS surface elevation in metres (z / 9.80665)
+    ifs_sdor_m: np.ndarray | None = None  # IFS sub-gridscale orography std in metres
+    rain_window_start_utc: datetime | None = None
+    rain_window_end_utc: datetime | None = None
 
 
 def floor6(dt: datetime) -> datetime:
@@ -212,6 +218,8 @@ def fetch_live_weather(now: datetime | None = None) -> LiveWeatherFields:
 
     rain_start = max(0, step - 12)
     rain_end = rain_start + 24
+    rain_start_utc = run + rain_start * HOUR
+    rain_end_utc = run + rain_end * HOUR
 
     gust_steps = list(range(max(3, rain_start + 3), rain_end + 1, 3))
 
@@ -221,17 +229,23 @@ def fetch_live_weather(now: datetime | None = None) -> LiveWeatherFields:
         ("v10", step, "10v"),
         ("msl", step, "msl"),
         ("lsm", 0, "lsm"),
+        ("z_sfc", 0, "z"),
+        ("sdor", 0, "sdor"),
         ("tp_end", rain_end, "tp"),
     ]
     if rain_start > 0:
         requests_to_fetch.append(("tp_start", rain_start, "tp"))
     for gs in gust_steps:
         requests_to_fetch.append((f"gust_{gs}", gs, "10fg"))
+        requests_to_fetch.append((f"mx2t_{gs}", gs, "mx2t3"))
+        requests_to_fetch.append((f"mn2t_{gs}", gs, "mn2t3"))
 
     print(
         f"[opendata] Fetching ECMWF {run:%Y-%m-%d %H}Z ({stream}), valid {valid_time:%Y-%m-%d %H:%M}Z (step +{step}h)...",
         file=sys.stderr,
     )
+
+    optional_prefixes = ("lsm", "z_sfc", "sdor", "gust_", "mx2t_", "mn2t_")
 
     def _worker(item: tuple[str, int, str]) -> tuple[str, np.ndarray | None]:
         key, st, param = item
@@ -239,7 +253,7 @@ def fetch_live_weather(now: datetime | None = None) -> LiveWeatherFields:
             p = fetch_grib_message(run, stream, st, param)
             return key, decode_grib_025(p)
         except Exception as exc:
-            if key == "lsm" or key.startswith("gust_"):
+            if key.startswith(optional_prefixes):
                 print(f"[opendata] Optional field {param} step {st} unavailable: {exc}", file=sys.stderr)
                 return key, None
             raise
@@ -264,6 +278,23 @@ def fetch_live_weather(now: datetime | None = None) -> LiveWeatherFields:
     else:
         gust_max = (wind_speed * 1.35).astype(np.float32)
 
+    mx_arrays = [results[f"mx2t_{gs}"] - 273.15 for gs in gust_steps if results.get(f"mx2t_{gs}") is not None]
+    t2m_max_24h_c = (
+        np.nanmax(np.stack(mx_arrays, axis=0), axis=0).astype(np.float32)
+        if mx_arrays
+        else t2m_c.astype(np.float32)
+    )
+    mn_arrays = [results[f"mn2t_{gs}"] - 273.15 for gs in gust_steps if results.get(f"mn2t_{gs}") is not None]
+    t2m_min_24h_c = (
+        np.nanmin(np.stack(mn_arrays, axis=0), axis=0).astype(np.float32)
+        if mn_arrays
+        else t2m_c.astype(np.float32)
+    )
+
+    z_sfc = results.get("z_sfc")
+    ifs_elev_m = (z_sfc / 9.80665).astype(np.float32) if z_sfc is not None else None
+    ifs_sdor_m = results.get("sdor").astype(np.float32) if results.get("sdor") is not None else None
+
     lats = np.linspace(90.0, -90.0, 721, dtype=np.float32)
     lons = (np.arange(1440, dtype=np.float32) * 0.25) - 180.0
 
@@ -282,6 +313,12 @@ def fetch_live_weather(now: datetime | None = None) -> LiveWeatherFields:
         rain_24h_mm=rain_24h_mm,
         mslp_hpa=mslp_hpa.astype(np.float32),
         lsm=results.get("lsm"),
+        t2m_max_24h_c=t2m_max_24h_c,
+        t2m_min_24h_c=t2m_min_24h_c,
+        ifs_elev_m=ifs_elev_m,
+        ifs_sdor_m=ifs_sdor_m,
+        rain_window_start_utc=rain_start_utc,
+        rain_window_end_utc=rain_end_utc,
     )
 
 

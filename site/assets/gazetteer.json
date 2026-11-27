@@ -1,1 +1,3406 @@
-[{"name":"Ireland","kind":"Country","sub":"Europe","lat":53.35,"lon":-7.8,"distance":1.52,"aliases":["Eire","Republic of Ireland","IE","IRL"]},{"name":"United Kingdom","kind":"Country","sub":"Europe","lat":54.4,"lon":-2.8,"distance":1.62,"aliases":["UK","Britain","Great Britain","England","GBR"]},{"name":"Scotland","kind":"Region","sub":"United Kingdom","lat":56.8,"lon":-4.2,"distance":1.52,"aliases":["Scottish Highlands"]},{"name":"Wales","kind":"Region","sub":"United Kingdom","lat":52.3,"lon":-3.8,"distance":1.48,"aliases":["Cymru"]},{"name":"Northern Ireland","kind":"Region","sub":"United Kingdom","lat":54.65,"lon":-6.7,"distance":1.46,"aliases":[]},{"name":"France","kind":"Country","sub":"Europe","lat":46.6,"lon":2.4,"distance":1.72,"aliases":["FR","FRA"]},{"name":"Spain","kind":"Country","sub":"Europe","lat":40.3,"lon":-3.7,"distance":1.72,"aliases":["Espana","ES","ESP"]},{"name":"Portugal","kind":"Country","sub":"Europe","lat":39.6,"lon":-8.1,"distance":1.58,"aliases":["PT","PRT"]},{"name":"Germany","kind":"Country","sub":"Europe","lat":51.2,"lon":10.4,"distance":1.68,"aliases":["Deutschland","DE","DEU"]},{"name":"Italy","kind":"Country","sub":"Europe","lat":42.6,"lon":12.6,"distance":1.7,"aliases":["Italia","IT","ITA"]},{"name":"Netherlands","kind":"Country","sub":"Europe","lat":52.2,"lon":5.3,"distance":1.5,"aliases":["Holland","NL","NLD"]},{"name":"Belgium","kind":"Country","sub":"Europe","lat":50.6,"lon":4.6,"distance":1.48,"aliases":["BE","BEL"]},{"name":"Luxembourg","kind":"Country","sub":"Europe","lat":49.75,"lon":6.1,"distance":1.44,"aliases":["LU","LUX"]},{"name":"Switzerland","kind":"Country","sub":"Europe","lat":46.8,"lon":8.2,"distance":1.5,"aliases":["CH","CHE"]},{"name":"Austria","kind":"Country","sub":"Europe","lat":47.6,"lon":14.1,"distance":1.55,"aliases":["AT","AUT"]},{"name":"Norway","kind":"Country","sub":"Europe","lat":64.0,"lon":13.0,"distance":1.82,"aliases":["NO","NOR"]},{"name":"Sweden","kind":"Country","sub":"Europe","lat":62.5,"lon":16.5,"distance":1.82,"aliases":["SE","SWE"]},{"name":"Finland","kind":"Country","sub":"Europe","lat":64.2,"lon":26.0,"distance":1.78,"aliases":["Suomi","FI","FIN"]},{"name":"Denmark","kind":"Country","sub":"Europe","lat":56.0,"lon":10.0,"distance":1.54,"aliases":["DK","DNK"]},{"name":"Iceland","kind":"Country","sub":"Europe","lat":64.9,"lon":-18.6,"distance":1.56,"aliases":["IS","ISL"]},{"name":"Greenland","kind":"Territory","sub":"North Atlantic / Arctic","lat":71.7,"lon":-42.6,"distance":2.05,"aliases":["Kalaallit Nunaat","GL"]},{"name":"Poland","kind":"Country","sub":"Europe","lat":52.1,"lon":19.4,"distance":1.68,"aliases":["PL","POL"]},{"name":"Czechia","kind":"Country","sub":"Europe","lat":49.8,"lon":15.5,"distance":1.55,"aliases":["Czech Republic","CZ","CZE"]},{"name":"Slovakia","kind":"Country","sub":"Europe","lat":48.7,"lon":19.7,"distance":1.52,"aliases":["SK","SVK"]},{"name":"Hungary","kind":"Country","sub":"Europe","lat":47.2,"lon":19.5,"distance":1.55,"aliases":["HU","HUN"]},{"name":"Romania","kind":"Country","sub":"Europe","lat":45.9,"lon":25.0,"distance":1.65,"aliases":["RO","ROU"]},{"name":"Bulgaria","kind":"Country","sub":"Europe","lat":42.7,"lon":25.5,"distance":1.58,"aliases":["BG","BGR"]},{"name":"Greece","kind":"Country","sub":"Europe","lat":39.1,"lon":22.9,"distance":1.64,"aliases":["Hellas","GR","GRC"]},{"name":"Croatia","kind":"Country","sub":"Europe","lat":45.1,"lon":15.5,"distance":1.55,"aliases":["HR","HRV"]},{"name":"Slovenia","kind":"Country","sub":"Europe","lat":46.1,"lon":14.8,"distance":1.48,"aliases":["SI","SVN"]},{"name":"Serbia","kind":"Country","sub":"Europe","lat":44.1,"lon":20.9,"distance":1.55,"aliases":["RS","SRB"]},{"name":"Bosnia and Herzegovina","kind":"Country","sub":"Europe","lat":44.0,"lon":17.8,"distance":1.52,"aliases":["Bosnia","BA","BIH"]},{"name":"Montenegro","kind":"Country","sub":"Europe","lat":42.7,"lon":19.3,"distance":1.46,"aliases":["ME","MNE"]},{"name":"North Macedonia","kind":"Country","sub":"Europe","lat":41.6,"lon":21.7,"distance":1.48,"aliases":["MK","MKD"]},{"name":"Albania","kind":"Country","sub":"Europe","lat":41.1,"lon":20.1,"distance":1.48,"aliases":["AL","ALB"]},{"name":"Kosovo","kind":"Country","sub":"Europe","lat":42.6,"lon":20.9,"distance":1.46,"aliases":["XK"]},{"name":"Ukraine","kind":"Country","sub":"Europe","lat":48.8,"lon":31.2,"distance":1.82,"aliases":["UA","UKR"]},{"name":"Moldova","kind":"Country","sub":"Europe","lat":47.2,"lon":28.5,"distance":1.5,"aliases":["MD","MDA"]},{"name":"Belarus","kind":"Country","sub":"Europe","lat":53.7,"lon":27.9,"distance":1.68,"aliases":["BY","BLR"]},{"name":"Lithuania","kind":"Country","sub":"Europe","lat":55.2,"lon":23.9,"distance":1.52,"aliases":["LT","LTU"]},{"name":"Latvia","kind":"Country","sub":"Europe","lat":56.9,"lon":24.6,"distance":1.52,"aliases":["LV","LVA"]},{"name":"Estonia","kind":"Country","sub":"Europe","lat":58.6,"lon":25.0,"distance":1.5,"aliases":["EE","EST"]},{"name":"Malta","kind":"Country","sub":"Europe","lat":35.9,"lon":14.4,"distance":1.42,"aliases":["MT","MLT"]},{"name":"Cyprus","kind":"Country","sub":"Europe","lat":35.1,"lon":33.4,"distance":1.46,"aliases":["CY","CYP"]},{"name":"Russia","kind":"Country","sub":"Eurasia","lat":61.5,"lon":95.0,"distance":2.55,"aliases":["Russian Federation","RU","RUS"]},{"name":"Turkey","kind":"Country","sub":"Eurasia","lat":39.0,"lon":35.2,"distance":1.8,"aliases":["Turkiye","TR","TUR"]},{"name":"Georgia","kind":"Country","sub":"Caucasus","lat":42.3,"lon":43.4,"distance":1.54,"aliases":["GE","GEO"]},{"name":"Armenia","kind":"Country","sub":"Caucasus","lat":40.1,"lon":45.0,"distance":1.5,"aliases":["AM","ARM"]},{"name":"Azerbaijan","kind":"Country","sub":"Caucasus","lat":40.3,"lon":47.6,"distance":1.54,"aliases":["AZ","AZE"]},{"name":"United States","kind":"Country","sub":"North America","lat":39.5,"lon":-98.5,"distance":2.35,"aliases":["USA","US","America","United States of America"]},{"name":"Canada","kind":"Country","sub":"North America","lat":58.0,"lon":-102.0,"distance":2.45,"aliases":["CA","CAN"]},{"name":"Mexico","kind":"Country","sub":"North America","lat":23.6,"lon":-102.5,"distance":2.02,"aliases":["MX","MEX"]},{"name":"Guatemala","kind":"Country","sub":"Central America","lat":15.5,"lon":-90.3,"distance":1.56,"aliases":["GT","GTM"]},{"name":"Belize","kind":"Country","sub":"Central America","lat":17.2,"lon":-88.7,"distance":1.48,"aliases":["BZ","BLZ"]},{"name":"Honduras","kind":"Country","sub":"Central America","lat":14.8,"lon":-86.5,"distance":1.56,"aliases":["HN","HND"]},{"name":"El Salvador","kind":"Country","sub":"Central America","lat":13.8,"lon":-88.9,"distance":1.48,"aliases":["SV","SLV"]},{"name":"Nicaragua","kind":"Country","sub":"Central America","lat":12.9,"lon":-85.2,"distance":1.56,"aliases":["NI","NIC"]},{"name":"Costa Rica","kind":"Country","sub":"Central America","lat":9.9,"lon":-84.1,"distance":1.52,"aliases":["CR","CRI"]},{"name":"Panama","kind":"Country","sub":"Central America","lat":8.6,"lon":-80.1,"distance":1.54,"aliases":["PA","PAN"]},{"name":"Cuba","kind":"Country","sub":"Caribbean","lat":21.5,"lon":-79.0,"distance":1.64,"aliases":["CU","CUB"]},{"name":"Jamaica","kind":"Country","sub":"Caribbean","lat":18.1,"lon":-77.3,"distance":1.46,"aliases":["JM","JAM"]},{"name":"Haiti","kind":"Country","sub":"Caribbean","lat":19.0,"lon":-72.4,"distance":1.48,"aliases":["HT","HTI"]},{"name":"Dominican Republic","kind":"Country","sub":"Caribbean","lat":18.9,"lon":-70.4,"distance":1.5,"aliases":["DO","DOM"]},{"name":"Puerto Rico","kind":"Territory","sub":"Caribbean","lat":18.2,"lon":-66.5,"distance":1.45,"aliases":["PR","PRI"]},{"name":"Bahamas","kind":"Country","sub":"Caribbean","lat":24.4,"lon":-76.5,"distance":1.56,"aliases":["BS","BHS"]},{"name":"Barbados","kind":"Country","sub":"Caribbean","lat":13.19,"lon":-59.54,"distance":1.42,"aliases":["BB","BRB"]},{"name":"Trinidad and Tobago","kind":"Country","sub":"Caribbean","lat":10.5,"lon":-61.3,"distance":1.45,"aliases":["TT","TTO"]},{"name":"Brazil","kind":"Country","sub":"South America","lat":-11.5,"lon":-52.5,"distance":2.4,"aliases":["Brasil","BR","BRA"]},{"name":"Argentina","kind":"Country","sub":"South America","lat":-36.5,"lon":-64.5,"distance":2.25,"aliases":["AR","ARG"]},{"name":"Chile","kind":"Country","sub":"South America","lat":-35.7,"lon":-71.5,"distance":2.2,"aliases":["CL","CHL"]},{"name":"Peru","kind":"Country","sub":"South America","lat":-9.5,"lon":-75.2,"distance":1.95,"aliases":["PE","PER"]},{"name":"Colombia","kind":"Country","sub":"South America","lat":4.6,"lon":-74.1,"distance":1.88,"aliases":["CO","COL"]},{"name":"Venezuela","kind":"Country","sub":"South America","lat":7.1,"lon":-66.2,"distance":1.82,"aliases":["VE","VEN"]},{"name":"Ecuador","kind":"Country","sub":"South America","lat":-1.6,"lon":-78.4,"distance":1.62,"aliases":["EC","ECU"]},{"name":"Bolivia","kind":"Country","sub":"South America","lat":-16.5,"lon":-64.7,"distance":1.85,"aliases":["BO","BOL"]},{"name":"Paraguay","kind":"Country","sub":"South America","lat":-23.4,"lon":-58.4,"distance":1.72,"aliases":["PY","PRY"]},{"name":"Uruguay","kind":"Country","sub":"South America","lat":-32.8,"lon":-56.0,"distance":1.6,"aliases":["UY","URY"]},{"name":"Guyana","kind":"Country","sub":"South America","lat":5.0,"lon":-58.9,"distance":1.6,"aliases":["GY","GUY"]},{"name":"Suriname","kind":"Country","sub":"South America","lat":4.1,"lon":-56.0,"distance":1.56,"aliases":["SR","SUR"]},{"name":"China","kind":"Country","sub":"Asia","lat":35.5,"lon":104.0,"distance":2.38,"aliases":["PRC","CN","CHN"]},{"name":"India","kind":"Country","sub":"Asia","lat":22.0,"lon":79.0,"distance":2.22,"aliases":["Bharat","IN","IND"]},{"name":"Pakistan","kind":"Country","sub":"Asia","lat":30.4,"lon":69.3,"distance":1.88,"aliases":["PK","PAK"]},{"name":"Bangladesh","kind":"Country","sub":"Asia","lat":23.8,"lon":90.3,"distance":1.58,"aliases":["BD","BGD"]},{"name":"Sri Lanka","kind":"Country","sub":"Asia","lat":7.9,"lon":80.7,"distance":1.52,"aliases":["LK","LKA"]},{"name":"Nepal","kind":"Country","sub":"Asia","lat":28.3,"lon":84.1,"distance":1.58,"aliases":["NP","NPL"]},{"name":"Bhutan","kind":"Country","sub":"Asia","lat":27.5,"lon":90.4,"distance":1.48,"aliases":["BT","BTN"]},{"name":"Maldives","kind":"Country","sub":"Asia","lat":3.2,"lon":73.2,"distance":1.55,"aliases":["MV","MDV"]},{"name":"Afghanistan","kind":"Country","sub":"Asia","lat":33.9,"lon":66.0,"distance":1.78,"aliases":["AF","AFG"]},{"name":"Kazakhstan","kind":"Country","sub":"Central Asia","lat":48.0,"lon":67.0,"distance":2.1,"aliases":["KZ","KAZ"]},{"name":"Uzbekistan","kind":"Country","sub":"Central Asia","lat":41.5,"lon":64.5,"distance":1.76,"aliases":["UZ","UZB"]},{"name":"Turkmenistan","kind":"Country","sub":"Central Asia","lat":39.0,"lon":59.5,"distance":1.72,"aliases":["TM","TKM"]},{"name":"Kyrgyzstan","kind":"Country","sub":"Central Asia","lat":41.2,"lon":74.8,"distance":1.6,"aliases":["KG","KGZ"]},{"name":"Tajikistan","kind":"Country","sub":"Central Asia","lat":38.9,"lon":71.3,"distance":1.58,"aliases":["TJ","TJK"]},{"name":"Mongolia","kind":"Country","sub":"Asia","lat":46.8,"lon":103.8,"distance":1.98,"aliases":["MN","MNG"]},{"name":"Japan","kind":"Country","sub":"Asia","lat":36.5,"lon":138.2,"distance":1.82,"aliases":["Nippon","JP","JPN"]},{"name":"South Korea","kind":"Country","sub":"Asia","lat":36.5,"lon":127.8,"distance":1.56,"aliases":["Republic of Korea","Korea","KR","KOR"]},{"name":"North Korea","kind":"Country","sub":"Asia","lat":40.0,"lon":127.2,"distance":1.58,"aliases":["DPRK","KP","PRK"]},{"name":"Taiwan","kind":"Country","sub":"Asia","lat":23.7,"lon":121.0,"distance":1.5,"aliases":["TW","TWN"]},{"name":"Philippines","kind":"Country","sub":"Southeast Asia","lat":12.8,"lon":122.0,"distance":1.8,"aliases":["PH","PHL"]},{"name":"Vietnam","kind":"Country","sub":"Southeast Asia","lat":16.0,"lon":107.8,"distance":1.78,"aliases":["Viet Nam","VN","VNM"]},{"name":"Thailand","kind":"Country","sub":"Southeast Asia","lat":15.4,"lon":101.0,"distance":1.76,"aliases":["TH","THA"]},{"name":"Myanmar","kind":"Country","sub":"Southeast Asia","lat":21.0,"lon":96.0,"distance":1.78,"aliases":["Burma","MM","MMR"]},{"name":"Laos","kind":"Country","sub":"Southeast Asia","lat":18.4,"lon":103.9,"distance":1.64,"aliases":["LA","LAO"]},{"name":"Cambodia","kind":"Country","sub":"Southeast Asia","lat":12.6,"lon":104.9,"distance":1.58,"aliases":["KH","KHM"]},{"name":"Malaysia","kind":"Country","sub":"Southeast Asia","lat":4.2,"lon":109.5,"distance":1.82,"aliases":["MY","MYS"]},{"name":"Singapore","kind":"Country","sub":"Southeast Asia","lat":1.35,"lon":103.82,"distance":1.4,"aliases":["SG","SGP"]},{"name":"Indonesia","kind":"Country","sub":"Southeast Asia","lat":-2.5,"lon":118.0,"distance":2.28,"aliases":["ID","IDN"]},{"name":"Brunei","kind":"Country","sub":"Southeast Asia","lat":4.5,"lon":114.7,"distance":1.44,"aliases":["BN","BRN"]},{"name":"Timor-Leste","kind":"Country","sub":"Southeast Asia","lat":-8.8,"lon":125.7,"distance":1.48,"aliases":["East Timor","TL","TLS"]},{"name":"Iran","kind":"Country","sub":"Middle East","lat":32.4,"lon":53.7,"distance":1.95,"aliases":["IR","IRN"]},{"name":"Iraq","kind":"Country","sub":"Middle East","lat":33.2,"lon":43.7,"distance":1.74,"aliases":["IQ","IRQ"]},{"name":"Saudi Arabia","kind":"Country","sub":"Middle East","lat":24.0,"lon":45.0,"distance":2.02,"aliases":["SA","SAU","KSA"]},{"name":"United Arab Emirates","kind":"Country","sub":"Middle East","lat":24.3,"lon":54.4,"distance":1.56,"aliases":["UAE","Emirates","AE","ARE"]},{"name":"Qatar","kind":"Country","sub":"Middle East","lat":25.3,"lon":51.2,"distance":1.44,"aliases":["QA","QAT"]},{"name":"Kuwait","kind":"Country","sub":"Middle East","lat":29.3,"lon":47.5,"distance":1.46,"aliases":["KW","KWT"]},{"name":"Bahrain","kind":"Country","sub":"Middle East","lat":26.05,"lon":50.55,"distance":1.4,"aliases":["BH","BHR"]},{"name":"Oman","kind":"Country","sub":"Middle East","lat":21.0,"lon":57.0,"distance":1.72,"aliases":["OM","OMN"]},{"name":"Yemen","kind":"Country","sub":"Middle East","lat":15.6,"lon":47.5,"distance":1.72,"aliases":["YE","YEM"]},{"name":"Jordan","kind":"Country","sub":"Middle East","lat":31.2,"lon":36.5,"distance":1.54,"aliases":["JO","JOR"]},{"name":"Lebanon","kind":"Country","sub":"Middle East","lat":33.9,"lon":35.8,"distance":1.46,"aliases":["LB","LBN"]},{"name":"Syria","kind":"Country","sub":"Middle East","lat":35.0,"lon":38.5,"distance":1.6,"aliases":["SY","SYR"]},{"name":"Israel","kind":"Country","sub":"Middle East","lat":31.4,"lon":34.9,"distance":1.48,"aliases":["IL","ISR"]},{"name":"Palestine","kind":"Country","sub":"Middle East","lat":31.9,"lon":35.2,"distance":1.45,"aliases":["PS","PSE"]},{"name":"Egypt","kind":"Country","sub":"Africa","lat":26.8,"lon":30.8,"distance":1.85,"aliases":["EG","EGY"]},{"name":"Libya","kind":"Country","sub":"Africa","lat":27.0,"lon":17.2,"distance":1.92,"aliases":["LY","LBY"]},{"name":"Tunisia","kind":"Country","sub":"Africa","lat":34.0,"lon":9.5,"distance":1.62,"aliases":["TN","TUN"]},{"name":"Algeria","kind":"Country","sub":"Africa","lat":28.0,"lon":2.6,"distance":2.02,"aliases":["DZ","DZA"]},{"name":"Morocco","kind":"Country","sub":"Africa","lat":31.8,"lon":-6.2,"distance":1.78,"aliases":["MA","MAR"]},{"name":"Mauritania","kind":"Country","sub":"Africa","lat":20.3,"lon":-10.5,"distance":1.85,"aliases":["MR","MRT"]},{"name":"Mali","kind":"Country","sub":"Africa","lat":17.3,"lon":-3.5,"distance":1.88,"aliases":["ML","MLI"]},{"name":"Niger","kind":"Country","sub":"Africa","lat":17.5,"lon":8.2,"distance":1.88,"aliases":["NE","NER"]},{"name":"Chad","kind":"Country","sub":"Africa","lat":15.4,"lon":18.7,"distance":1.88,"aliases":["TD","TCD"]},{"name":"Sudan","kind":"Country","sub":"Africa","lat":15.6,"lon":30.2,"distance":1.92,"aliases":["SD","SDN"]},{"name":"South Sudan","kind":"Country","sub":"Africa","lat":7.5,"lon":30.0,"distance":1.76,"aliases":["SS","SSD"]},{"name":"Ethiopia","kind":"Country","sub":"Africa","lat":9.1,"lon":40.5,"distance":1.86,"aliases":["ET","ETH"]},{"name":"Eritrea","kind":"Country","sub":"Africa","lat":15.2,"lon":39.8,"distance":1.6,"aliases":["ER","ERI"]},{"name":"Djibouti","kind":"Country","sub":"Africa","lat":11.8,"lon":42.6,"distance":1.45,"aliases":["DJ","DJI"]},{"name":"Somalia","kind":"Country","sub":"Africa","lat":5.8,"lon":46.2,"distance":1.82,"aliases":["SO","SOM"]},{"name":"Kenya","kind":"Country","sub":"Africa","lat":0.4,"lon":37.9,"distance":1.76,"aliases":["KE","KEN"]},{"name":"Uganda","kind":"Country","sub":"Africa","lat":1.4,"lon":32.3,"distance":1.62,"aliases":["UG","UGA"]},{"name":"Tanzania","kind":"Country","sub":"Africa","lat":-6.4,"lon":35.0,"distance":1.82,"aliases":["TZ","TZA"]},{"name":"Rwanda","kind":"Country","sub":"Africa","lat":-1.9,"lon":29.9,"distance":1.46,"aliases":["RW","RWA"]},{"name":"Burundi","kind":"Country","sub":"Africa","lat":-3.4,"lon":29.9,"distance":1.46,"aliases":["BI","BDI"]},{"name":"Democratic Republic of the Congo","kind":"Country","sub":"Africa","lat":-2.9,"lon":23.6,"distance":2.02,"aliases":["DRC","DR Congo","CD","COD"]},{"name":"Republic of the Congo","kind":"Country","sub":"Africa","lat":-0.8,"lon":15.2,"distance":1.7,"aliases":["Congo","CG","COG"]},{"name":"Central African Republic","kind":"Country","sub":"Africa","lat":6.6,"lon":20.9,"distance":1.76,"aliases":["CAR","CF","CAF"]},{"name":"Cameroon","kind":"Country","sub":"Africa","lat":6.0,"lon":12.4,"distance":1.74,"aliases":["CM","CMR"]},{"name":"Gabon","kind":"Country","sub":"Africa","lat":-0.8,"lon":11.6,"distance":1.62,"aliases":["GA","GAB"]},{"name":"Nigeria","kind":"Country","sub":"Africa","lat":9.1,"lon":8.7,"distance":1.82,"aliases":["NG","NGA"]},{"name":"Ghana","kind":"Country","sub":"Africa","lat":7.9,"lon":-1.0,"distance":1.62,"aliases":["GH","GHA"]},{"name":"Cote d'Ivoire","kind":"Country","sub":"Africa","lat":7.5,"lon":-5.5,"distance":1.64,"aliases":["Ivory Coast","CI","CIV"]},{"name":"Senegal","kind":"Country","sub":"Africa","lat":14.5,"lon":-14.5,"distance":1.6,"aliases":["SN","SEN"]},{"name":"Gambia","kind":"Country","sub":"Africa","lat":13.45,"lon":-15.4,"distance":1.46,"aliases":["GM","GMB"]},{"name":"Guinea","kind":"Country","sub":"Africa","lat":10.4,"lon":-10.9,"distance":1.62,"aliases":["GN","GIN"]},{"name":"Sierra Leone","kind":"Country","sub":"Africa","lat":8.5,"lon":-11.8,"distance":1.52,"aliases":["SL","SLE"]},{"name":"Liberia","kind":"Country","sub":"Africa","lat":6.4,"lon":-9.4,"distance":1.54,"aliases":["LR","LBR"]},{"name":"Burkina Faso","kind":"Country","sub":"Africa","lat":12.3,"lon":-1.6,"distance":1.64,"aliases":["BF","BFA"]},{"name":"Benin","kind":"Country","sub":"Africa","lat":9.3,"lon":2.3,"distance":1.58,"aliases":["BJ","BEN"]},{"name":"Togo","kind":"Country","sub":"Africa","lat":8.6,"lon":0.9,"distance":1.54,"aliases":["TG","TGO"]},{"name":"Angola","kind":"Country","sub":"Africa","lat":-12.3,"lon":17.5,"distance":1.9,"aliases":["AO","AGO"]},{"name":"Zambia","kind":"Country","sub":"Africa","lat":-13.5,"lon":27.8,"distance":1.8,"aliases":["ZM","ZMB"]},{"name":"Zimbabwe","kind":"Country","sub":"Africa","lat":-19.0,"lon":29.8,"distance":1.7,"aliases":["ZW","ZWE"]},{"name":"Malawi","kind":"Country","sub":"Africa","lat":-13.3,"lon":34.3,"distance":1.62,"aliases":["MW","MWI"]},{"name":"Mozambique","kind":"Country","sub":"Africa","lat":-18.6,"lon":35.5,"distance":1.88,"aliases":["MZ","MOZ"]},{"name":"Madagascar","kind":"Country","sub":"Africa","lat":-19.2,"lon":46.7,"distance":1.84,"aliases":["MG","MDG"]},{"name":"Mauritius","kind":"Country","sub":"Africa","lat":-20.28,"lon":57.55,"distance":1.44,"aliases":["MU","MUS"]},{"name":"Namibia","kind":"Country","sub":"Africa","lat":-22.2,"lon":17.2,"distance":1.85,"aliases":["NA","NAM"]},{"name":"Botswana","kind":"Country","sub":"Africa","lat":-22.3,"lon":24.7,"distance":1.78,"aliases":["BW","BWA"]},{"name":"South Africa","kind":"Country","sub":"Africa","lat":-29.0,"lon":25.0,"distance":1.92,"aliases":["ZA","ZAF","RSA"]},{"name":"Lesotho","kind":"Country","sub":"Africa","lat":-29.6,"lon":28.2,"distance":1.46,"aliases":["LS","LSO"]},{"name":"Eswatini","kind":"Country","sub":"Africa","lat":-26.5,"lon":31.5,"distance":1.46,"aliases":["Swaziland","SZ","SWZ"]},{"name":"Australia","kind":"Country","sub":"Oceania","lat":-25.5,"lon":134.5,"distance":2.32,"aliases":["AU","AUS"]},{"name":"New Zealand","kind":"Country","sub":"Oceania","lat":-41.5,"lon":172.5,"distance":1.72,"aliases":["Aotearoa","NZ","NZL"]},{"name":"Papua New Guinea","kind":"Country","sub":"Oceania","lat":-6.3,"lon":145.2,"distance":1.76,"aliases":["PNG","PG"]},{"name":"Fiji","kind":"Country","sub":"Oceania","lat":-17.8,"lon":178.0,"distance":1.52,"aliases":["FJ","FJI"]},{"name":"Solomon Islands","kind":"Country","sub":"Oceania","lat":-9.4,"lon":160.2,"distance":1.58,"aliases":["SB","SLB"]},{"name":"Vanuatu","kind":"Country","sub":"Oceania","lat":-16.2,"lon":167.8,"distance":1.54,"aliases":["VU","VUT"]},{"name":"Samoa","kind":"Country","sub":"Oceania","lat":-13.8,"lon":-172.1,"distance":1.46,"aliases":["WS","WSM"]},{"name":"Tonga","kind":"Country","sub":"Oceania","lat":-21.2,"lon":-175.2,"distance":1.46,"aliases":["TO","TON"]},{"name":"Siberia","kind":"Region","sub":"Russia","lat":63.0,"lon":105.0,"distance":2.25,"aliases":["Northern Siberia","Eastern Siberia"]},{"name":"Arctic","kind":"Region","sub":"Polar","lat":82.0,"lon":0.0,"distance":2.35,"aliases":["North Pole","Arctic Ocean"]},{"name":"Antarctica","kind":"Region","sub":"Polar","lat":-80.0,"lon":40.0,"distance":2.4,"aliases":["South Pole","Antarctic Plateau"]},{"name":"Amazon Basin","kind":"Region","sub":"South America","lat":-4.5,"lon":-62.0,"distance":2.1,"aliases":["Amazonia","Amazon Rainforest"]},{"name":"Patagonia","kind":"Region","sub":"South America","lat":-47.5,"lon":-70.5,"distance":1.82,"aliases":[]},{"name":"Sahel","kind":"Region","sub":"Africa","lat":14.5,"lon":8.0,"distance":2.15,"aliases":[]},{"name":"Horn of Africa","kind":"Region","sub":"Africa","lat":7.5,"lon":45.0,"distance":1.85,"aliases":[]},{"name":"Mediterranean","kind":"Region","sub":"Southern Europe & North Africa","lat":38.0,"lon":16.0,"distance":2.05,"aliases":["Mediterranean Sea"]},{"name":"Southern Alps","kind":"Region","sub":"New Zealand","lat":-43.6,"lon":170.2,"distance":1.52,"aliases":[]},{"name":"Himalayas","kind":"Region","sub":"South & Central Asia","lat":28.6,"lon":85.5,"distance":1.85,"aliases":[]},{"name":"Dublin","kind":"City","sub":"Ireland","lat":53.3498,"lon":-6.2603,"distance":1.44,"aliases":["Baile Atha Cliath"]},{"name":"Cork","kind":"City","sub":"Ireland","lat":51.8985,"lon":-8.4756,"distance":1.44,"aliases":[]},{"name":"Galway","kind":"City","sub":"Ireland","lat":53.2707,"lon":-9.0568,"distance":1.44,"aliases":[]},{"name":"Limerick","kind":"City","sub":"Ireland","lat":52.6638,"lon":-8.6267,"distance":1.44,"aliases":[]},{"name":"Belfast","kind":"City","sub":"United Kingdom","lat":54.5973,"lon":-5.9301,"distance":1.44,"aliases":[]},{"name":"London","kind":"City","sub":"United Kingdom","lat":51.5074,"lon":-0.1278,"distance":1.45,"aliases":[]},{"name":"Edinburgh","kind":"City","sub":"United Kingdom","lat":55.9533,"lon":-3.1883,"distance":1.44,"aliases":[]},{"name":"Manchester","kind":"City","sub":"United Kingdom","lat":53.4808,"lon":-2.2426,"distance":1.44,"aliases":[]},{"name":"Truro","kind":"City","sub":"United Kingdom","lat":50.2632,"lon":-5.051,"distance":1.44,"aliases":["Cornwall"]},{"name":"Paris","kind":"City","sub":"France","lat":48.8566,"lon":2.3522,"distance":1.45,"aliases":[]},{"name":"Madrid","kind":"City","sub":"Spain","lat":40.4168,"lon":-3.7038,"distance":1.45,"aliases":[]},{"name":"Barcelona","kind":"City","sub":"Spain","lat":41.3874,"lon":2.1686,"distance":1.45,"aliases":[]},{"name":"Lisbon","kind":"City","sub":"Portugal","lat":38.7223,"lon":-9.1393,"distance":1.45,"aliases":[]},{"name":"Berlin","kind":"City","sub":"Germany","lat":52.52,"lon":13.405,"distance":1.45,"aliases":[]},{"name":"Rome","kind":"City","sub":"Italy","lat":41.9028,"lon":12.4964,"distance":1.45,"aliases":[]},{"name":"Amsterdam","kind":"City","sub":"Netherlands","lat":52.3676,"lon":4.9041,"distance":1.45,"aliases":[]},{"name":"Oslo","kind":"City","sub":"Norway","lat":59.9139,"lon":10.7522,"distance":1.45,"aliases":[]},{"name":"Stockholm","kind":"City","sub":"Sweden","lat":59.3293,"lon":18.0686,"distance":1.45,"aliases":[]},{"name":"Athens","kind":"City","sub":"Greece","lat":37.9838,"lon":23.7275,"distance":1.45,"aliases":[]},{"name":"Warsaw","kind":"City","sub":"Poland","lat":52.2297,"lon":21.0122,"distance":1.45,"aliases":[]},{"name":"Vienna","kind":"City","sub":"Austria","lat":48.2082,"lon":16.3738,"distance":1.45,"aliases":[]},{"name":"Zurich","kind":"City","sub":"Switzerland","lat":47.3769,"lon":8.5417,"distance":1.45,"aliases":[]},{"name":"Istanbul","kind":"City","sub":"Turkey","lat":41.0082,"lon":28.9784,"distance":1.45,"aliases":[]},{"name":"Moscow","kind":"City","sub":"Russia","lat":55.7558,"lon":37.6173,"distance":1.46,"aliases":[]},{"name":"New York","kind":"City","sub":"United States","lat":40.7128,"lon":-74.006,"distance":1.46,"aliases":["NYC"]},{"name":"Los Angeles","kind":"City","sub":"United States","lat":34.0522,"lon":-118.2437,"distance":1.46,"aliases":["LA"]},{"name":"Chicago","kind":"City","sub":"United States","lat":41.8781,"lon":-87.6298,"distance":1.46,"aliases":[]},{"name":"Miami","kind":"City","sub":"United States","lat":25.7617,"lon":-80.1918,"distance":1.46,"aliases":[]},{"name":"San Francisco","kind":"City","sub":"United States","lat":37.7749,"lon":-122.4194,"distance":1.46,"aliases":[]},{"name":"Seattle","kind":"City","sub":"United States","lat":47.6062,"lon":-122.3321,"distance":1.46,"aliases":[]},{"name":"Houston","kind":"City","sub":"United States","lat":29.7604,"lon":-95.3698,"distance":1.46,"aliases":[]},{"name":"Toronto","kind":"City","sub":"Canada","lat":43.6532,"lon":-79.3832,"distance":1.46,"aliases":[]},{"name":"Vancouver","kind":"City","sub":"Canada","lat":49.2827,"lon":-123.1207,"distance":1.46,"aliases":[]},{"name":"Montreal","kind":"City","sub":"Canada","lat":45.5017,"lon":-73.5673,"distance":1.46,"aliases":[]},{"name":"Mexico City","kind":"City","sub":"Mexico","lat":19.4326,"lon":-99.1332,"distance":1.46,"aliases":["CDMX"]},{"name":"Sao Paulo","kind":"City","sub":"Brazil","lat":-23.5505,"lon":-46.6333,"distance":1.46,"aliases":[]},{"name":"Rio de Janeiro","kind":"City","sub":"Brazil","lat":-22.9068,"lon":-43.1729,"distance":1.46,"aliases":["Rio"]},{"name":"Buenos Aires","kind":"City","sub":"Argentina","lat":-34.6037,"lon":-58.3816,"distance":1.46,"aliases":[]},{"name":"Santiago","kind":"City","sub":"Chile","lat":-33.4489,"lon":-70.6693,"distance":1.46,"aliases":[]},{"name":"Lima","kind":"City","sub":"Peru","lat":-12.0464,"lon":-77.0428,"distance":1.46,"aliases":[]},{"name":"Bogota","kind":"City","sub":"Colombia","lat":4.711,"lon":-74.0721,"distance":1.46,"aliases":[]},{"name":"Tokyo","kind":"City","sub":"Japan","lat":35.6762,"lon":139.6503,"distance":1.46,"aliases":[]},{"name":"Seoul","kind":"City","sub":"South Korea","lat":37.5665,"lon":126.978,"distance":1.46,"aliases":[]},{"name":"Beijing","kind":"City","sub":"China","lat":39.9042,"lon":116.4074,"distance":1.46,"aliases":[]},{"name":"Shanghai","kind":"City","sub":"China","lat":31.2304,"lon":121.4737,"distance":1.46,"aliases":[]},{"name":"Hong Kong","kind":"City","sub":"China","lat":22.3193,"lon":114.1694,"distance":1.44,"aliases":["HK"]},{"name":"Taipei","kind":"City","sub":"Taiwan","lat":25.033,"lon":121.5654,"distance":1.45,"aliases":[]},{"name":"Manila","kind":"City","sub":"Philippines","lat":14.5995,"lon":120.9842,"distance":1.46,"aliases":[]},{"name":"Bangkok","kind":"City","sub":"Thailand","lat":13.7563,"lon":100.5018,"distance":1.46,"aliases":[]},{"name":"Jakarta","kind":"City","sub":"Indonesia","lat":-6.2088,"lon":106.8456,"distance":1.46,"aliases":[]},{"name":"Mumbai","kind":"City","sub":"India","lat":19.076,"lon":72.8777,"distance":1.46,"aliases":[]},{"name":"New Delhi","kind":"City","sub":"India","lat":28.6139,"lon":77.209,"distance":1.46,"aliases":["Delhi"]},{"name":"Karachi","kind":"City","sub":"Pakistan","lat":24.8607,"lon":67.0011,"distance":1.46,"aliases":[]},{"name":"Islamabad","kind":"City","sub":"Pakistan","lat":33.6844,"lon":73.0479,"distance":1.46,"aliases":[]},{"name":"Lahore","kind":"City","sub":"Pakistan","lat":31.5204,"lon":74.3587,"distance":1.46,"aliases":[]},{"name":"Dhaka","kind":"City","sub":"Bangladesh","lat":23.8103,"lon":90.4125,"distance":1.46,"aliases":[]},{"name":"Dubai","kind":"City","sub":"United Arab Emirates","lat":25.2048,"lon":55.2708,"distance":1.45,"aliases":[]},{"name":"Riyadh","kind":"City","sub":"Saudi Arabia","lat":24.7136,"lon":46.6753,"distance":1.46,"aliases":[]},{"name":"Cairo","kind":"City","sub":"Egypt","lat":30.0444,"lon":31.2357,"distance":1.46,"aliases":[]},{"name":"Lagos","kind":"City","sub":"Nigeria","lat":6.5244,"lon":3.3792,"distance":1.46,"aliases":[]},{"name":"Nairobi","kind":"City","sub":"Kenya","lat":-1.2921,"lon":36.8219,"distance":1.46,"aliases":[]},{"name":"Johannesburg","kind":"City","sub":"South Africa","lat":-26.2041,"lon":28.0473,"distance":1.46,"aliases":[]},{"name":"Cape Town","kind":"City","sub":"South Africa","lat":-33.9249,"lon":18.4241,"distance":1.46,"aliases":[]},{"name":"Sydney","kind":"City","sub":"Australia","lat":-33.8688,"lon":151.2093,"distance":1.46,"aliases":[]},{"name":"Melbourne","kind":"City","sub":"Australia","lat":-37.8136,"lon":144.9631,"distance":1.46,"aliases":[]},{"name":"Brisbane","kind":"City","sub":"Australia","lat":-27.4698,"lon":153.0251,"distance":1.46,"aliases":[]},{"name":"Perth","kind":"City","sub":"Australia","lat":-31.9505,"lon":115.8605,"distance":1.46,"aliases":[]},{"name":"Auckland","kind":"City","sub":"New Zealand","lat":-36.8485,"lon":174.7633,"distance":1.45,"aliases":[]},{"name":"Wellington","kind":"City","sub":"New Zealand","lat":-41.2866,"lon":174.7756,"distance":1.45,"aliases":[]},{"name":"Christchurch","kind":"City","sub":"New Zealand","lat":-43.5321,"lon":172.6362,"distance":1.45,"aliases":[]}]
+[
+  {
+    "name": "Ireland",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 53.35,
+    "lon": -7.8,
+    "distance": 1.52,
+    "aliases": [
+      "Eire",
+      "Republic of Ireland",
+      "IE",
+      "IRL"
+    ]
+  },
+  {
+    "name": "United Kingdom",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 54.4,
+    "lon": -2.8,
+    "distance": 1.62,
+    "aliases": [
+      "UK",
+      "Britain",
+      "Great Britain",
+      "England",
+      "GBR"
+    ]
+  },
+  {
+    "name": "Scotland",
+    "kind": "Region",
+    "sub": "United Kingdom",
+    "lat": 56.8,
+    "lon": -4.2,
+    "distance": 1.52,
+    "aliases": [
+      "Scottish Highlands"
+    ]
+  },
+  {
+    "name": "Wales",
+    "kind": "Region",
+    "sub": "United Kingdom",
+    "lat": 52.3,
+    "lon": -3.8,
+    "distance": 1.48,
+    "aliases": [
+      "Cymru"
+    ]
+  },
+  {
+    "name": "Northern Ireland",
+    "kind": "Region",
+    "sub": "United Kingdom",
+    "lat": 54.65,
+    "lon": -6.7,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "France",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 46.6,
+    "lon": 2.4,
+    "distance": 1.72,
+    "aliases": [
+      "FR",
+      "FRA"
+    ]
+  },
+  {
+    "name": "Spain",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 40.3,
+    "lon": -3.7,
+    "distance": 1.72,
+    "aliases": [
+      "Espana",
+      "ES",
+      "ESP"
+    ]
+  },
+  {
+    "name": "Portugal",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 39.6,
+    "lon": -8.1,
+    "distance": 1.58,
+    "aliases": [
+      "PT",
+      "PRT"
+    ]
+  },
+  {
+    "name": "Germany",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 51.2,
+    "lon": 10.4,
+    "distance": 1.68,
+    "aliases": [
+      "Deutschland",
+      "DE",
+      "DEU"
+    ]
+  },
+  {
+    "name": "Italy",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 42.6,
+    "lon": 12.6,
+    "distance": 1.7,
+    "aliases": [
+      "Italia",
+      "IT",
+      "ITA"
+    ]
+  },
+  {
+    "name": "Netherlands",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 52.2,
+    "lon": 5.3,
+    "distance": 1.5,
+    "aliases": [
+      "Holland",
+      "NL",
+      "NLD"
+    ]
+  },
+  {
+    "name": "Belgium",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 50.6,
+    "lon": 4.6,
+    "distance": 1.48,
+    "aliases": [
+      "BE",
+      "BEL"
+    ]
+  },
+  {
+    "name": "Luxembourg",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 49.75,
+    "lon": 6.1,
+    "distance": 1.44,
+    "aliases": [
+      "LU",
+      "LUX"
+    ]
+  },
+  {
+    "name": "Switzerland",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 46.8,
+    "lon": 8.2,
+    "distance": 1.5,
+    "aliases": [
+      "CH",
+      "CHE"
+    ]
+  },
+  {
+    "name": "Austria",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 47.6,
+    "lon": 14.1,
+    "distance": 1.55,
+    "aliases": [
+      "AT",
+      "AUT"
+    ]
+  },
+  {
+    "name": "Norway",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 64.0,
+    "lon": 13.0,
+    "distance": 1.82,
+    "aliases": [
+      "NO",
+      "NOR"
+    ]
+  },
+  {
+    "name": "Sweden",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 62.5,
+    "lon": 16.5,
+    "distance": 1.82,
+    "aliases": [
+      "SE",
+      "SWE"
+    ]
+  },
+  {
+    "name": "Finland",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 64.2,
+    "lon": 26.0,
+    "distance": 1.78,
+    "aliases": [
+      "Suomi",
+      "FI",
+      "FIN"
+    ]
+  },
+  {
+    "name": "Denmark",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 56.0,
+    "lon": 10.0,
+    "distance": 1.54,
+    "aliases": [
+      "DK",
+      "DNK"
+    ]
+  },
+  {
+    "name": "Iceland",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 64.9,
+    "lon": -18.6,
+    "distance": 1.56,
+    "aliases": [
+      "IS",
+      "ISL"
+    ]
+  },
+  {
+    "name": "Greenland",
+    "kind": "Territory",
+    "sub": "North Atlantic / Arctic",
+    "lat": 71.7,
+    "lon": -42.6,
+    "distance": 2.05,
+    "aliases": [
+      "Kalaallit Nunaat",
+      "GL"
+    ]
+  },
+  {
+    "name": "Poland",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 52.1,
+    "lon": 19.4,
+    "distance": 1.68,
+    "aliases": [
+      "PL",
+      "POL"
+    ]
+  },
+  {
+    "name": "Czechia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 49.8,
+    "lon": 15.5,
+    "distance": 1.55,
+    "aliases": [
+      "Czech Republic",
+      "CZ",
+      "CZE"
+    ]
+  },
+  {
+    "name": "Slovakia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 48.7,
+    "lon": 19.7,
+    "distance": 1.52,
+    "aliases": [
+      "SK",
+      "SVK"
+    ]
+  },
+  {
+    "name": "Hungary",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 47.2,
+    "lon": 19.5,
+    "distance": 1.55,
+    "aliases": [
+      "HU",
+      "HUN"
+    ]
+  },
+  {
+    "name": "Romania",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 45.9,
+    "lon": 25.0,
+    "distance": 1.65,
+    "aliases": [
+      "RO",
+      "ROU"
+    ]
+  },
+  {
+    "name": "Bulgaria",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 42.7,
+    "lon": 25.5,
+    "distance": 1.58,
+    "aliases": [
+      "BG",
+      "BGR"
+    ]
+  },
+  {
+    "name": "Greece",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 39.1,
+    "lon": 22.9,
+    "distance": 1.64,
+    "aliases": [
+      "Hellas",
+      "GR",
+      "GRC"
+    ]
+  },
+  {
+    "name": "Croatia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 45.1,
+    "lon": 15.5,
+    "distance": 1.55,
+    "aliases": [
+      "HR",
+      "HRV"
+    ]
+  },
+  {
+    "name": "Slovenia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 46.1,
+    "lon": 14.8,
+    "distance": 1.48,
+    "aliases": [
+      "SI",
+      "SVN"
+    ]
+  },
+  {
+    "name": "Serbia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 44.1,
+    "lon": 20.9,
+    "distance": 1.55,
+    "aliases": [
+      "RS",
+      "SRB"
+    ]
+  },
+  {
+    "name": "Bosnia and Herzegovina",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 44.0,
+    "lon": 17.8,
+    "distance": 1.52,
+    "aliases": [
+      "Bosnia",
+      "BA",
+      "BIH"
+    ]
+  },
+  {
+    "name": "Montenegro",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 42.7,
+    "lon": 19.3,
+    "distance": 1.46,
+    "aliases": [
+      "ME",
+      "MNE"
+    ]
+  },
+  {
+    "name": "North Macedonia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 41.6,
+    "lon": 21.7,
+    "distance": 1.48,
+    "aliases": [
+      "MK",
+      "MKD"
+    ]
+  },
+  {
+    "name": "Albania",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 41.1,
+    "lon": 20.1,
+    "distance": 1.48,
+    "aliases": [
+      "AL",
+      "ALB"
+    ]
+  },
+  {
+    "name": "Kosovo",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 42.6,
+    "lon": 20.9,
+    "distance": 1.46,
+    "aliases": [
+      "XK"
+    ]
+  },
+  {
+    "name": "Ukraine",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 48.8,
+    "lon": 31.2,
+    "distance": 1.82,
+    "aliases": [
+      "UA",
+      "UKR"
+    ]
+  },
+  {
+    "name": "Moldova",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 47.2,
+    "lon": 28.5,
+    "distance": 1.5,
+    "aliases": [
+      "MD",
+      "MDA"
+    ]
+  },
+  {
+    "name": "Belarus",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 53.7,
+    "lon": 27.9,
+    "distance": 1.68,
+    "aliases": [
+      "BY",
+      "BLR"
+    ]
+  },
+  {
+    "name": "Lithuania",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 55.2,
+    "lon": 23.9,
+    "distance": 1.52,
+    "aliases": [
+      "LT",
+      "LTU"
+    ]
+  },
+  {
+    "name": "Latvia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 56.9,
+    "lon": 24.6,
+    "distance": 1.52,
+    "aliases": [
+      "LV",
+      "LVA"
+    ]
+  },
+  {
+    "name": "Estonia",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 58.6,
+    "lon": 25.0,
+    "distance": 1.5,
+    "aliases": [
+      "EE",
+      "EST"
+    ]
+  },
+  {
+    "name": "Malta",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 35.9,
+    "lon": 14.4,
+    "distance": 1.42,
+    "aliases": [
+      "MT",
+      "MLT"
+    ]
+  },
+  {
+    "name": "Cyprus",
+    "kind": "Country",
+    "sub": "Europe",
+    "lat": 35.1,
+    "lon": 33.4,
+    "distance": 1.46,
+    "aliases": [
+      "CY",
+      "CYP"
+    ]
+  },
+  {
+    "name": "Russia",
+    "kind": "Country",
+    "sub": "Eurasia",
+    "lat": 61.5,
+    "lon": 95.0,
+    "distance": 2.55,
+    "aliases": [
+      "Russian Federation",
+      "RU",
+      "RUS"
+    ]
+  },
+  {
+    "name": "Turkey",
+    "kind": "Country",
+    "sub": "Eurasia",
+    "lat": 39.0,
+    "lon": 35.2,
+    "distance": 1.8,
+    "aliases": [
+      "Turkiye",
+      "TR",
+      "TUR"
+    ]
+  },
+  {
+    "name": "Georgia",
+    "kind": "Country",
+    "sub": "Caucasus",
+    "lat": 42.3,
+    "lon": 43.4,
+    "distance": 1.54,
+    "aliases": [
+      "GE",
+      "GEO"
+    ]
+  },
+  {
+    "name": "Armenia",
+    "kind": "Country",
+    "sub": "Caucasus",
+    "lat": 40.1,
+    "lon": 45.0,
+    "distance": 1.5,
+    "aliases": [
+      "AM",
+      "ARM"
+    ]
+  },
+  {
+    "name": "Azerbaijan",
+    "kind": "Country",
+    "sub": "Caucasus",
+    "lat": 40.3,
+    "lon": 47.6,
+    "distance": 1.54,
+    "aliases": [
+      "AZ",
+      "AZE"
+    ]
+  },
+  {
+    "name": "United States",
+    "kind": "Country",
+    "sub": "North America",
+    "lat": 39.5,
+    "lon": -98.5,
+    "distance": 2.35,
+    "aliases": [
+      "USA",
+      "US",
+      "America",
+      "United States of America"
+    ]
+  },
+  {
+    "name": "Canada",
+    "kind": "Country",
+    "sub": "North America",
+    "lat": 58.0,
+    "lon": -102.0,
+    "distance": 2.45,
+    "aliases": [
+      "CA",
+      "CAN"
+    ]
+  },
+  {
+    "name": "Mexico",
+    "kind": "Country",
+    "sub": "North America",
+    "lat": 23.6,
+    "lon": -102.5,
+    "distance": 2.02,
+    "aliases": [
+      "MX",
+      "MEX"
+    ]
+  },
+  {
+    "name": "Guatemala",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 15.5,
+    "lon": -90.3,
+    "distance": 1.56,
+    "aliases": [
+      "GT",
+      "GTM"
+    ]
+  },
+  {
+    "name": "Belize",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 17.2,
+    "lon": -88.7,
+    "distance": 1.48,
+    "aliases": [
+      "BZ",
+      "BLZ"
+    ]
+  },
+  {
+    "name": "Honduras",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 14.8,
+    "lon": -86.5,
+    "distance": 1.56,
+    "aliases": [
+      "HN",
+      "HND"
+    ]
+  },
+  {
+    "name": "El Salvador",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 13.8,
+    "lon": -88.9,
+    "distance": 1.48,
+    "aliases": [
+      "SV",
+      "SLV"
+    ]
+  },
+  {
+    "name": "Nicaragua",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 12.9,
+    "lon": -85.2,
+    "distance": 1.56,
+    "aliases": [
+      "NI",
+      "NIC"
+    ]
+  },
+  {
+    "name": "Costa Rica",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 9.9,
+    "lon": -84.1,
+    "distance": 1.52,
+    "aliases": [
+      "CR",
+      "CRI"
+    ]
+  },
+  {
+    "name": "Panama",
+    "kind": "Country",
+    "sub": "Central America",
+    "lat": 8.6,
+    "lon": -80.1,
+    "distance": 1.54,
+    "aliases": [
+      "PA",
+      "PAN"
+    ]
+  },
+  {
+    "name": "Cuba",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 21.5,
+    "lon": -79.0,
+    "distance": 1.64,
+    "aliases": [
+      "CU",
+      "CUB"
+    ]
+  },
+  {
+    "name": "Jamaica",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 18.1,
+    "lon": -77.3,
+    "distance": 1.46,
+    "aliases": [
+      "JM",
+      "JAM"
+    ]
+  },
+  {
+    "name": "Haiti",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 19.0,
+    "lon": -72.4,
+    "distance": 1.48,
+    "aliases": [
+      "HT",
+      "HTI"
+    ]
+  },
+  {
+    "name": "Dominican Republic",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 18.9,
+    "lon": -70.4,
+    "distance": 1.5,
+    "aliases": [
+      "DO",
+      "DOM"
+    ]
+  },
+  {
+    "name": "Puerto Rico",
+    "kind": "Territory",
+    "sub": "Caribbean",
+    "lat": 18.2,
+    "lon": -66.5,
+    "distance": 1.45,
+    "aliases": [
+      "PR",
+      "PRI"
+    ]
+  },
+  {
+    "name": "Bahamas",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 24.4,
+    "lon": -76.5,
+    "distance": 1.56,
+    "aliases": [
+      "BS",
+      "BHS"
+    ]
+  },
+  {
+    "name": "Barbados",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 13.19,
+    "lon": -59.54,
+    "distance": 1.42,
+    "aliases": [
+      "BB",
+      "BRB"
+    ]
+  },
+  {
+    "name": "Trinidad and Tobago",
+    "kind": "Country",
+    "sub": "Caribbean",
+    "lat": 10.5,
+    "lon": -61.3,
+    "distance": 1.45,
+    "aliases": [
+      "TT",
+      "TTO"
+    ]
+  },
+  {
+    "name": "Brazil",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -11.5,
+    "lon": -52.5,
+    "distance": 2.4,
+    "aliases": [
+      "Brasil",
+      "BR",
+      "BRA"
+    ]
+  },
+  {
+    "name": "Argentina",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -36.5,
+    "lon": -64.5,
+    "distance": 2.25,
+    "aliases": [
+      "AR",
+      "ARG"
+    ]
+  },
+  {
+    "name": "Chile",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -35.7,
+    "lon": -71.5,
+    "distance": 2.2,
+    "aliases": [
+      "CL",
+      "CHL"
+    ]
+  },
+  {
+    "name": "Peru",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -9.5,
+    "lon": -75.2,
+    "distance": 1.95,
+    "aliases": [
+      "PE",
+      "PER"
+    ]
+  },
+  {
+    "name": "Colombia",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": 4.6,
+    "lon": -74.1,
+    "distance": 1.88,
+    "aliases": [
+      "CO",
+      "COL"
+    ]
+  },
+  {
+    "name": "Venezuela",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": 7.1,
+    "lon": -66.2,
+    "distance": 1.82,
+    "aliases": [
+      "VE",
+      "VEN"
+    ]
+  },
+  {
+    "name": "Ecuador",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -1.6,
+    "lon": -78.4,
+    "distance": 1.62,
+    "aliases": [
+      "EC",
+      "ECU"
+    ]
+  },
+  {
+    "name": "Bolivia",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -16.5,
+    "lon": -64.7,
+    "distance": 1.85,
+    "aliases": [
+      "BO",
+      "BOL"
+    ]
+  },
+  {
+    "name": "Paraguay",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -23.4,
+    "lon": -58.4,
+    "distance": 1.72,
+    "aliases": [
+      "PY",
+      "PRY"
+    ]
+  },
+  {
+    "name": "Uruguay",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": -32.8,
+    "lon": -56.0,
+    "distance": 1.6,
+    "aliases": [
+      "UY",
+      "URY"
+    ]
+  },
+  {
+    "name": "Guyana",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": 5.0,
+    "lon": -58.9,
+    "distance": 1.6,
+    "aliases": [
+      "GY",
+      "GUY"
+    ]
+  },
+  {
+    "name": "Suriname",
+    "kind": "Country",
+    "sub": "South America",
+    "lat": 4.1,
+    "lon": -56.0,
+    "distance": 1.56,
+    "aliases": [
+      "SR",
+      "SUR"
+    ]
+  },
+  {
+    "name": "China",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 35.5,
+    "lon": 104.0,
+    "distance": 2.38,
+    "aliases": [
+      "PRC",
+      "CN",
+      "CHN"
+    ]
+  },
+  {
+    "name": "India",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 22.0,
+    "lon": 79.0,
+    "distance": 2.22,
+    "aliases": [
+      "Bharat",
+      "IN",
+      "IND"
+    ]
+  },
+  {
+    "name": "Pakistan",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 30.4,
+    "lon": 69.3,
+    "distance": 1.88,
+    "aliases": [
+      "PK",
+      "PAK"
+    ]
+  },
+  {
+    "name": "Bangladesh",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 23.8,
+    "lon": 90.3,
+    "distance": 1.58,
+    "aliases": [
+      "BD",
+      "BGD"
+    ]
+  },
+  {
+    "name": "Sri Lanka",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 7.9,
+    "lon": 80.7,
+    "distance": 1.52,
+    "aliases": [
+      "LK",
+      "LKA"
+    ]
+  },
+  {
+    "name": "Nepal",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 28.3,
+    "lon": 84.1,
+    "distance": 1.58,
+    "aliases": [
+      "NP",
+      "NPL"
+    ]
+  },
+  {
+    "name": "Bhutan",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 27.5,
+    "lon": 90.4,
+    "distance": 1.48,
+    "aliases": [
+      "BT",
+      "BTN"
+    ]
+  },
+  {
+    "name": "Maldives",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 3.2,
+    "lon": 73.2,
+    "distance": 1.55,
+    "aliases": [
+      "MV",
+      "MDV"
+    ]
+  },
+  {
+    "name": "Afghanistan",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 33.9,
+    "lon": 66.0,
+    "distance": 1.78,
+    "aliases": [
+      "AF",
+      "AFG"
+    ]
+  },
+  {
+    "name": "Kazakhstan",
+    "kind": "Country",
+    "sub": "Central Asia",
+    "lat": 48.0,
+    "lon": 67.0,
+    "distance": 2.1,
+    "aliases": [
+      "KZ",
+      "KAZ"
+    ]
+  },
+  {
+    "name": "Uzbekistan",
+    "kind": "Country",
+    "sub": "Central Asia",
+    "lat": 41.5,
+    "lon": 64.5,
+    "distance": 1.76,
+    "aliases": [
+      "UZ",
+      "UZB"
+    ]
+  },
+  {
+    "name": "Turkmenistan",
+    "kind": "Country",
+    "sub": "Central Asia",
+    "lat": 39.0,
+    "lon": 59.5,
+    "distance": 1.72,
+    "aliases": [
+      "TM",
+      "TKM"
+    ]
+  },
+  {
+    "name": "Kyrgyzstan",
+    "kind": "Country",
+    "sub": "Central Asia",
+    "lat": 41.2,
+    "lon": 74.8,
+    "distance": 1.6,
+    "aliases": [
+      "KG",
+      "KGZ"
+    ]
+  },
+  {
+    "name": "Tajikistan",
+    "kind": "Country",
+    "sub": "Central Asia",
+    "lat": 38.9,
+    "lon": 71.3,
+    "distance": 1.58,
+    "aliases": [
+      "TJ",
+      "TJK"
+    ]
+  },
+  {
+    "name": "Mongolia",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 46.8,
+    "lon": 103.8,
+    "distance": 1.98,
+    "aliases": [
+      "MN",
+      "MNG"
+    ]
+  },
+  {
+    "name": "Japan",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 36.5,
+    "lon": 138.2,
+    "distance": 1.82,
+    "aliases": [
+      "Nippon",
+      "JP",
+      "JPN"
+    ]
+  },
+  {
+    "name": "South Korea",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 36.5,
+    "lon": 127.8,
+    "distance": 1.56,
+    "aliases": [
+      "Republic of Korea",
+      "Korea",
+      "KR",
+      "KOR"
+    ]
+  },
+  {
+    "name": "North Korea",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 40.0,
+    "lon": 127.2,
+    "distance": 1.58,
+    "aliases": [
+      "DPRK",
+      "KP",
+      "PRK"
+    ]
+  },
+  {
+    "name": "Taiwan",
+    "kind": "Country",
+    "sub": "Asia",
+    "lat": 23.7,
+    "lon": 121.0,
+    "distance": 1.5,
+    "aliases": [
+      "TW",
+      "TWN"
+    ]
+  },
+  {
+    "name": "Philippines",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 12.8,
+    "lon": 122.0,
+    "distance": 1.8,
+    "aliases": [
+      "PH",
+      "PHL"
+    ]
+  },
+  {
+    "name": "Vietnam",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 16.0,
+    "lon": 107.8,
+    "distance": 1.78,
+    "aliases": [
+      "Viet Nam",
+      "VN",
+      "VNM"
+    ]
+  },
+  {
+    "name": "Thailand",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 15.4,
+    "lon": 101.0,
+    "distance": 1.76,
+    "aliases": [
+      "TH",
+      "THA"
+    ]
+  },
+  {
+    "name": "Myanmar",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 21.0,
+    "lon": 96.0,
+    "distance": 1.78,
+    "aliases": [
+      "Burma",
+      "MM",
+      "MMR"
+    ]
+  },
+  {
+    "name": "Laos",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 18.4,
+    "lon": 103.9,
+    "distance": 1.64,
+    "aliases": [
+      "LA",
+      "LAO"
+    ]
+  },
+  {
+    "name": "Cambodia",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 12.6,
+    "lon": 104.9,
+    "distance": 1.58,
+    "aliases": [
+      "KH",
+      "KHM"
+    ]
+  },
+  {
+    "name": "Malaysia",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 4.2,
+    "lon": 109.5,
+    "distance": 1.82,
+    "aliases": [
+      "MY",
+      "MYS"
+    ]
+  },
+  {
+    "name": "Singapore",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 1.35,
+    "lon": 103.82,
+    "distance": 1.4,
+    "aliases": [
+      "SG",
+      "SGP"
+    ]
+  },
+  {
+    "name": "Indonesia",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": -2.5,
+    "lon": 118.0,
+    "distance": 2.28,
+    "aliases": [
+      "ID",
+      "IDN"
+    ]
+  },
+  {
+    "name": "Brunei",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": 4.5,
+    "lon": 114.7,
+    "distance": 1.44,
+    "aliases": [
+      "BN",
+      "BRN"
+    ]
+  },
+  {
+    "name": "Timor-Leste",
+    "kind": "Country",
+    "sub": "Southeast Asia",
+    "lat": -8.8,
+    "lon": 125.7,
+    "distance": 1.48,
+    "aliases": [
+      "East Timor",
+      "TL",
+      "TLS"
+    ]
+  },
+  {
+    "name": "Iran",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 32.4,
+    "lon": 53.7,
+    "distance": 1.95,
+    "aliases": [
+      "IR",
+      "IRN"
+    ]
+  },
+  {
+    "name": "Iraq",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 33.2,
+    "lon": 43.7,
+    "distance": 1.74,
+    "aliases": [
+      "IQ",
+      "IRQ"
+    ]
+  },
+  {
+    "name": "Saudi Arabia",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 24.0,
+    "lon": 45.0,
+    "distance": 2.02,
+    "aliases": [
+      "SA",
+      "SAU",
+      "KSA"
+    ]
+  },
+  {
+    "name": "United Arab Emirates",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 24.3,
+    "lon": 54.4,
+    "distance": 1.56,
+    "aliases": [
+      "UAE",
+      "Emirates",
+      "AE",
+      "ARE"
+    ]
+  },
+  {
+    "name": "Qatar",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 25.3,
+    "lon": 51.2,
+    "distance": 1.44,
+    "aliases": [
+      "QA",
+      "QAT"
+    ]
+  },
+  {
+    "name": "Kuwait",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 29.3,
+    "lon": 47.5,
+    "distance": 1.46,
+    "aliases": [
+      "KW",
+      "KWT"
+    ]
+  },
+  {
+    "name": "Bahrain",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 26.05,
+    "lon": 50.55,
+    "distance": 1.4,
+    "aliases": [
+      "BH",
+      "BHR"
+    ]
+  },
+  {
+    "name": "Oman",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 21.0,
+    "lon": 57.0,
+    "distance": 1.72,
+    "aliases": [
+      "OM",
+      "OMN"
+    ]
+  },
+  {
+    "name": "Yemen",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 15.6,
+    "lon": 47.5,
+    "distance": 1.72,
+    "aliases": [
+      "YE",
+      "YEM"
+    ]
+  },
+  {
+    "name": "Jordan",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 31.2,
+    "lon": 36.5,
+    "distance": 1.54,
+    "aliases": [
+      "JO",
+      "JOR"
+    ]
+  },
+  {
+    "name": "Lebanon",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 33.9,
+    "lon": 35.8,
+    "distance": 1.46,
+    "aliases": [
+      "LB",
+      "LBN"
+    ]
+  },
+  {
+    "name": "Syria",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 35.0,
+    "lon": 38.5,
+    "distance": 1.6,
+    "aliases": [
+      "SY",
+      "SYR"
+    ]
+  },
+  {
+    "name": "Israel",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 31.4,
+    "lon": 34.9,
+    "distance": 1.48,
+    "aliases": [
+      "IL",
+      "ISR"
+    ]
+  },
+  {
+    "name": "Palestine",
+    "kind": "Country",
+    "sub": "Middle East",
+    "lat": 31.9,
+    "lon": 35.2,
+    "distance": 1.45,
+    "aliases": [
+      "PS",
+      "PSE"
+    ]
+  },
+  {
+    "name": "Egypt",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 26.8,
+    "lon": 30.8,
+    "distance": 1.85,
+    "aliases": [
+      "EG",
+      "EGY"
+    ]
+  },
+  {
+    "name": "Libya",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 27.0,
+    "lon": 17.2,
+    "distance": 1.92,
+    "aliases": [
+      "LY",
+      "LBY"
+    ]
+  },
+  {
+    "name": "Tunisia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 34.0,
+    "lon": 9.5,
+    "distance": 1.62,
+    "aliases": [
+      "TN",
+      "TUN"
+    ]
+  },
+  {
+    "name": "Algeria",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 28.0,
+    "lon": 2.6,
+    "distance": 2.02,
+    "aliases": [
+      "DZ",
+      "DZA"
+    ]
+  },
+  {
+    "name": "Morocco",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 31.8,
+    "lon": -6.2,
+    "distance": 1.78,
+    "aliases": [
+      "MA",
+      "MAR"
+    ]
+  },
+  {
+    "name": "Mauritania",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 20.3,
+    "lon": -10.5,
+    "distance": 1.85,
+    "aliases": [
+      "MR",
+      "MRT"
+    ]
+  },
+  {
+    "name": "Mali",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 17.3,
+    "lon": -3.5,
+    "distance": 1.88,
+    "aliases": [
+      "ML",
+      "MLI"
+    ]
+  },
+  {
+    "name": "Niger",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 17.5,
+    "lon": 8.2,
+    "distance": 1.88,
+    "aliases": [
+      "NE",
+      "NER"
+    ]
+  },
+  {
+    "name": "Chad",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 15.4,
+    "lon": 18.7,
+    "distance": 1.88,
+    "aliases": [
+      "TD",
+      "TCD"
+    ]
+  },
+  {
+    "name": "Sudan",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 15.6,
+    "lon": 30.2,
+    "distance": 1.92,
+    "aliases": [
+      "SD",
+      "SDN"
+    ]
+  },
+  {
+    "name": "South Sudan",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 7.5,
+    "lon": 30.0,
+    "distance": 1.76,
+    "aliases": [
+      "SS",
+      "SSD"
+    ]
+  },
+  {
+    "name": "Ethiopia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 9.1,
+    "lon": 40.5,
+    "distance": 1.86,
+    "aliases": [
+      "ET",
+      "ETH"
+    ]
+  },
+  {
+    "name": "Eritrea",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 15.2,
+    "lon": 39.8,
+    "distance": 1.6,
+    "aliases": [
+      "ER",
+      "ERI"
+    ]
+  },
+  {
+    "name": "Djibouti",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 11.8,
+    "lon": 42.6,
+    "distance": 1.45,
+    "aliases": [
+      "DJ",
+      "DJI"
+    ]
+  },
+  {
+    "name": "Somalia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 5.8,
+    "lon": 46.2,
+    "distance": 1.82,
+    "aliases": [
+      "SO",
+      "SOM"
+    ]
+  },
+  {
+    "name": "Kenya",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 0.4,
+    "lon": 37.9,
+    "distance": 1.76,
+    "aliases": [
+      "KE",
+      "KEN"
+    ]
+  },
+  {
+    "name": "Uganda",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 1.4,
+    "lon": 32.3,
+    "distance": 1.62,
+    "aliases": [
+      "UG",
+      "UGA"
+    ]
+  },
+  {
+    "name": "Tanzania",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -6.4,
+    "lon": 35.0,
+    "distance": 1.82,
+    "aliases": [
+      "TZ",
+      "TZA"
+    ]
+  },
+  {
+    "name": "Rwanda",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -1.9,
+    "lon": 29.9,
+    "distance": 1.46,
+    "aliases": [
+      "RW",
+      "RWA"
+    ]
+  },
+  {
+    "name": "Burundi",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -3.4,
+    "lon": 29.9,
+    "distance": 1.46,
+    "aliases": [
+      "BI",
+      "BDI"
+    ]
+  },
+  {
+    "name": "Democratic Republic of the Congo",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -2.9,
+    "lon": 23.6,
+    "distance": 2.02,
+    "aliases": [
+      "DRC",
+      "DR Congo",
+      "CD",
+      "COD"
+    ]
+  },
+  {
+    "name": "Republic of the Congo",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -0.8,
+    "lon": 15.2,
+    "distance": 1.7,
+    "aliases": [
+      "Congo",
+      "CG",
+      "COG"
+    ]
+  },
+  {
+    "name": "Central African Republic",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 6.6,
+    "lon": 20.9,
+    "distance": 1.76,
+    "aliases": [
+      "CAR",
+      "CF",
+      "CAF"
+    ]
+  },
+  {
+    "name": "Cameroon",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 6.0,
+    "lon": 12.4,
+    "distance": 1.74,
+    "aliases": [
+      "CM",
+      "CMR"
+    ]
+  },
+  {
+    "name": "Gabon",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -0.8,
+    "lon": 11.6,
+    "distance": 1.62,
+    "aliases": [
+      "GA",
+      "GAB"
+    ]
+  },
+  {
+    "name": "Nigeria",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 9.1,
+    "lon": 8.7,
+    "distance": 1.82,
+    "aliases": [
+      "NG",
+      "NGA"
+    ]
+  },
+  {
+    "name": "Ghana",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 7.9,
+    "lon": -1.0,
+    "distance": 1.62,
+    "aliases": [
+      "GH",
+      "GHA"
+    ]
+  },
+  {
+    "name": "Cote d'Ivoire",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 7.5,
+    "lon": -5.5,
+    "distance": 1.64,
+    "aliases": [
+      "Ivory Coast",
+      "CI",
+      "CIV"
+    ]
+  },
+  {
+    "name": "Senegal",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 14.5,
+    "lon": -14.5,
+    "distance": 1.6,
+    "aliases": [
+      "SN",
+      "SEN"
+    ]
+  },
+  {
+    "name": "Gambia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 13.45,
+    "lon": -15.4,
+    "distance": 1.46,
+    "aliases": [
+      "GM",
+      "GMB"
+    ]
+  },
+  {
+    "name": "Guinea",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 10.4,
+    "lon": -10.9,
+    "distance": 1.62,
+    "aliases": [
+      "GN",
+      "GIN"
+    ]
+  },
+  {
+    "name": "Sierra Leone",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 8.5,
+    "lon": -11.8,
+    "distance": 1.52,
+    "aliases": [
+      "SL",
+      "SLE"
+    ]
+  },
+  {
+    "name": "Liberia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 6.4,
+    "lon": -9.4,
+    "distance": 1.54,
+    "aliases": [
+      "LR",
+      "LBR"
+    ]
+  },
+  {
+    "name": "Burkina Faso",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 12.3,
+    "lon": -1.6,
+    "distance": 1.64,
+    "aliases": [
+      "BF",
+      "BFA"
+    ]
+  },
+  {
+    "name": "Benin",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 9.3,
+    "lon": 2.3,
+    "distance": 1.58,
+    "aliases": [
+      "BJ",
+      "BEN"
+    ]
+  },
+  {
+    "name": "Togo",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": 8.6,
+    "lon": 0.9,
+    "distance": 1.54,
+    "aliases": [
+      "TG",
+      "TGO"
+    ]
+  },
+  {
+    "name": "Angola",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -12.3,
+    "lon": 17.5,
+    "distance": 1.9,
+    "aliases": [
+      "AO",
+      "AGO"
+    ]
+  },
+  {
+    "name": "Zambia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -13.5,
+    "lon": 27.8,
+    "distance": 1.8,
+    "aliases": [
+      "ZM",
+      "ZMB"
+    ]
+  },
+  {
+    "name": "Zimbabwe",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -19.0,
+    "lon": 29.8,
+    "distance": 1.7,
+    "aliases": [
+      "ZW",
+      "ZWE"
+    ]
+  },
+  {
+    "name": "Malawi",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -13.3,
+    "lon": 34.3,
+    "distance": 1.62,
+    "aliases": [
+      "MW",
+      "MWI"
+    ]
+  },
+  {
+    "name": "Mozambique",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -18.6,
+    "lon": 35.5,
+    "distance": 1.88,
+    "aliases": [
+      "MZ",
+      "MOZ"
+    ]
+  },
+  {
+    "name": "Madagascar",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -19.2,
+    "lon": 46.7,
+    "distance": 1.84,
+    "aliases": [
+      "MG",
+      "MDG"
+    ]
+  },
+  {
+    "name": "Mauritius",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -20.28,
+    "lon": 57.55,
+    "distance": 1.44,
+    "aliases": [
+      "MU",
+      "MUS"
+    ]
+  },
+  {
+    "name": "Namibia",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -22.2,
+    "lon": 17.2,
+    "distance": 1.85,
+    "aliases": [
+      "NA",
+      "NAM"
+    ]
+  },
+  {
+    "name": "Botswana",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -22.3,
+    "lon": 24.7,
+    "distance": 1.78,
+    "aliases": [
+      "BW",
+      "BWA"
+    ]
+  },
+  {
+    "name": "South Africa",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -29.0,
+    "lon": 25.0,
+    "distance": 1.92,
+    "aliases": [
+      "ZA",
+      "ZAF",
+      "RSA"
+    ]
+  },
+  {
+    "name": "Lesotho",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -29.6,
+    "lon": 28.2,
+    "distance": 1.46,
+    "aliases": [
+      "LS",
+      "LSO"
+    ]
+  },
+  {
+    "name": "Eswatini",
+    "kind": "Country",
+    "sub": "Africa",
+    "lat": -26.5,
+    "lon": 31.5,
+    "distance": 1.46,
+    "aliases": [
+      "Swaziland",
+      "SZ",
+      "SWZ"
+    ]
+  },
+  {
+    "name": "Australia",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -25.5,
+    "lon": 134.5,
+    "distance": 2.32,
+    "aliases": [
+      "AU",
+      "AUS"
+    ]
+  },
+  {
+    "name": "New Zealand",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -41.5,
+    "lon": 172.5,
+    "distance": 1.72,
+    "aliases": [
+      "Aotearoa",
+      "NZ",
+      "NZL"
+    ]
+  },
+  {
+    "name": "Papua New Guinea",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -6.3,
+    "lon": 145.2,
+    "distance": 1.76,
+    "aliases": [
+      "PNG",
+      "PG"
+    ]
+  },
+  {
+    "name": "Fiji",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -17.8,
+    "lon": 178.0,
+    "distance": 1.52,
+    "aliases": [
+      "FJ",
+      "FJI"
+    ]
+  },
+  {
+    "name": "Solomon Islands",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -9.4,
+    "lon": 160.2,
+    "distance": 1.58,
+    "aliases": [
+      "SB",
+      "SLB"
+    ]
+  },
+  {
+    "name": "Vanuatu",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -16.2,
+    "lon": 167.8,
+    "distance": 1.54,
+    "aliases": [
+      "VU",
+      "VUT"
+    ]
+  },
+  {
+    "name": "Samoa",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -13.8,
+    "lon": -172.1,
+    "distance": 1.46,
+    "aliases": [
+      "WS",
+      "WSM"
+    ]
+  },
+  {
+    "name": "Tonga",
+    "kind": "Country",
+    "sub": "Oceania",
+    "lat": -21.2,
+    "lon": -175.2,
+    "distance": 1.46,
+    "aliases": [
+      "TO",
+      "TON"
+    ]
+  },
+  {
+    "name": "Siberia",
+    "kind": "Region",
+    "sub": "Russia",
+    "lat": 63.0,
+    "lon": 105.0,
+    "distance": 2.25,
+    "aliases": [
+      "Northern Siberia",
+      "Eastern Siberia"
+    ]
+  },
+  {
+    "name": "Arctic",
+    "kind": "Region",
+    "sub": "Polar",
+    "lat": 82.0,
+    "lon": 0.0,
+    "distance": 2.35,
+    "aliases": [
+      "North Pole",
+      "Arctic Ocean"
+    ]
+  },
+  {
+    "name": "Antarctica",
+    "kind": "Region",
+    "sub": "Polar",
+    "lat": -80.0,
+    "lon": 40.0,
+    "distance": 2.4,
+    "aliases": [
+      "South Pole",
+      "Antarctic Plateau"
+    ]
+  },
+  {
+    "name": "Amazon Basin",
+    "kind": "Region",
+    "sub": "South America",
+    "lat": -4.5,
+    "lon": -62.0,
+    "distance": 2.1,
+    "aliases": [
+      "Amazonia",
+      "Amazon Rainforest"
+    ]
+  },
+  {
+    "name": "Patagonia",
+    "kind": "Region",
+    "sub": "South America",
+    "lat": -47.5,
+    "lon": -70.5,
+    "distance": 1.82,
+    "aliases": []
+  },
+  {
+    "name": "Sahel",
+    "kind": "Region",
+    "sub": "Africa",
+    "lat": 14.5,
+    "lon": 8.0,
+    "distance": 2.15,
+    "aliases": []
+  },
+  {
+    "name": "Horn of Africa",
+    "kind": "Region",
+    "sub": "Africa",
+    "lat": 7.5,
+    "lon": 45.0,
+    "distance": 1.85,
+    "aliases": []
+  },
+  {
+    "name": "Mediterranean",
+    "kind": "Region",
+    "sub": "Southern Europe & North Africa",
+    "lat": 38.0,
+    "lon": 16.0,
+    "distance": 2.05,
+    "aliases": [
+      "Mediterranean Sea"
+    ]
+  },
+  {
+    "name": "Southern Alps",
+    "kind": "Region",
+    "sub": "New Zealand",
+    "lat": -43.6,
+    "lon": 170.2,
+    "distance": 1.52,
+    "aliases": []
+  },
+  {
+    "name": "Himalayas",
+    "kind": "Region",
+    "sub": "South & Central Asia",
+    "lat": 28.6,
+    "lon": 85.5,
+    "distance": 1.85,
+    "aliases": []
+  },
+  {
+    "name": "Dublin",
+    "kind": "City",
+    "sub": "Ireland",
+    "lat": 53.3498,
+    "lon": -6.2603,
+    "distance": 1.44,
+    "aliases": [
+      "Baile Atha Cliath"
+    ]
+  },
+  {
+    "name": "Cork",
+    "kind": "City",
+    "sub": "Ireland",
+    "lat": 51.8985,
+    "lon": -8.4756,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Galway",
+    "kind": "City",
+    "sub": "Ireland",
+    "lat": 53.2707,
+    "lon": -9.0568,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Limerick",
+    "kind": "City",
+    "sub": "Ireland",
+    "lat": 52.6638,
+    "lon": -8.6267,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Belfast",
+    "kind": "City",
+    "sub": "United Kingdom",
+    "lat": 54.5973,
+    "lon": -5.9301,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "London",
+    "kind": "City",
+    "sub": "United Kingdom",
+    "lat": 51.5074,
+    "lon": -0.1278,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Edinburgh",
+    "kind": "City",
+    "sub": "United Kingdom",
+    "lat": 55.9533,
+    "lon": -3.1883,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Manchester",
+    "kind": "City",
+    "sub": "United Kingdom",
+    "lat": 53.4808,
+    "lon": -2.2426,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Truro",
+    "kind": "City",
+    "sub": "United Kingdom",
+    "lat": 50.2632,
+    "lon": -5.051,
+    "distance": 1.44,
+    "aliases": [
+      "Cornwall"
+    ]
+  },
+  {
+    "name": "Paris",
+    "kind": "City",
+    "sub": "France",
+    "lat": 48.8566,
+    "lon": 2.3522,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Madrid",
+    "kind": "City",
+    "sub": "Spain",
+    "lat": 40.4168,
+    "lon": -3.7038,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Barcelona",
+    "kind": "City",
+    "sub": "Spain",
+    "lat": 41.3874,
+    "lon": 2.1686,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Lisbon",
+    "kind": "City",
+    "sub": "Portugal",
+    "lat": 38.7223,
+    "lon": -9.1393,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Berlin",
+    "kind": "City",
+    "sub": "Germany",
+    "lat": 52.52,
+    "lon": 13.405,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Rome",
+    "kind": "City",
+    "sub": "Italy",
+    "lat": 41.9028,
+    "lon": 12.4964,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Amsterdam",
+    "kind": "City",
+    "sub": "Netherlands",
+    "lat": 52.3676,
+    "lon": 4.9041,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Oslo",
+    "kind": "City",
+    "sub": "Norway",
+    "lat": 59.9139,
+    "lon": 10.7522,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Stockholm",
+    "kind": "City",
+    "sub": "Sweden",
+    "lat": 59.3293,
+    "lon": 18.0686,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Athens",
+    "kind": "City",
+    "sub": "Greece",
+    "lat": 37.9838,
+    "lon": 23.7275,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Warsaw",
+    "kind": "City",
+    "sub": "Poland",
+    "lat": 52.2297,
+    "lon": 21.0122,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Vienna",
+    "kind": "City",
+    "sub": "Austria",
+    "lat": 48.2082,
+    "lon": 16.3738,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Zurich",
+    "kind": "City",
+    "sub": "Switzerland",
+    "lat": 47.3769,
+    "lon": 8.5417,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Istanbul",
+    "kind": "City",
+    "sub": "Turkey",
+    "lat": 41.0082,
+    "lon": 28.9784,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Moscow",
+    "kind": "City",
+    "sub": "Russia",
+    "lat": 55.7558,
+    "lon": 37.6173,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "New York",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 40.7128,
+    "lon": -74.006,
+    "distance": 1.46,
+    "aliases": [
+      "NYC"
+    ]
+  },
+  {
+    "name": "Los Angeles",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 34.0522,
+    "lon": -118.2437,
+    "distance": 1.46,
+    "aliases": [
+      "LA"
+    ]
+  },
+  {
+    "name": "Chicago",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 41.8781,
+    "lon": -87.6298,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Miami",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 25.7617,
+    "lon": -80.1918,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "San Francisco",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 37.7749,
+    "lon": -122.4194,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Seattle",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 47.6062,
+    "lon": -122.3321,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Houston",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 29.7604,
+    "lon": -95.3698,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Toronto",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 43.6532,
+    "lon": -79.3832,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Vancouver",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 49.2827,
+    "lon": -123.1207,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Montreal",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 45.5017,
+    "lon": -73.5673,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Mexico City",
+    "kind": "City",
+    "sub": "Mexico",
+    "lat": 19.4326,
+    "lon": -99.1332,
+    "distance": 1.46,
+    "aliases": [
+      "CDMX"
+    ]
+  },
+  {
+    "name": "Sao Paulo",
+    "kind": "City",
+    "sub": "Brazil",
+    "lat": -23.5505,
+    "lon": -46.6333,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Rio de Janeiro",
+    "kind": "City",
+    "sub": "Brazil",
+    "lat": -22.9068,
+    "lon": -43.1729,
+    "distance": 1.46,
+    "aliases": [
+      "Rio"
+    ]
+  },
+  {
+    "name": "Buenos Aires",
+    "kind": "City",
+    "sub": "Argentina",
+    "lat": -34.6037,
+    "lon": -58.3816,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Santiago",
+    "kind": "City",
+    "sub": "Chile",
+    "lat": -33.4489,
+    "lon": -70.6693,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Lima",
+    "kind": "City",
+    "sub": "Peru",
+    "lat": -12.0464,
+    "lon": -77.0428,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Bogota",
+    "kind": "City",
+    "sub": "Colombia",
+    "lat": 4.711,
+    "lon": -74.0721,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Tokyo",
+    "kind": "City",
+    "sub": "Japan",
+    "lat": 35.6762,
+    "lon": 139.6503,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Seoul",
+    "kind": "City",
+    "sub": "South Korea",
+    "lat": 37.5665,
+    "lon": 126.978,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Beijing",
+    "kind": "City",
+    "sub": "China",
+    "lat": 39.9042,
+    "lon": 116.4074,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Shanghai",
+    "kind": "City",
+    "sub": "China",
+    "lat": 31.2304,
+    "lon": 121.4737,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Hong Kong",
+    "kind": "City",
+    "sub": "China",
+    "lat": 22.3193,
+    "lon": 114.1694,
+    "distance": 1.44,
+    "aliases": [
+      "HK"
+    ]
+  },
+  {
+    "name": "Taipei",
+    "kind": "City",
+    "sub": "Taiwan",
+    "lat": 25.033,
+    "lon": 121.5654,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Manila",
+    "kind": "City",
+    "sub": "Philippines",
+    "lat": 14.5995,
+    "lon": 120.9842,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Bangkok",
+    "kind": "City",
+    "sub": "Thailand",
+    "lat": 13.7563,
+    "lon": 100.5018,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Jakarta",
+    "kind": "City",
+    "sub": "Indonesia",
+    "lat": -6.2088,
+    "lon": 106.8456,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Mumbai",
+    "kind": "City",
+    "sub": "India",
+    "lat": 19.076,
+    "lon": 72.8777,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "New Delhi",
+    "kind": "City",
+    "sub": "India",
+    "lat": 28.6139,
+    "lon": 77.209,
+    "distance": 1.46,
+    "aliases": [
+      "Delhi"
+    ]
+  },
+  {
+    "name": "Karachi",
+    "kind": "City",
+    "sub": "Pakistan",
+    "lat": 24.8607,
+    "lon": 67.0011,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Islamabad",
+    "kind": "City",
+    "sub": "Pakistan",
+    "lat": 33.6844,
+    "lon": 73.0479,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Lahore",
+    "kind": "City",
+    "sub": "Pakistan",
+    "lat": 31.5204,
+    "lon": 74.3587,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Dhaka",
+    "kind": "City",
+    "sub": "Bangladesh",
+    "lat": 23.8103,
+    "lon": 90.4125,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Dubai",
+    "kind": "City",
+    "sub": "United Arab Emirates",
+    "lat": 25.2048,
+    "lon": 55.2708,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Riyadh",
+    "kind": "City",
+    "sub": "Saudi Arabia",
+    "lat": 24.7136,
+    "lon": 46.6753,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Cairo",
+    "kind": "City",
+    "sub": "Egypt",
+    "lat": 30.0444,
+    "lon": 31.2357,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Lagos",
+    "kind": "City",
+    "sub": "Nigeria",
+    "lat": 6.5244,
+    "lon": 3.3792,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Nairobi",
+    "kind": "City",
+    "sub": "Kenya",
+    "lat": -1.2921,
+    "lon": 36.8219,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Johannesburg",
+    "kind": "City",
+    "sub": "South Africa",
+    "lat": -26.2041,
+    "lon": 28.0473,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Cape Town",
+    "kind": "City",
+    "sub": "South Africa",
+    "lat": -33.9249,
+    "lon": 18.4241,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Sydney",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -33.8688,
+    "lon": 151.2093,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Melbourne",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -37.8136,
+    "lon": 144.9631,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Brisbane",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -27.4698,
+    "lon": 153.0251,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Perth",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -31.9505,
+    "lon": 115.8605,
+    "distance": 1.46,
+    "aliases": []
+  },
+  {
+    "name": "Auckland",
+    "kind": "City",
+    "sub": "New Zealand",
+    "lat": -36.8485,
+    "lon": 174.7633,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Wellington",
+    "kind": "City",
+    "sub": "New Zealand",
+    "lat": -41.2866,
+    "lon": 174.7756,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Christchurch",
+    "kind": "City",
+    "sub": "New Zealand",
+    "lat": -43.5321,
+    "lon": 172.6362,
+    "distance": 1.45,
+    "aliases": []
+  },
+  {
+    "name": "Reykjavik",
+    "kind": "City",
+    "sub": "Iceland",
+    "lat": 64.15,
+    "lon": -21.94,
+    "distance": 1.44,
+    "aliases": [
+      "Reykjavík"
+    ]
+  },
+  {
+    "name": "Akureyri",
+    "kind": "City",
+    "sub": "Iceland",
+    "lat": 65.68,
+    "lon": -18.09,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Guayaquil",
+    "kind": "City",
+    "sub": "Ecuador",
+    "lat": -2.19,
+    "lon": -79.89,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Quito",
+    "kind": "City",
+    "sub": "Ecuador",
+    "lat": -0.18,
+    "lon": -78.47,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Novosibirsk",
+    "kind": "City",
+    "sub": "Russia",
+    "lat": 55.01,
+    "lon": 82.93,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Omsk",
+    "kind": "City",
+    "sub": "Russia",
+    "lat": 54.99,
+    "lon": 73.37,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Yakutsk",
+    "kind": "City",
+    "sub": "Russia",
+    "lat": 62.03,
+    "lon": 129.73,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Vladivostok",
+    "kind": "City",
+    "sub": "Russia",
+    "lat": 43.12,
+    "lon": 131.89,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Hue",
+    "kind": "City",
+    "sub": "Vietnam",
+    "lat": 16.46,
+    "lon": 107.59,
+    "distance": 1.44,
+    "aliases": [
+      "Hue City",
+      "Huế"
+    ]
+  },
+  {
+    "name": "Da Nang",
+    "kind": "City",
+    "sub": "Vietnam",
+    "lat": 16.05,
+    "lon": 108.2,
+    "distance": 1.44,
+    "aliases": [
+      "Danang"
+    ]
+  },
+  {
+    "name": "Hanoi",
+    "kind": "City",
+    "sub": "Vietnam",
+    "lat": 21.03,
+    "lon": 105.85,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Ho Chi Minh City",
+    "kind": "City",
+    "sub": "Vietnam",
+    "lat": 10.82,
+    "lon": 106.63,
+    "distance": 1.44,
+    "aliases": [
+      "Saigon"
+    ]
+  },
+  {
+    "name": "La Paz",
+    "kind": "City",
+    "sub": "Bolivia",
+    "lat": -16.5,
+    "lon": -68.15,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Santa Cruz",
+    "kind": "City",
+    "sub": "Bolivia",
+    "lat": -17.78,
+    "lon": -63.18,
+    "distance": 1.44,
+    "aliases": [
+      "Santa Cruz de la Sierra"
+    ]
+  },
+  {
+    "name": "Dushanbe",
+    "kind": "City",
+    "sub": "Tajikistan",
+    "lat": 38.56,
+    "lon": 68.77,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Tashkent",
+    "kind": "City",
+    "sub": "Uzbekistan",
+    "lat": 41.3,
+    "lon": 69.24,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Almaty",
+    "kind": "City",
+    "sub": "Kazakhstan",
+    "lat": 43.24,
+    "lon": 76.95,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Astana",
+    "kind": "City",
+    "sub": "Kazakhstan",
+    "lat": 51.17,
+    "lon": 71.45,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "N'Djamena",
+    "kind": "City",
+    "sub": "Chad",
+    "lat": 12.13,
+    "lon": 15.05,
+    "distance": 1.44,
+    "aliases": [
+      "NDjamena"
+    ]
+  },
+  {
+    "name": "Khartoum",
+    "kind": "City",
+    "sub": "Sudan",
+    "lat": 15.5,
+    "lon": 32.56,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Addis Ababa",
+    "kind": "City",
+    "sub": "Ethiopia",
+    "lat": 9.03,
+    "lon": 38.74,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Dar es Salaam",
+    "kind": "City",
+    "sub": "Tanzania",
+    "lat": -6.79,
+    "lon": 39.21,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Maputo",
+    "kind": "City",
+    "sub": "Mozambique",
+    "lat": -25.97,
+    "lon": 32.57,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Antananarivo",
+    "kind": "City",
+    "sub": "Madagascar",
+    "lat": -18.88,
+    "lon": 47.51,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Colombo",
+    "kind": "City",
+    "sub": "Sri Lanka",
+    "lat": 6.93,
+    "lon": 79.86,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Chennai",
+    "kind": "City",
+    "sub": "India",
+    "lat": 13.08,
+    "lon": 80.27,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Kolkata",
+    "kind": "City",
+    "sub": "India",
+    "lat": 22.57,
+    "lon": 88.36,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Kathmandu",
+    "kind": "City",
+    "sub": "Nepal",
+    "lat": 27.72,
+    "lon": 85.32,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Kabul",
+    "kind": "City",
+    "sub": "Afghanistan",
+    "lat": 34.56,
+    "lon": 69.21,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Tehran",
+    "kind": "City",
+    "sub": "Iran",
+    "lat": 35.69,
+    "lon": 51.39,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Baghdad",
+    "kind": "City",
+    "sub": "Iraq",
+    "lat": 33.31,
+    "lon": 44.37,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Anchorage",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 61.22,
+    "lon": -149.9,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Honolulu",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 21.31,
+    "lon": -157.86,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Boston",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 42.36,
+    "lon": -71.06,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Washington",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 38.91,
+    "lon": -77.04,
+    "distance": 1.44,
+    "aliases": [
+      "Washington DC"
+    ]
+  },
+  {
+    "name": "Atlanta",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 33.75,
+    "lon": -84.39,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Dallas",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 32.78,
+    "lon": -96.8,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Denver",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 39.74,
+    "lon": -104.99,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Phoenix",
+    "kind": "City",
+    "sub": "United States",
+    "lat": 33.45,
+    "lon": -112.07,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Calgary",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 51.05,
+    "lon": -114.07,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Winnipeg",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 49.9,
+    "lon": -97.14,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Halifax",
+    "kind": "City",
+    "sub": "Canada",
+    "lat": 44.65,
+    "lon": -63.57,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Havana",
+    "kind": "City",
+    "sub": "Cuba",
+    "lat": 23.11,
+    "lon": -82.37,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Kingston",
+    "kind": "City",
+    "sub": "Jamaica",
+    "lat": 18.0,
+    "lon": -76.79,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Caracas",
+    "kind": "City",
+    "sub": "Venezuela",
+    "lat": 10.48,
+    "lon": -66.9,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Manaus",
+    "kind": "City",
+    "sub": "Brazil",
+    "lat": -3.12,
+    "lon": -60.02,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Recife",
+    "kind": "City",
+    "sub": "Brazil",
+    "lat": -8.05,
+    "lon": -34.88,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Montevideo",
+    "kind": "City",
+    "sub": "Uruguay",
+    "lat": -34.9,
+    "lon": -56.16,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Darwin",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -12.46,
+    "lon": 130.84,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Adelaide",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -34.93,
+    "lon": 138.6,
+    "distance": 1.44,
+    "aliases": []
+  },
+  {
+    "name": "Hobart",
+    "kind": "City",
+    "sub": "Australia",
+    "lat": -42.88,
+    "lon": 147.33,
+    "distance": 1.44,
+    "aliases": []
+  }
+]

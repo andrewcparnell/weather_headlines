@@ -2,8 +2,8 @@
 
 Default synthesis uses Microsoft's neural `en-GB-SoniaNeural` British female voice via `edge-tts`
 (zero API key required, runs identically locally and in GitHub Actions every 6 hours), paired with
-phonetic broadcast normalisation so units, year ranges, rankings, and names such as Met Eireann
-and El Nino are spoken with natural BBC / Sky News intonation.
+phonetic normalisation so units, year ranges, rankings, and names such as Met Eireann
+and El Nino are spoken clearly and calmly.
 """
 from __future__ import annotations
 
@@ -195,7 +195,13 @@ async def _synthesise_story_from_cues(
     return total_sec
 
 
-async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[str]:
+def format_audio_stamp(generated_utc: str | None) -> str:
+    """Normalise an ISO timestamp into a compact URL-safe stamp (e.g. '20261127T060000Z')."""
+    compact = re.sub(r"[^0-9TZ]", "", str(generated_utc or "").upper())
+    return compact if len(compact) >= 8 else "latest"
+
+
+async def _synthesise_all_async(stories: list[dict], audio_dir: Path, stamp: str) -> list[str]:
     voice = os.environ.get("WEATHER_TTS_VOICE", DEFAULT_VOICE).strip() or DEFAULT_VOICE
     rate = os.environ.get("WEATHER_TTS_RATE", DEFAULT_RATE).strip() or DEFAULT_RATE
     pitch = os.environ.get("WEATHER_TTS_PITCH", DEFAULT_PITCH).strip() or DEFAULT_PITCH
@@ -204,7 +210,7 @@ async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[st
     sem = asyncio.Semaphore(4)
 
     async def _worker(idx: int, story: dict) -> str:
-        filename = f"story-{idx}.mp3"
+        filename = f"story-{idx}-{stamp}.mp3"
         dest = audio_dir / filename
         duration_sec = await _synthesise_story_from_cues(
             story, dest, voice=voice, rate=rate, pitch=pitch, sem=sem
@@ -218,16 +224,22 @@ async def _synthesise_all_async(stories: list[dict], audio_dir: Path) -> list[st
         )
         return rel
 
-    return list(await asyncio.gather(*(_worker(idx, st) for idx, st in enumerate(stories, start=1))))
+    written_rels = list(await asyncio.gather(*(_worker(idx, st) for idx, st in enumerate(stories, start=1))))
+    keep_names = {Path(r).name for r in written_rels}
+    for old_mp3 in audio_dir.glob("story-*.mp3"):
+        if old_mp3.name not in keep_names:
+            old_mp3.unlink(missing_ok=True)
+    return written_rels
 
 
 def build_bulletin_audio(bulletin: dict, out_data_dir: Path) -> dict:
-    """Generate MP3 files for every story in `bulletin` under `out_data_dir/audio/` and attach `audio_url`."""
+    """Generate stamped MP3 files `story-{n}-{generated_utc}.mp3` under `out_data_dir/audio/`."""
     stories = bulletin.get("stories") or []
     if not stories:
         return bulletin
+    stamp = format_audio_stamp(bulletin.get("generated_utc"))
     audio_dir = out_data_dir / "audio"
-    asyncio.run(_synthesise_all_async(stories, audio_dir))
+    asyncio.run(_synthesise_all_async(stories, audio_dir, stamp=stamp))
     bulletin["voice"] = os.environ.get("WEATHER_TTS_VOICE", DEFAULT_VOICE)
     return bulletin
 
@@ -244,8 +256,9 @@ def main() -> int:
     cleaned, errors = validate_and_clean_bulletin(payload)
     if errors:
         raise RuntimeError(f"Cannot synthesise audio for invalid bulletin: {errors}")
+    if not cleaned.get("generated_utc"):
+        cleaned["generated_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     cleaned = build_bulletin_audio(cleaned, DATA_DIR)
-    cleaned["generated_utc"] = datetime.now(timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
     tmp = headlines_path.with_suffix(".tmp.json")
     tmp.write_text(json.dumps(cleaned, indent=2, ensure_ascii=False) + "\n")
     tmp.replace(headlines_path)

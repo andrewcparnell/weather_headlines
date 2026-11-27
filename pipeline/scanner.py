@@ -1,12 +1,56 @@
 """Objective global weather hotspot scanner, pressure centre detector, and isobar tracer."""
 from __future__ import annotations
 
+import json
 import math
 from dataclasses import dataclass
 
 import numpy as np
 
+from .config import SITE_DIR
 from .opendata import LiveWeatherFields
+
+_POPULATED_COORDS: tuple[np.ndarray, np.ndarray] | None = None
+
+
+def _populated_proximity_weight_05(lats_05: np.ndarray, lons_05: np.ndarray) -> np.ndarray:
+    """Weight [361, 720] favouring populated regions near gazetteer cities over uninhabited tundra/ocean."""
+    global _POPULATED_COORDS
+    if _POPULATED_COORDS is None:
+        gaz_path = SITE_DIR / "assets" / "gazetteer.json"
+        if gaz_path.exists():
+            raw = json.loads(gaz_path.read_text())
+            pts = [(float(e["lat"]), float(e["lon"])) for e in raw if e.get("kind") == "City"]
+            _POPULATED_COORDS = (
+                np.array([p[0] for p in pts], dtype=np.float32),
+                np.array([p[1] for p in pts], dtype=np.float32),
+            )
+        else:
+            _POPULATED_COORDS = (np.array([], dtype=np.float32), np.array([], dtype=np.float32))
+
+    c_lats, c_lons = _POPULATED_COORDS
+    if len(c_lats) == 0:
+        return np.ones((len(lats_05), len(lons_05)), dtype=np.float32)
+
+    lat_rad = np.radians(lats_05)[:, None]
+    lon_rad = np.radians(lons_05)[None, :]
+    min_d_km = np.full((len(lats_05), len(lons_05)), 9999.0, dtype=np.float32)
+
+    # Vectorised great-circle distance to each gazetteer city (~120 cities -> ~12 ms total)
+    sin_lat = np.sin(lat_rad)
+    cos_lat = np.cos(lat_rad)
+    for cla, clo in zip(c_lats, c_lons):
+        p_c = math.radians(float(cla))
+        l_c = math.radians(float(clo))
+        cos_ang = np.clip(
+            sin_lat * math.sin(p_c) + cos_lat * math.cos(p_c) * np.cos(lon_rad - l_c),
+            -1.0,
+            1.0,
+        )
+        d_km = 6371.0 * np.arccos(cos_ang)
+        min_d_km = np.minimum(min_d_km, d_km)
+
+    return np.where(min_d_km <= 450.0, 1.0, np.where(min_d_km <= 850.0, 0.62, 0.28)).astype(np.float32)
 
 
 @dataclass
@@ -53,15 +97,44 @@ def _smooth_periodic(arr: np.ndarray, passes: int = 2) -> np.ndarray:
 
 
 def _coastal_land_mask(lsm: np.ndarray | None, shape: tuple[int, int]) -> np.ndarray:
-    """Boolean mask True over land and within ~75 km of coastlines (excludes deep uninhabited ocean)."""
+    """Boolean mask True over land and within ~125 km of coastlines (excludes uninhabited open ocean)."""
     if lsm is None or lsm.shape != shape:
         return np.ones(shape, dtype=bool)
-    land = lsm > 0.35
+    land = lsm > 0.30
     expanded = land.copy()
-    for dy in (-3, -2, -1, 0, 1, 2, 3):
-        for dx in (-3, -2, -1, 0, 1, 2, 3):
+    for dy in range(-5, 6):
+        for dx in range(-5, 6):
             expanded |= np.roll(np.roll(land, dy, axis=0), dx, axis=1)
     return expanded
+
+
+def _terrain_mask_05(
+    ifs_elev_025_m: np.ndarray | None,
+    era5_elev_025_m: np.ndarray | None,
+    ifs_sdor_025_m: np.ndarray | None,
+    shape_05: tuple[int, int],
+) -> np.ndarray:
+    """Boolean mask True where terrain is trustworthy (excludes steep relief & >300 m IFS/ERA5 mismatch)."""
+    valid = np.ones(shape_05, dtype=bool)
+    if ifs_elev_025_m is not None:
+        elev_05 = ifs_elev_025_m[::2, ::2]
+        if era5_elev_025_m is not None and era5_elev_025_m.shape == ifs_elev_025_m.shape:
+            diff_05 = np.abs(elev_05 - era5_elev_025_m[::2, ::2].astype(np.float32))
+            valid &= diff_05 <= 300.0
+        # Exclude steep local elevation jumps (>600 m across 3x3 0.5 deg neighbourhood)
+        pad = np.pad(elev_05, ((1, 1), (0, 0)), mode="edge")
+        pad = np.concatenate([pad[:, -1:], pad, pad[:, :1]], axis=1)
+        loc_max = np.full_like(elev_05, -np.inf)
+        loc_min = np.full_like(elev_05, np.inf)
+        for dy in range(3):
+            for dx in range(3):
+                sl = pad[dy : dy + shape_05[0], dx : dx + shape_05[1]]
+                loc_max = np.maximum(loc_max, sl)
+                loc_min = np.minimum(loc_min, sl)
+        valid &= (loc_max - loc_min) <= 600.0
+    if ifs_sdor_025_m is not None:
+        valid &= ifs_sdor_025_m[::2, ::2] <= 250.0
+    return valid
 
 
 def detect_global_candidates(
@@ -69,6 +142,7 @@ def detect_global_candidates(
     climo_mean_c: np.ndarray,
     climo_std_c: np.ndarray,
     max_candidates: int = 14,
+    era5_elev_025_m: np.ndarray | None = None,
 ) -> tuple[list[dict], np.ndarray, np.ndarray]:
     """Scan global 0.25 deg fields and return spatially diverse candidate hotspots plus (anom_c, z_t2m)."""
     anom_c = (weather.t2m_c - climo_mean_c).astype(np.float32)
@@ -78,6 +152,8 @@ def detect_global_candidates(
     lats = weather.lats[::2]
     lons = weather.lons[::2]
     t2m = weather.t2m_c[::2, ::2]
+    tmax_24 = (weather.t2m_max_24h_c if weather.t2m_max_24h_c is not None else weather.t2m_c)[::2, ::2]
+    tmin_24 = (weather.t2m_min_24h_c if weather.t2m_min_24h_c is not None else weather.t2m_c)[::2, ::2]
     anom = _smooth_periodic(anom_c[::2, ::2], passes=1)
     z_sm = _smooth_periodic(z_t2m[::2, ::2], passes=1)
     rain = weather.rain_24h_mm[::2, ::2]
@@ -85,9 +161,11 @@ def detect_global_candidates(
     gust = weather.gust_max[::2, ::2]
     mslp = _smooth_periodic(weather.mslp_hpa[::2, ::2], passes=1)
     near_land = _coastal_land_mask(weather.lsm[::2, ::2] if weather.lsm is not None else None, t2m.shape)
+    clean_terrain = _terrain_mask_05(weather.ifs_elev_m, era5_elev_025_m, weather.ifs_sdor_m, t2m.shape)
 
     lat_2d = lats[:, None]
-    habitable = np.abs(lat_2d) < 72.0  # avoid routine Antarctic plateau noise unless truly extreme
+    habitable = (lat_2d > -58.0) & (lat_2d < 71.5)  # exclude Antarctica and high-polar sea ice
+    pop_weight = _populated_proximity_weight_05(lats, lons)
 
     raw_pool: list[WeatherCandidate] = []
 
@@ -143,29 +221,26 @@ def detect_global_candidates(
             if len(picked_here) >= count:
                 break
 
-    # 1. Extreme heat anomalies (weight land & high both anom_c and z-score; also reward high absolute heat > 36 C)
-    heat_weight = np.where(near_land & habitable, 1.35, 0.45)
-    abs_heat_bonus = np.clip((t2m - 32.0) * 0.18, 0.0, 3.0)
+    # 1. Extreme heat / mildness anomalies (exclude high-relief / >300 m orography-mismatch cells; prefer populated places)
+    heat_weight = np.where(near_land & habitable & clean_terrain, 1.35 * pop_weight, 0.0)
+    abs_heat_bonus = np.clip((tmax_24 - 32.0) * 0.18, 0.0, 3.0)
     heat_score = np.where(anom > 5.0, (anom * 0.55 + np.maximum(0.0, z_sm) * 1.8 + abs_heat_bonus) * heat_weight, 0.0)
     _add_top_points(heat_score, "heat", "anomaly", anom, "°C", count=5)
 
-    # 2. Severe cold outbreaks (strong negative anomalies over land)
-    cold_weight = np.where(near_land & habitable, 1.35, 0.35)
+    # 2. Severe cold outbreaks (strong negative anomalies over trustworthy populated land terrain)
+    cold_weight = np.where(near_land & habitable & clean_terrain, 1.35 * pop_weight, 0.0)
     cold_score = np.where(anom < -6.0, ((-anom) * 0.55 + np.maximum(0.0, -z_sm) * 1.8) * cold_weight, 0.0)
     _add_top_points(cold_score, "cold", "anomaly", anom, "°C", count=4)
 
-    # 3. Torrential rainfall / atmospheric rivers / monsoonal deluges (24h rain >= 50 mm, strongly preferring land/coasts)
-    rain_weight = np.where(near_land & habitable, 1.5, 0.4)
+    # 3. Heavy rainfall (24h rain >= 45 mm over inhabited land/coastal zones; exclude open-ocean ITCZ)
+    rain_weight = np.where(near_land & habitable, 1.5 * pop_weight, 0.0)
     rain_score = np.where(rain >= 45.0, (rain / 12.0) * rain_weight, 0.0)
     _add_top_points(rain_score, "rain", "rain", rain, "mm", count=5)
 
-    # 4. Cyclones, explosive lows, and severe windstorms (deep lows or Tropical Cyclones or destructive gusts)
+    # 4. Cyclones, deep lows, and severe windstorms affecting populated land or coastal regions
     tropical = np.abs(lat_2d) <= 32.0
     low_depth = np.where(tropical, np.maximum(0.0, 1006.0 - mslp) * 0.45, np.maximum(0.0, 988.0 - mslp) * 0.28)
-    storm_land_weight = np.where(near_land, 1.35, 0.80)
-    # Suppress routine uninhabited Southern Ocean lows unless hitting land/NZ/South America
-    southern_ocean_open = (lat_2d < -46.0) & (~near_land)
-    storm_land_weight = np.where(southern_ocean_open, 0.3, storm_land_weight)
+    storm_land_weight = np.where(near_land & habitable, 1.35 * np.maximum(0.55, pop_weight), 0.0)
     storm_score = np.where(
         (gust >= 24.0) | (low_depth > 4.0),
         (np.maximum(0.0, gust - 16.0) * 0.55 + low_depth) * storm_land_weight,
@@ -184,28 +259,35 @@ def detect_global_candidates(
         if len(deduped) >= max_candidates:
             break
 
-    serialised = [
-        {
-            "id": f"cand-{i + 1:02d}-{c.kind}",
-            "kind": c.kind,
-            "primary_layer": c.primary_layer,
-            "lat": c.lat,
-            "lon": c.lon,
-            "score": c.score,
-            "peak_value": c.peak_value,
-            "units": c.units,
-            "t2m_c": c.t2m_c,
-            "anom_c": c.anom_c,
-            "z_score": c.z_score,
-            "rain_24h_mm": c.rain_24h_mm,
-            "wind_ms": c.wind_ms,
-            "gust_ms": c.gust_ms,
-            "mslp_hpa": c.mslp_hpa,
-            "on_land": c.on_land,
-            "summary_hint": c.summary_hint,
-        }
-        for i, c in enumerate(deduped)
-    ]
+    serialised = []
+    for i, c in enumerate(deduped):
+        iy05 = int(round((90.0 - c.lat) / 0.5))
+        ix05 = int(round(((c.lon + 180.0) % 360.0) / 0.5)) % 720
+        serialised.append(
+            {
+                "id": f"cand-{i + 1:02d}-{c.kind}",
+                "kind": c.kind,
+                "primary_layer": c.primary_layer,
+                "lat": c.lat,
+                "lon": c.lon,
+                "score": c.score,
+                "peak_value": c.peak_value,
+                "units": c.units,
+                "t2m_c": c.t2m_c,
+                "t2m_max_24h_c": round(float(tmax_24[iy05, ix05]), 1),
+                "t2m_min_24h_c": round(float(tmin_24[iy05, ix05]), 1),
+                "anom_c": c.anom_c,
+                "z_score": c.z_score,
+                "rain_24h_mm": c.rain_24h_mm,
+                "wind_ms": c.wind_ms,
+                "wind_kmh": round(c.wind_ms * 3.6, 0),
+                "gust_ms": c.gust_ms,
+                "gust_kmh": round(c.gust_ms * 3.6, 0),
+                "mslp_hpa": c.mslp_hpa,
+                "on_land": c.on_land,
+                "summary_hint": c.summary_hint,
+            }
+        )
     return serialised, anom_c, z_t2m
 
 

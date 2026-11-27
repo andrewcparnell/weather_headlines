@@ -32,42 +32,49 @@ jobs:
         with:
           python-version: "3.12"
 
-      - name: Restore ERA5 climatology cache
-        if: github.event_name != 'push'
+      - name: Cache ERA5 historical point series
         uses: actions/cache@v4
         with:
-          path: pipeline_cache/climatology
-          key: era5-climo-v1-${{ runner.os }}-${{ github.run_id }}
+          path: pipeline_cache/era5_points
+          key: era5-points-v2-${{ runner.os }}-${{ hashFiles('pipeline/climatology.py') }}
           restore-keys: |
-            era5-climo-v1-${{ runner.os }}-
-            era5-climo-v1-
+            era5-points-v2-${{ runner.os }}-
+            era5-points-v2-
+
+      - name: Restore latest headlines.json from orphan data branch
+        run: |
+          mkdir -p site/data
+          if git ls-remote --exit-code --heads origin data >/dev/null 2>&1; then
+            git fetch --depth=1 origin data
+            git show FETCH_HEAD:headlines.json > site/data/headlines.json || true
+          fi
 
       - name: Install dependencies
         run: uv sync --frozen
 
-      - name: Fetch live ECMWF weather, ERA5 rankings, and generate 5-story bulletin
-        if: github.event_name != 'push'
+      - name: Refresh live ECMWF weather layers and 5-story bulletin
         env:
-          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ github.event_name != 'push' && secrets.ANTHROPIC_API_KEY || '' }}
         run: |
           uv run --frozen python -m pipeline.build --keep-existing-headlines-if-no-key
-          if [ -z "${ANTHROPIC_API_KEY}" ]; then
-            echo "::notice::ANTHROPIC_API_KEY secret is not set yet. Live ECMWF weather layers were refreshed; add ANTHROPIC_API_KEY under Settings -> Secrets and variables -> Actions to enable 6-hourly Claude + web-search headline updates."
-          fi
 
       - name: Run pipeline and data integrity tests
         run: uv run --frozen pytest -v
 
-      - name: Commit refreshed 6-hourly weather data to main
+      - name: Snapshot headlines.json to orphan data branch (without touching main)
         if: github.event_name != 'push'
         run: |
+          SNAPSHOT_DIR=$(mktemp -d)
+          cp site/data/headlines.json "${SNAPSHOT_DIR}/headlines.json"
+          cd "${SNAPSHOT_DIR}"
+          git init -b data
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add site/data
-          if ! git diff --cached --quiet; then
-            git commit -m "chore: refresh 6-hourly weather headlines [skip ci]"
-            git pull --rebase -X theirs origin main && git push origin HEAD:main || echo "::warning::Skipped git push due to concurrent main branch update; deploying fresh site artifact directly."
-          fi
+          git add headlines.json
+          git commit -m "chore: snapshot latest headlines.json"
+          git push --force "https://x-access-token:${GITHUB_TOKEN}@github.com/${GITHUB_REPOSITORY}.git" HEAD:data || echo "::warning::Unable to push headlines.json snapshot to data branch."
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload static site artifact for GitHub Pages
         uses: actions/upload-pages-artifact@v3

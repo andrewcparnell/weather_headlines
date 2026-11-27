@@ -5,6 +5,8 @@ const DEG2RAD = Math.PI / 180;
 const RAD2DEG = 180 / Math.PI;
 const HOME_LAT = 26;
 const HOME_LON = -12;
+const Z_AXIS = new THREE.Vector3(0, 0, 1);
+const Y_AXIS = new THREE.Vector3(0, 1, 0);
 
 const LAYER_MODE_INDEX = {
   temperature: 0,
@@ -26,13 +28,13 @@ export function latLonToVec3(lat, lon, radius = 1, out = new THREE.Vector3()) {
 }
 
 export function vec3ToLatLon(vec) {
-  const n = vec.clone().normalize();
-  const lat = Math.asin(Math.max(-1, Math.min(1, n.y))) * RAD2DEG;
-  const lon = Math.atan2(-n.z, n.x) * RAD2DEG;
+  const len = vec.length() || 1;
+  const lat = Math.asin(Math.max(-1, Math.min(1, vec.y / len))) * RAD2DEG;
+  const lon = Math.atan2(-vec.z, vec.x) * RAD2DEG;
   return { lat, lon };
 }
 
-function parseHexRgba(hex) {
+export function parseHexRgba(hex) {
   const clean = hex.replace('#', '');
   const r = parseInt(clean.slice(0, 2), 16);
   const g = parseInt(clean.slice(2, 4), 16);
@@ -41,31 +43,37 @@ function parseHexRgba(hex) {
   return [r, g, b, a];
 }
 
+export function sampleLayerColourAtValue(layerSpec, val) {
+  const stops = layerSpec.stops;
+  if (!stops || !stops.length) return [255, 255, 255, 255];
+  const first = parseHexRgba(stops[0][1]);
+  if (val <= stops[0][0]) return first;
+  const last = parseHexRgba(stops[stops.length - 1][1]);
+  if (val >= stops[stops.length - 1][0]) return last;
+  for (let s = 0; s < stops.length - 1; s++) {
+    const v0 = stops[s][0];
+    const v1 = stops[s + 1][0];
+    if (val >= v0 && val <= v1) {
+      const c0 = parseHexRgba(stops[s][1]);
+      const c1 = parseHexRgba(stops[s + 1][1]);
+      const f = (val - v0) / Math.max(1e-6, v1 - v0);
+      return [
+        Math.round(c0[0] + f * (c1[0] - c0[0])),
+        Math.round(c0[1] + f * (c1[1] - c0[1])),
+        Math.round(c0[2] + f * (c1[2] - c0[2])),
+        Math.round(c0[3] + f * (c1[3] - c0[3])),
+      ];
+    }
+  }
+  return last;
+}
+
 function buildLutTexture(layerSpec) {
   const data = new Uint8Array(256 * 4);
-  const stops = layerSpec.stops.map(([val, hex]) => ({ val, rgba: parseHexRgba(hex) }));
   for (let i = 0; i < 255; i++) {
     const t = i / 254;
     const val = layerSpec.lo + t * (layerSpec.hi - layerSpec.lo);
-    let c = stops[0].rgba;
-    if (val >= stops[stops.length - 1].val) {
-      c = stops[stops.length - 1].rgba;
-    } else {
-      for (let s = 0; s < stops.length - 1; s++) {
-        const s0 = stops[s];
-        const s1 = stops[s + 1];
-        if (val >= s0.val && val <= s1.val) {
-          const f = (val - s0.val) / Math.max(1e-6, s1.val - s0.val);
-          c = [
-            Math.round(s0.rgba[0] + f * (s1.rgba[0] - s0.rgba[0])),
-            Math.round(s0.rgba[1] + f * (s1.rgba[1] - s0.rgba[1])),
-            Math.round(s0.rgba[2] + f * (s1.rgba[2] - s0.rgba[2])),
-            Math.round(s0.rgba[3] + f * (s1.rgba[3] - s0.rgba[3])),
-          ];
-          break;
-        }
-      }
-    }
+    const c = sampleLayerColourAtValue(layerSpec, val);
     data[i * 4] = c[0];
     data[i * 4 + 1] = c[1];
     data[i * 4 + 2] = c[2];
@@ -82,18 +90,6 @@ function buildLutTexture(layerSpec) {
   return tex;
 }
 
-function decodeDeltaRing(deltaArr, scale = 100) {
-  const pts = [];
-  let x = 0;
-  let y = 0;
-  for (let i = 0; i < deltaArr.length; i += 2) {
-    x += deltaArr[i];
-    y += deltaArr[i + 1];
-    pts.push([x / scale, y / scale]);
-  }
-  return pts;
-}
-
 export function computeViewportCameraParams(width, height) {
   const aspect = Math.max(0.3, width / Math.max(1, height));
   const fov = aspect < 1.0 ? Math.min(54, 38 + (1.0 - aspect) * 28) : 38;
@@ -104,6 +100,10 @@ export function computeViewportCameraParams(width, height) {
   const initialDist = aspect < 1.0 ? Math.max(3.4, Math.min(6.0, exactDist)) : 2.75;
   const altitudeScale = aspect < 0.9 ? Math.min(2.15, 0.95 / Math.max(0.42, aspect)) : 1.0;
   return { aspect, fov, initialDist, altitudeScale };
+}
+
+function maxPixelRatioForViewport() {
+  return window.innerWidth < 768 ? 1.5 : 2;
 }
 
 export class WeatherGlobe {
@@ -119,24 +119,48 @@ export class WeatherGlobe {
     this.layerLuts = new Map();
     this.layerTextures = new Map();
     this.layerBuffers = new Map();
+    this.baseMapTexture = null;
+
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.reducedMotion = Boolean(mq?.matches);
+    mq?.addEventListener?.('change', e => {
+      this.reducedMotion = Boolean(e.matches);
+      if (this.reducedMotion) {
+        this.autoSpin = false;
+      }
+    });
 
     this.currentLayer = 'temperature';
     this.transition = null;
     this.flight = null;
     this.tourControlled = false;
-    this.autoSpin = true;
+    this.autoSpin = !this.reducedMotion;
 
-    // Regional focus for high-density storm particles & broadcast surface spotlight
-    this.focusRegion = null; // { lat, lon }
-    this.focusCallout = null; // { vec, el, labelEl, metricEl, visible }
+    this.focusRegion = null;
+    this.focusCallout = null;
+    this.searchMarker = null;
 
     this.hlElements = [];
     this.storyPinElements = [];
+
+    // Pre-allocated scratch structs to eliminate per-particle / per-frame GC churn
+    this._windScratch = { u: 0, v: 0, speed: 0 };
+    this._vHead = new THREE.Vector3();
+    this._vTail = new THREE.Vector3();
+    this._camDir = new THREE.Vector3();
+    this._projVec = new THREE.Vector3();
+    this._camRight = new THREE.Vector3();
+    this._spinQuat = new THREE.Quaternion();
+    this._flightQuat = new THREE.Quaternion();
+    this._flightDir = new THREE.Vector3();
+    this._flightLook = new THREE.Vector3();
+    this._ringOutward = new THREE.Vector3();
 
     this._elapsedSec = 0;
     this._initScene();
     this._initParticles();
     this._initFocusSpotlight();
+    this._initSearchMarker();
     this._bindEvents();
     this._lastFrame = performance.now();
     this._animate = this._animate.bind(this);
@@ -150,7 +174,7 @@ export class WeatherGlobe {
     latLonToVec3(HOME_LAT, HOME_LON, vp.initialDist, this.camera.position);
 
     this.renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, powerPreference: 'high-performance' });
-    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, 2));
+    this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatioForViewport()));
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.stageEl.appendChild(this.renderer.domElement);
 
@@ -163,8 +187,7 @@ export class WeatherGlobe {
     this.controls.minDistance = 1.24;
     this.controls.maxDistance = 7.2;
 
-    // Subtle deep-space starfield
-    const starCount = 1400;
+    const starCount = 1200;
     const starPos = new Float32Array(starCount * 3);
     for (let i = 0; i < starCount; i++) {
       const u = Math.random() * 2 - 1;
@@ -183,7 +206,7 @@ export class WeatherGlobe {
     this.earthGroup = new THREE.Group();
     this.scene.add(this.earthGroup);
 
-    const blankTex = new THREE.DataTexture(new Uint8Array([0, 0, 0, 0]), 1, 1, THREE.RGBAFormat);
+    const blankTex = new THREE.DataTexture(new Uint8Array([9, 24, 44, 255]), 1, 1, THREE.RGBAFormat);
     blankTex.needsUpdate = true;
 
     this.globeUniforms = {
@@ -208,13 +231,10 @@ export class WeatherGlobe {
       vertexShader: `
         varying vec3 vObjPos;
         varying vec3 vWorldNormal;
-        varying vec3 vViewPos;
         void main() {
           vObjPos = position;
           vWorldNormal = normalize(mat3(modelMatrix) * normal);
-          vec4 mvPos = modelViewMatrix * vec4(position, 1.0);
-          vViewPos = -mvPos.xyz;
-          gl_Position = projectionMatrix * mvPos;
+          gl_Position = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
         }
       `,
       fragmentShader: `
@@ -235,7 +255,6 @@ export class WeatherGlobe {
 
         varying vec3 vObjPos;
         varying vec3 vWorldNormal;
-        varying vec3 vViewPos;
 
         vec4 sampleLayer(sampler2D fieldTex, sampler2D lutTex, int chan, float isSqrt, vec2 uvField, out float normVal) {
           vec4 raw = texture2D(fieldTex, uvField);
@@ -271,40 +290,35 @@ export class WeatherGlobe {
           vec4 weather = mix(colA, colB, uMix);
           float intensity = mix(normA, normB, uMix);
 
-          // Live meteorological shader animation tailored to active variable
           if (uLayerMode == 3 && weather.a > 0.15) {
-            // Rainfall: animated radar wave ripple across active rainbands
             float wave = 0.5 + 0.5 * sin(uTime * 4.4 - latDeg * 0.65 + lonDeg * 0.55);
             float heavyBoost = smoothstep(0.08, 0.45, intensity);
             weather.rgb += vec3(0.10, 0.22, 0.34) * wave * heavyBoost;
             weather.a = min(1.0, weather.a + 0.12 * wave * heavyBoost);
           } else if (uLayerMode == 1) {
-            // Temp Anomaly: living pulse on strong warm/cold departures
             float extremeness = smoothstep(0.16, 0.38, abs(intensity - 0.5));
             float pulse = 0.5 + 0.5 * sin(uTime * 3.1 - latDeg * 0.25);
-            weather.rgb *= (1.0 + 0.14 * pulse * extremeness);
+            weather.rgb *= (1.0 + 0.12 * pulse * extremeness);
           } else if (uLayerMode == 0) {
-            // Temperature: subtle thermal shimmer in extreme heat/cold zones
             float extremeness = smoothstep(0.24, 0.44, abs(intensity - 0.52));
             float pulse = 0.5 + 0.5 * sin(uTime * 2.6 + lonDeg * 0.2);
-            weather.rgb *= (1.0 + 0.10 * pulse * extremeness);
+            weather.rgb *= (1.0 + 0.08 * pulse * extremeness);
           }
 
           vec3 nWorld = normalize(vWorldNormal);
-          float diffuse = 0.78 + 0.26 * max(0.0, dot(nWorld, uSunDir));
+          float diffuse = 0.80 + 0.24 * max(0.0, dot(nWorld, uSunDir));
           vec3 litBase = baseCol * diffuse;
-
-          vec3 blended = mix(litBase, weather.rgb, weather.a * 0.89);
+          vec3 blended = mix(litBase, weather.rgb, weather.a * 0.86);
 
           float rim = pow(1.0 - max(0.0, dot(nWorld, normalize(cameraPosition - nObj))), 3.2);
-          blended += vec3(0.14, 0.34, 0.58) * rim * 0.42;
+          blended += vec3(0.14, 0.34, 0.58) * rim * 0.40;
 
           gl_FragColor = vec4(blended, 1.0);
         }
       `,
     });
 
-    this.sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 144, 108), globeMat);
+    this.sphereMesh = new THREE.Mesh(new THREE.SphereGeometry(1, 128, 96), globeMat);
     this.earthGroup.add(this.sphereMesh);
 
     const haloMat = new THREE.ShaderMaterial({
@@ -326,11 +340,11 @@ export class WeatherGlobe {
         varying vec3 vView;
         void main() {
           float intensity = pow(clamp(0.72 - dot(vNormal, vView), 0.0, 1.0), 2.8);
-          gl_FragColor = vec4(0.22, 0.56, 0.88, intensity * 0.48);
+          gl_FragColor = vec4(0.22, 0.56, 0.88, intensity * 0.46);
         }
       `,
     });
-    this.earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(1.042, 96, 64), haloMat));
+    this.earthGroup.add(new THREE.Mesh(new THREE.SphereGeometry(1.042, 80, 56), haloMat));
 
     this.isobarGroup = new THREE.Group();
     this.isobarGroup.visible = false;
@@ -338,12 +352,11 @@ export class WeatherGlobe {
   }
 
   _initParticles() {
-    // 3,000 global particles + 1,800 high-density regional storm particles during Tour mode!
     this.globalParticleCount = 3000;
     this.regionalParticleCount = 1800;
     this.particleCount = this.globalParticleCount + this.regionalParticleCount;
 
-    this.particles = new Float32Array(this.particleCount * 3); // [lat, lon, age]
+    this.particles = new Float32Array(this.particleCount * 3);
     const positions = new Float32Array(this.particleCount * 6);
     const colors = new Float32Array(this.particleCount * 6);
 
@@ -354,6 +367,7 @@ export class WeatherGlobe {
     const geo = new THREE.BufferGeometry();
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3));
     geo.setAttribute('color', new THREE.BufferAttribute(colors, 3));
+    geo.setDrawRange(0, this.globalParticleCount * 2);
 
     this.particleMat = new THREE.LineBasicMaterial({
       vertexColors: true,
@@ -367,7 +381,6 @@ export class WeatherGlobe {
   }
 
   _initFocusSpotlight() {
-    // Animated concentric surface radar rings + floating broadcast callout pin for Tour sentences
     this.focusRingGroup = new THREE.Group();
     this.focusRingGroup.visible = false;
 
@@ -416,14 +429,45 @@ export class WeatherGlobe {
     };
   }
 
+  _initSearchMarker() {
+    const el = document.createElement('div');
+    el.className = 'search-marker';
+    el.hidden = true;
+    el.innerHTML =
+      '<span class="search-marker-pin"></span>' +
+      '<span class="search-marker-label"></span>';
+    this.overlayEl.appendChild(el);
+    this.searchMarker = {
+      el,
+      labelEl: el.querySelector('.search-marker-label'),
+      vec: new THREE.Vector3(0, 0, 1.008),
+      active: false,
+    };
+  }
+
+  setSearchMarker(lat, lon, label = '') {
+    if (!this.searchMarker) return;
+    latLonToVec3(lat, lon, 1.008, this.searchMarker.vec);
+    this.searchMarker.labelEl.textContent = label || '';
+    this.searchMarker.labelEl.hidden = !label;
+    this.searchMarker.active = true;
+  }
+
+  clearSearchMarker() {
+    if (!this.searchMarker) return;
+    this.searchMarker.active = false;
+    this.searchMarker.el.hidden = true;
+    this.searchMarker.el.style.visibility = 'hidden';
+  }
+
   _respawnParticle(i, randomAge = false) {
     const isRegional = i >= this.globalParticleCount && this.focusRegion;
     let lat;
     let lon;
     if (isRegional) {
-      const spreadLat = 18;
+      const spreadLat = 16;
       const cosC = Math.max(0.28, Math.cos(this.focusRegion.lat * DEG2RAD));
-      const spreadLon = Math.min(48, 22 / cosC);
+      const spreadLon = Math.min(42, 20 / cosC);
       lat = Math.max(-83, Math.min(83, this.focusRegion.lat + (Math.random() * 2 - 1) * spreadLat));
       lon = (((this.focusRegion.lon + (Math.random() * 2 - 1) * spreadLon + 180) % 360) + 360) % 360 - 180;
     } else {
@@ -443,6 +487,7 @@ export class WeatherGlobe {
       if (this.focusCallout) {
         this.focusCallout.active = false;
         this.focusCallout.el.hidden = true;
+        this.focusCallout.el.style.visibility = 'hidden';
       }
       return;
     }
@@ -450,7 +495,6 @@ export class WeatherGlobe {
     const prevRegion = this.focusRegion;
     this.focusRegion = { lat: cue.lat, lon: cue.lon };
 
-    // Immediately seed regional storm particles around the new focus if we jumped > 20 deg
     if (!prevRegion || Math.hypot(prevRegion.lat - cue.lat, prevRegion.lon - cue.lon) > 20) {
       for (let i = this.globalParticleCount; i < this.particleCount; i++) {
         this._respawnParticle(i, true);
@@ -458,7 +502,7 @@ export class WeatherGlobe {
     }
 
     const vec = latLonToVec3(cue.lat, cue.lon, 1.005);
-    if (!this.focusCallout.active) {
+    if (!this.focusCallout.active || this.reducedMotion) {
       this.focusCallout.currentVec.copy(vec);
     }
     this.focusCallout.targetVec.copy(vec);
@@ -469,117 +513,34 @@ export class WeatherGlobe {
     this.focusRingGroup.visible = true;
   }
 
-  async loadBasemap(url = 'assets/basemap.json') {
-    const resp = await fetch(url);
-    if (!resp.ok) return;
-    const topo = await resp.json();
-    const scale = topo.scale || 100;
+  async loadBasemap(url = 'assets/basemap.webp') {
+    try {
+      const img = new Image();
+      img.crossOrigin = 'anonymous';
+      img.decoding = 'async';
+      img.src = url;
+      await img.decode();
 
-    const W = 2048;
-    const H = 1024;
-    const canvas = document.createElement('canvas');
-    canvas.width = W;
-    canvas.height = H;
-    const ctx = canvas.getContext('2d');
+      const baseTex = new THREE.Texture(img);
+      baseTex.flipY = false;
+      baseTex.wrapS = THREE.RepeatWrapping;
+      baseTex.wrapT = THREE.ClampToEdgeWrapping;
+      baseTex.minFilter = THREE.LinearFilter;
+      baseTex.magFilter = THREE.LinearFilter;
+      baseTex.needsUpdate = true;
 
-    const grad = ctx.createLinearGradient(0, 0, 0, H);
-    grad.addColorStop(0, '#091b32');
-    grad.addColorStop(0.5, '#071426');
-    grad.addColorStop(1, '#091a30');
-    ctx.fillStyle = grad;
-    ctx.fillRect(0, 0, W, H);
-
-    ctx.fillStyle = '#182b42';
-    ctx.strokeStyle = '#294666';
-    ctx.lineWidth = 0.8;
-
-    const coastPositions = [];
-    const vTmpA = new THREE.Vector3();
-    const vTmpB = new THREE.Vector3();
-
-    for (const encodedRing of topo.land || []) {
-      const pts = decodeDeltaRing(encodedRing, scale);
-      if (pts.length < 3) continue;
-
-      let minLon = Infinity;
-      let maxLon = -Infinity;
-      let avgLat = 0;
-      for (const [lo, la] of pts) {
-        if (lo < minLon) minLon = lo;
-        if (lo > maxLon) maxLon = lo;
-        avgLat += la;
+      if (this.baseMapTexture) {
+        this.baseMapTexture.dispose();
       }
-      avgLat /= pts.length;
-      const isAntarctica = avgLat < -62 && maxLon - minLon > 300;
-
-      for (const shift of [-360, 0, 360]) {
-        if (shift !== 0 && !isAntarctica && minLon >= -180 && maxLon <= 180) continue;
-        ctx.beginPath();
-        pts.forEach(([lo, la], idx) => {
-          const px = ((lo + shift + 180) / 360) * W;
-          const py = ((90 - la) / 180) * H;
-          if (idx === 0) ctx.moveTo(px, py);
-          else ctx.lineTo(px, py);
-        });
-        if (isAntarctica && shift === 0) {
-          const firstPx = ((pts[0][0] + 180) / 360) * W;
-          const lastPx = ((pts[pts.length - 1][0] + 180) / 360) * W;
-          ctx.lineTo(lastPx, H);
-          ctx.lineTo(firstPx, H);
-        }
-        ctx.closePath();
-        ctx.fill();
-      }
-
-      for (let i = 0; i < pts.length - 1; i++) {
-        const [lo0, la0] = pts[i];
-        const [lo1, la1] = pts[i + 1];
-        if (isAntarctica && Math.abs(lo1 - lo0) > 40) continue;
-        latLonToVec3(la0, lo0, 1.0018, vTmpA);
-        latLonToVec3(la1, lo1, 1.0018, vTmpB);
-        coastPositions.push(vTmpA.x, vTmpA.y, vTmpA.z, vTmpB.x, vTmpB.y, vTmpB.z);
-      }
+      this.baseMapTexture = baseTex;
+      this.globeUniforms.uBaseMap.value = baseTex;
+    } catch (err) {
+      console.warn('Basemap texture load failed:', err);
     }
-
-    const baseTex = new THREE.CanvasTexture(canvas);
-    baseTex.flipY = false;
-    baseTex.wrapS = THREE.RepeatWrapping;
-    baseTex.wrapT = THREE.ClampToEdgeWrapping;
-    baseTex.minFilter = THREE.LinearFilter;
-    baseTex.magFilter = THREE.LinearFilter;
-    baseTex.needsUpdate = true;
-    this.globeUniforms.uBaseMap.value = baseTex;
-
-    const coastGeo = new THREE.BufferGeometry();
-    coastGeo.setAttribute('position', new THREE.Float32BufferAttribute(coastPositions, 3));
-    const coastMat = new THREE.LineBasicMaterial({
-      color: 0xd8e8f8,
-      transparent: true,
-      opacity: 0.56,
-    });
-    this.earthGroup.add(new THREE.LineSegments(coastGeo, coastMat));
-
-    const borderPositions = [];
-    for (const encodedLine of topo.borders || []) {
-      const pts = decodeDeltaRing(encodedLine, scale);
-      for (let i = 0; i < pts.length - 1; i++) {
-        latLonToVec3(pts[i][1], pts[i][0], 1.0015, vTmpA);
-        latLonToVec3(pts[i + 1][1], pts[i + 1][0], 1.0015, vTmpB);
-        borderPositions.push(vTmpA.x, vTmpA.y, vTmpA.z, vTmpB.x, vTmpB.y, vTmpB.z);
-      }
-    }
-    const borderGeo = new THREE.BufferGeometry();
-    borderGeo.setAttribute('position', new THREE.Float32BufferAttribute(borderPositions, 3));
-    const borderMat = new THREE.LineBasicMaterial({
-      color: 0x9ab6d4,
-      transparent: true,
-      opacity: 0.3,
-    });
-    this.earthGroup.add(new THREE.LineSegments(borderGeo, borderMat));
   }
 
   async loadWeatherManifest(manifestUrl = 'data/manifest.json') {
-    const resp = await fetch(`${manifestUrl}?t=${Date.now()}`);
+    const resp = await fetch(manifestUrl, { cache: 'no-cache' });
     if (!resp.ok) throw new Error('Unable to load weather manifest');
     const manifest = await resp.json();
     this.manifest = manifest;
@@ -587,15 +548,28 @@ export class WeatherGlobe {
 
     for (const spec of manifest.layers) {
       this.layerSpecs.set(spec.id, spec);
+      const prevLut = this.layerLuts.get(spec.id);
       this.layerLuts.set(spec.id, buildLutTexture(spec));
+      prevLut?.dispose();
     }
 
-    const cacheBust = encodeURIComponent(manifest.generated_utc || Date.now());
-    await Promise.all(
+    const cacheBust = encodeURIComponent(manifest.generated_utc || 'latest');
+    const results = await Promise.allSettled(
       manifest.layers.map(spec => this._loadLayerImage(spec.id, `data/layers/${spec.id}.webp?v=${cacheBust}`))
     );
+    results.forEach((res, idx) => {
+      if (res.status === 'rejected') {
+        console.warn(`Layer ${manifest.layers[idx]?.id} failed to load:`, res.reason);
+      }
+    });
 
     this._buildIsobarsAndCentres(manifest.isobars || [], manifest.pressure_centres || []);
+    if (!this.layerTextures.has(this.currentLayer)) {
+      const firstAvailable = manifest.layers.find(spec => this.layerTextures.has(spec.id));
+      if (firstAvailable) {
+        this.currentLayer = firstAvailable.id;
+      }
+    }
     this.setLayer(this.currentLayer, true);
     return manifest;
   }
@@ -624,13 +598,17 @@ export class WeatherGlobe {
     tex.minFilter = THREE.LinearFilter;
     tex.magFilter = THREE.LinearFilter;
     tex.needsUpdate = true;
+
+    const prevTex = this.layerTextures.get(layerId);
     this.layerTextures.set(layerId, tex);
+    prevTex?.dispose();
   }
 
   _buildIsobarsAndCentres(isobars, centres) {
     while (this.isobarGroup.children.length) {
       const ch = this.isobarGroup.children.pop();
       ch.geometry?.dispose();
+      ch.material?.dispose();
     }
     const pos = [];
     const vA = new THREE.Vector3();
@@ -657,6 +635,7 @@ export class WeatherGlobe {
       el.className = `hl-badge ${c.kind === 'L' ? 'low' : 'high'}`;
       el.textContent = `${c.kind} ${c.hpa}`;
       el.hidden = true;
+      el.style.visibility = 'hidden';
       this.overlayEl.appendChild(el);
       return { ...c, el, vec: latLonToVec3(c.lat, c.lon, 1.006) };
     });
@@ -669,7 +648,10 @@ export class WeatherGlobe {
       el.type = 'button';
       el.className = `story-pin${idx === activeIndex ? ' active' : ''}`;
       el.textContent = String(idx + 1);
-      el.title = st.headline;
+      const place =
+        st.country && st.country !== 'Global' ? st.country : st.region || st.headline || `Story ${idx + 1}`;
+      el.setAttribute('aria-label', `Story ${idx + 1}: ${place}`);
+      el.title = st.headline || `Story ${idx + 1}: ${place}`;
       el.onclick = e => {
         e.stopPropagation();
         this.onPinClick?.(idx);
@@ -699,7 +681,7 @@ export class WeatherGlobe {
     const chan = layerId === 'wind' ? 2 : 0;
     const isSqrt = targetSpec.scale === 'sqrt' ? 1.0 : 0.0;
 
-    if (immediate || this.currentLayer === layerId) {
+    if (immediate || this.reducedMotion || this.currentLayer === layerId || !this.layerTextures.has(this.currentLayer)) {
       this.globeUniforms.uTexA.value = targetTex;
       this.globeUniforms.uLutA.value = targetLut;
       this.globeUniforms.uChannelA.value = chan;
@@ -722,13 +704,11 @@ export class WeatherGlobe {
       this.globeUniforms.uChannelB.value = chan;
       this.globeUniforms.uSqrtB.value = isSqrt;
       this.globeUniforms.uMix.value = 0.0;
-      this.transition = { start: performance.now(), duration: 480 };
+      this.transition = { start: performance.now(), duration: 420 };
     }
 
     this.currentLayer = layerId;
     this.globeUniforms.uLayerMode.value = LAYER_MODE_INDEX[layerId] ?? 0;
-
-    // Show crisp isobars on Pressure AND subtly on Wind/Rain storms during Tour mode
     this.isobarGroup.visible = layerId === 'pressure';
 
     if (layerId === 'wind') this.particleMat.opacity = 0.96;
@@ -766,42 +746,58 @@ export class WeatherGlobe {
     };
   }
 
-  sampleWindVector(lat, lon) {
+  sampleWindVector(lat, lon, out = this._windScratch) {
     const buf = this.layerBuffers.get('wind');
     const spec = this.layerSpecs.get('wind');
     if (!buf || !spec) return null;
+
+    const nx = buf.nx;
+    const ny = buf.ny;
+    const rgba = buf.rgba;
     const u = (((lon + 180) % 360) + 360) % 360 / 360;
     const v = Math.max(0, Math.min(1, (90 - lat) / 180));
-    const fx = u * buf.nx;
-    const fy = v * (buf.ny - 1);
-    const i0 = Math.floor(fx) % buf.nx;
-    const i1 = (i0 + 1) % buf.nx;
-    const j0 = Math.min(buf.ny - 2, Math.floor(fy));
+    const fx = u * nx;
+    const fy = v * (ny - 1);
+    const i0 = Math.floor(fx) % nx;
+    const i1 = (i0 + 1) % nx;
+    const j0 = Math.min(ny - 2, Math.floor(fy));
     const j1 = j0 + 1;
     const tx = fx - Math.floor(fx);
     const ty = fy - j0;
+    const omtX = 1 - tx;
+    const omtY = 1 - ty;
 
-    const decode = (idx, ch, lo, hi) => {
-      const b = buf.rgba[idx * 4 + ch];
-      return b >= 255 ? 0 : lo + (b / 254) * (hi - lo);
-    };
     const maxW = spec.hi;
-    const k00 = j0 * buf.nx + i0;
-    const k10 = j0 * buf.nx + i1;
-    const k01 = j1 * buf.nx + i0;
-    const k11 = j1 * buf.nx + i1;
+    const span = (2 * maxW) / 254;
+    const b00 = (j0 * nx + i0) * 4;
+    const b10 = (j0 * nx + i1) * 4;
+    const b01 = (j1 * nx + i0) * 4;
+    const b11 = (j1 * nx + i1) * 4;
 
-    const bilerp = (ch, lo, hi) => {
-      const v00 = decode(k00, ch, lo, hi);
-      const v10 = decode(k10, ch, lo, hi);
-      const v01 = decode(k01, ch, lo, hi);
-      const v11 = decode(k11, ch, lo, hi);
-      return (v00 * (1 - tx) + v10 * tx) * (1 - ty) + (v01 * (1 - tx) + v11 * tx) * ty;
-    };
+    const r00 = rgba[b00];
+    const r10 = rgba[b10];
+    const r01 = rgba[b01];
+    const r11 = rgba[b11];
+    const u00 = r00 >= 255 ? 0 : -maxW + r00 * span;
+    const u10 = r10 >= 255 ? 0 : -maxW + r10 * span;
+    const u01 = r01 >= 255 ? 0 : -maxW + r01 * span;
+    const u11 = r11 >= 255 ? 0 : -maxW + r11 * span;
+    const wu = (u00 * omtX + u10 * tx) * omtY + (u01 * omtX + u11 * tx) * ty;
 
-    const wu = bilerp(0, -maxW, maxW);
-    const wv = bilerp(1, -maxW, maxW);
-    return { u: wu, v: wv, speed: Math.hypot(wu, wv) };
+    const g00 = rgba[b00 + 1];
+    const g10 = rgba[b10 + 1];
+    const g01 = rgba[b01 + 1];
+    const g11 = rgba[b11 + 1];
+    const v00 = g00 >= 255 ? 0 : -maxW + g00 * span;
+    const v10 = g10 >= 255 ? 0 : -maxW + g10 * span;
+    const v01 = g01 >= 255 ? 0 : -maxW + g01 * span;
+    const v11 = g11 >= 255 ? 0 : -maxW + g11 * span;
+    const wv = (v00 * omtX + v10 * tx) * omtY + (v01 * omtX + v11 * tx) * ty;
+
+    out.u = wu;
+    out.v = wv;
+    out.speed = Math.hypot(wu, wv);
+    return out;
   }
 
   getCurrentCameraGeo() {
@@ -816,18 +812,28 @@ export class WeatherGlobe {
     this.autoSpin = false;
     this.tourControlled = false;
     this.controls.target.set(0, 0, 0);
+
+    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
+    const adjDistance = 1.0 + Math.max(0.24, distance - 1.0) * vp.altitudeScale;
+
+    if (this.reducedMotion || durationMs <= 0) {
+      this.flight = null;
+      latLonToVec3(lat, lon, adjDistance, this.camera.position);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(0, 0, 0);
+      this.controls.update();
+      return;
+    }
+
     const fromDir = this.camera.position.clone().normalize();
     const toDir = latLonToVec3(lat, lon, 1).normalize();
     const fromDist = this.camera.position.length();
     const angle = fromDir.angleTo(toDir);
     const peakBoost = Math.min(0.65, angle * 0.28);
 
-    const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
-    const adjDistance = 1.0 + Math.max(0.24, distance - 1.0) * vp.altitudeScale;
-
     this.flight = {
-      fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromDir),
-      toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
+      fromQuat: new THREE.Quaternion().setFromUnitVectors(Z_AXIS, fromDir),
+      toQuat: new THREE.Quaternion().setFromUnitVectors(Z_AXIS, toDir),
       fromDist,
       toDist: adjDistance,
       fromLook: new THREE.Vector3(0, 0, 0),
@@ -841,30 +847,37 @@ export class WeatherGlobe {
 
   returnToHomeView(durationMs = 1650) {
     const vp = computeViewportCameraParams(window.innerWidth, window.innerHeight);
-    const fromDir = this.camera.position.clone().normalize();
-    const toDir = latLonToVec3(HOME_LAT, HOME_LON, 1).normalize();
-    const fromDist = this.camera.position.length();
-    const angle = fromDir.angleTo(toDir);
-
-    // Preserve exact optical axis on frame 1 so transitioning out of oblique tour view has zero jump
-    const fwd = this.camera.getWorldDirection(new THREE.Vector3());
-    const fromLook = this.camera.position.clone().addScaledVector(fwd, fromDist);
-
     this.tourControlled = false;
     this.controls.enabled = true;
     this.autoSpin = false;
     this.setTourFocusCallout(null);
     this.controls.target.set(0, 0, 0);
 
+    if (this.reducedMotion || durationMs <= 0) {
+      this.flight = null;
+      latLonToVec3(HOME_LAT, HOME_LON, vp.initialDist, this.camera.position);
+      this.camera.up.set(0, 1, 0);
+      this.camera.lookAt(0, 0, 0);
+      this.controls.update();
+      return;
+    }
+
+    const fromDir = this.camera.position.clone().normalize();
+    const toDir = latLonToVec3(HOME_LAT, HOME_LON, 1).normalize();
+    const fromDist = this.camera.position.length();
+    const angle = fromDir.angleTo(toDir);
+    const fwd = this.camera.getWorldDirection(new THREE.Vector3());
+    const fromLook = this.camera.position.clone().addScaledVector(fwd, fromDist);
+
     this.flight = {
-      fromQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), fromDir),
-      toQuat: new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), toDir),
+      fromQuat: new THREE.Quaternion().setFromUnitVectors(Z_AXIS, fromDir),
+      toQuat: new THREE.Quaternion().setFromUnitVectors(Z_AXIS, toDir),
       fromDist,
       toDist: vp.initialDist,
       fromLook,
       toLook: new THREE.Vector3(0, 0, 0),
       peakBoost: Math.min(0.35, angle * 0.16),
-      resumeAutoSpin: true,
+      resumeAutoSpin: !this.reducedMotion,
       start: performance.now(),
       duration: durationMs,
     };
@@ -877,7 +890,7 @@ export class WeatherGlobe {
       this.autoSpin = false;
       this.flight = null;
     } else {
-      this.returnToHomeView(1650);
+      this.returnToHomeView(this.reducedMotion ? 0 : 1650);
     }
   }
 
@@ -910,7 +923,6 @@ export class WeatherGlobe {
     this.camera.position.copy(camDir.multiplyScalar(effDist));
     this.camera.up.set(0, 1, 0);
 
-    // On desktop, nudge slightly right-of-centre to clear top-left script; on mobile, centre horizontally in the open middle window
     const tiltFrac = Math.min(1.0, tiltDeg / 14.5);
     const span = Math.max(0.15, effDist - 1.0);
     const eastShift = isNarrowMobile ? 0.0 : -0.065 * span * tiltFrac;
@@ -929,6 +941,7 @@ export class WeatherGlobe {
       this.camera.fov = vp.fov;
       this.camera.aspect = vp.aspect;
       this.camera.updateProjectionMatrix();
+      this.renderer.setPixelRatio(Math.min(window.devicePixelRatio || 1, maxPixelRatioForViewport()));
       this.renderer.setSize(window.innerWidth, window.innerHeight);
     });
 
@@ -977,27 +990,26 @@ export class WeatherGlobe {
 
   _stepParticles(dt) {
     if (!this.layerBuffers.has('wind')) return;
+    if (this.reducedMotion) {
+      this.particleLines.geometry.setDrawRange(0, 0);
+      return;
+    }
+
     const posAttr = this.particleLines.geometry.getAttribute('position');
     const colAttr = this.particleLines.geometry.getAttribute('color');
     const posArr = posAttr.array;
     const colArr = colAttr.array;
-    const vHead = new THREE.Vector3();
-    const vTail = new THREE.Vector3();
+    const vHead = this._vHead;
+    const vTail = this._vTail;
 
     const layer = this.currentLayer;
     const modeSpeed = layer === 'wind' ? 1.55 : layer === 'rain' ? 1.2 : layer === 'pressure' ? 1.15 : 0.85;
     const speedScale = 0.26 * modeSpeed * dt * 60;
 
     const activeCount = this.focusRegion ? this.particleCount : this.globalParticleCount;
+    this.particleLines.geometry.setDrawRange(0, activeCount * 2);
 
-    for (let i = 0; i < this.particleCount; i++) {
-      if (i >= activeCount) {
-        const base = i * 6;
-        posArr[base] = posArr[base + 1] = posArr[base + 2] = 0;
-        posArr[base + 3] = posArr[base + 4] = posArr[base + 5] = 0;
-        continue;
-      }
-
+    for (let i = 0; i < activeCount; i++) {
       let lat = this.particles[i * 3];
       let lon = this.particles[i * 3 + 1];
       let age = this.particles[i * 3 + 2] + 1;
@@ -1028,8 +1040,9 @@ export class WeatherGlobe {
 
       const tailMult = layer === 'wind' ? 0.095 : layer === 'rain' ? 0.075 : 0.062;
       const tailLen = Math.min(3.6, 0.2 + spd * tailMult);
-      const tailLat = Math.max(-85, Math.min(85, nextLat - (wv / Math.max(1, spd)) * tailLen));
-      const tailLon = nextLon - ((wu / Math.max(1, spd)) * tailLen) / cosLat;
+      const invSpd = 1 / Math.max(1, spd);
+      const tailLat = Math.max(-85, Math.min(85, nextLat - wv * invSpd * tailLen));
+      const tailLon = nextLon - (wu * invSpd * tailLen) / cosLat;
 
       latLonToVec3(tailLat, tailLon, 1.0032, vTail);
       latLonToVec3(nextLat, nextLon, 1.0032, vHead);
@@ -1045,7 +1058,6 @@ export class WeatherGlobe {
       let fade = Math.sin((age / maxAge) * Math.PI) * Math.min(1.0, spd / 7.5);
       if (i >= this.globalParticleCount) fade *= 1.22;
 
-      // Variable-specific colour & intensity modulation
       let hr = 0.88;
       let hg = 0.97;
       let hb = 1.0;
@@ -1055,7 +1067,6 @@ export class WeatherGlobe {
 
       if (layer === 'wind') {
         if (spd > 21) {
-          // Storm-force / gale streaks glow bright gold-white
           hr = 1.0;
           hg = 0.93;
           hb = 0.45;
@@ -1066,8 +1077,7 @@ export class WeatherGlobe {
         }
       } else if (layer === 'rain') {
         const rainMm = this._sampleScalarFast('rain', nextLat, nextLon) || 0;
-        const rainWeight = Math.min(1.0, 0.16 + rainMm / 14.0);
-        fade *= rainWeight;
+        fade *= Math.min(1.0, 0.16 + rainMm / 14.0);
         hr = 0.68;
         hg = 0.94;
         hb = 1.0;
@@ -1108,62 +1118,96 @@ export class WeatherGlobe {
   _updateFocusRings(dt) {
     if (!this.focusCallout?.active) return;
 
-    // Smoothly glide the surface spotlight & callout when transitioning between sentence locations
-    this.focusCallout.currentVec.lerp(this.focusCallout.targetVec, Math.min(1, dt * 2.8));
+    if (this.reducedMotion) {
+      this.focusCallout.currentVec.copy(this.focusCallout.targetVec);
+    } else {
+      this.focusCallout.currentVec.lerp(this.focusCallout.targetVec, Math.min(1, dt * 2.8));
+    }
     this.focusCallout.currentVec.normalize().multiplyScalar(1.0045);
 
     this.focusRingGroup.position.copy(this.focusCallout.currentVec);
-    const outward = this.focusCallout.currentVec.clone().normalize();
-    this.focusRingGroup.quaternion.setFromUnitVectors(new THREE.Vector3(0, 0, 1), outward);
+    this._ringOutward.copy(this.focusCallout.currentVec).normalize();
+    this.focusRingGroup.quaternion.setFromUnitVectors(Z_AXIS, this._ringOutward);
 
-    const pA = (this._elapsedSec * 0.62) % 1;
-    const pB = (this._elapsedSec * 0.62 + 0.5) % 1;
-    const sA = 1.0 + pA * 3.8;
-    const sB = 1.0 + pB * 3.8;
-    this.focusRingA.scale.setScalar(sA);
-    this.focusRingB.scale.setScalar(sB);
-    this.focusRingMatA.opacity = (1.0 - pA) * 0.85;
-    this.focusRingMatB.opacity = (1.0 - pB) * 0.72;
+    if (this.reducedMotion) {
+      this.focusRingA.scale.setScalar(1.3);
+      this.focusRingB.scale.setScalar(1.8);
+      this.focusRingMatA.opacity = 0.75;
+      this.focusRingMatB.opacity = 0.45;
+    } else {
+      const pA = (this._elapsedSec * 0.62) % 1;
+      const pB = (this._elapsedSec * 0.62 + 0.5) % 1;
+      this.focusRingA.scale.setScalar(1.0 + pA * 3.8);
+      this.focusRingB.scale.setScalar(1.0 + pB * 3.8);
+      this.focusRingMatA.opacity = (1.0 - pA) * 0.85;
+      this.focusRingMatB.opacity = (1.0 - pB) * 0.72;
+    }
   }
 
   _updateOverlayProjections() {
     const w = window.innerWidth;
     const h = window.innerHeight;
-    const camDir = this.camera.position.clone().normalize();
-    const proj = new THREE.Vector3();
+    const isMobile = w <= 820;
+    const camDir = this._camDir.copy(this.camera.position).normalize();
+    const proj = this._projVec;
 
     const showHl = this.currentLayer === 'pressure';
     for (const item of this.hlElements) {
       if (!showHl || item.vec.dot(camDir) < 0.28) {
         item.el.hidden = true;
+        item.el.style.visibility = 'hidden';
         continue;
       }
       proj.copy(item.vec).project(this.camera);
+      const x = (proj.x * 0.5 + 0.5) * w;
+      const y = (-proj.y * 0.5 + 0.5) * h;
       item.el.hidden = false;
-      item.el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
-      item.el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
+      item.el.style.visibility = 'visible';
+      item.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%)`;
     }
 
     for (const pin of this.storyPinElements) {
-      if (pin.vec.dot(camDir) < 0.18) {
+      if (this.tourControlled || pin.vec.dot(camDir) < 0.18) {
         pin.el.hidden = true;
+        pin.el.style.visibility = 'hidden';
         continue;
       }
       proj.copy(pin.vec).project(this.camera);
+      const x = (proj.x * 0.5 + 0.5) * w;
+      const y = (-proj.y * 0.5 + 0.5) * h;
       pin.el.hidden = false;
-      pin.el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
-      pin.el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
+      pin.el.style.visibility = 'visible';
+      pin.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%)`;
     }
 
     if (this.focusCallout?.active) {
       const fv = this.focusCallout.currentVec;
-      if (fv.clone().normalize().dot(camDir) < 0.2) {
+      const dot = (fv.x * camDir.x + fv.y * camDir.y + fv.z * camDir.z) / Math.max(1e-6, fv.length());
+      if (dot < 0.2) {
         this.focusCallout.el.hidden = true;
+        this.focusCallout.el.style.visibility = 'hidden';
       } else {
         proj.copy(fv).project(this.camera);
+        const x = (proj.x * 0.5 + 0.5) * w;
+        const y = (-proj.y * 0.5 + 0.5) * h;
+        const offsetTransform = isMobile ? 'translate(-50%, -132%)' : 'translate(16px, -50%)';
         this.focusCallout.el.hidden = false;
-        this.focusCallout.el.style.left = `${(proj.x * 0.5 + 0.5) * w}px`;
-        this.focusCallout.el.style.top = `${(-proj.y * 0.5 + 0.5) * h}px`;
+        this.focusCallout.el.style.visibility = 'visible';
+        this.focusCallout.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) ${offsetTransform}`;
+      }
+    }
+
+    if (this.searchMarker?.active && !this.tourControlled) {
+      if (this.searchMarker.vec.dot(camDir) < 0.18) {
+        this.searchMarker.el.hidden = true;
+        this.searchMarker.el.style.visibility = 'hidden';
+      } else {
+        proj.copy(this.searchMarker.vec).project(this.camera);
+        const x = (proj.x * 0.5 + 0.5) * w;
+        const y = (-proj.y * 0.5 + 0.5) * h;
+        this.searchMarker.el.hidden = false;
+        this.searchMarker.el.style.visibility = 'visible';
+        this.searchMarker.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-7px, -50%)`;
       }
     }
   }
@@ -1172,8 +1216,10 @@ export class WeatherGlobe {
     requestAnimationFrame(this._animate);
     const dt = Math.min(0.05, (now - this._lastFrame) / 1000);
     this._lastFrame = now;
-    this._elapsedSec += dt;
-    this.globeUniforms.uTime.value = this._elapsedSec;
+    if (!this.reducedMotion) {
+      this._elapsedSec += dt;
+      this.globeUniforms.uTime.value = this._elapsedSec;
+    }
 
     if (this.transition) {
       const t = Math.min(1, (now - this.transition.start) / this.transition.duration);
@@ -1188,23 +1234,23 @@ export class WeatherGlobe {
       }
     }
 
-    if (this.isobarMat && this.isobarGroup.visible) {
+    if (this.isobarMat && this.isobarGroup.visible && !this.reducedMotion) {
       this.isobarMat.opacity = 0.5 + 0.14 * Math.sin(this._elapsedSec * 2.4);
     }
 
     if (this.flight) {
       const rawT = Math.min(1, (now - this.flight.start) / this.flight.duration);
       const ease = rawT < 0.5 ? 4 * rawT * rawT * rawT : 1 - Math.pow(-2 * rawT + 2, 3) / 2;
-      const q = new THREE.Quaternion().slerpQuaternions(this.flight.fromQuat, this.flight.toQuat, ease);
-      const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(q);
+      this._flightQuat.slerpQuaternions(this.flight.fromQuat, this.flight.toQuat, ease);
+      this._flightDir.set(0, 0, 1).applyQuaternion(this._flightQuat);
       const arc = Math.sin(rawT * Math.PI) * this.flight.peakBoost;
       const dist = THREE.MathUtils.lerp(this.flight.fromDist, this.flight.toDist, ease) + arc;
-      this.camera.position.copy(dir.multiplyScalar(dist));
+      this.camera.position.copy(this._flightDir.multiplyScalar(dist));
       this.camera.up.set(0, 1, 0);
-      const lookPt = new THREE.Vector3().lerpVectors(this.flight.fromLook, this.flight.toLook, ease);
-      this.camera.lookAt(lookPt);
+      this._flightLook.lerpVectors(this.flight.fromLook, this.flight.toLook, ease);
+      this.camera.lookAt(this._flightLook);
       if (rawT >= 1) {
-        const shouldSpin = this.flight.resumeAutoSpin;
+        const shouldSpin = this.flight.resumeAutoSpin && !this.reducedMotion;
         this.flight = null;
         this.controls.target.set(0, 0, 0);
         this.controls.update();
@@ -1213,19 +1259,19 @@ export class WeatherGlobe {
         }
       }
     } else if (!this.tourControlled) {
-      if (this.autoSpin) {
+      if (this.autoSpin && !this.reducedMotion) {
         // Negative camera rotation around +Y makes Earth spin West-to-East (anticlockwise from above North Pole)
-        const q = new THREE.Quaternion().setFromAxisAngle(new THREE.Vector3(0, 1, 0), -dt * 0.062);
-        this.camera.position.applyQuaternion(q);
+        this._spinQuat.setFromAxisAngle(Y_AXIS, -dt * 0.062);
+        this.camera.position.applyQuaternion(this._spinQuat);
       }
       this.controls.update();
     }
 
-    const camRight = new THREE.Vector3().crossVectors(this.camera.up, this.camera.position).normalize();
+    this._camRight.crossVectors(this.camera.up, this.camera.position).normalize();
     this.globeUniforms.uSunDir.value
       .copy(this.camera.position)
       .normalize()
-      .addScaledVector(camRight, -0.45)
+      .addScaledVector(this._camRight, -0.45)
       .addScaledVector(this.camera.up, 0.35)
       .normalize();
 

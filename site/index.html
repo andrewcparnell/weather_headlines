@@ -4,12 +4,12 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
   <title>Weather Headlines · Aimsir Live Global Weather</title>
-  <meta name="description" content="Explore live global ECMWF weather on an interactive 3D Earth and watch a 6-hourly broadcast tour of the world's top 5 weather stories.">
+  <meta name="description" content="Explore live global ECMWF weather forecasts on an interactive 3D Earth and watch a 6-hourly tour of the world's top 5 weather stories.">
   <link rel="canonical" href="https://headlines.aimsir.org/">
   <meta property="og:type" content="website">
   <meta property="og:site_name" content="Aimsir · Weather Headlines">
   <meta property="og:title" content="Weather Headlines · Live Global Weather">
-  <meta property="og:description" content="Interactive 3D live global weather explorer and 6-hourly broadcast tour of the world's top 5 weather events.">
+  <meta property="og:description" content="Interactive 3D live global weather explorer and 6-hourly tour of the world's top 5 weather events.">
   <meta property="og:url" content="https://headlines.aimsir.org/">
   <meta property="og:image" content="https://headlines.aimsir.org/icon-512.png">
   <meta name="theme-color" content="#050b14">
@@ -22,7 +22,7 @@
   <link rel="icon" type="image/png" sizes="32x32" href="/favicon-32x32.png">
   <link rel="apple-touch-icon" sizes="180x180" href="/apple-touch-icon.png">
   <link rel="manifest" href="/site.webmanifest">
-  <link rel="stylesheet" href="style.css?v=20261126v">
+  <link rel="stylesheet" href="style.css?v=6b5d14ab">
   <script type="importmap">
     {
       "imports": {
@@ -30,13 +30,19 @@
       }
     }
   </script>
+  <link rel="modulepreload" href="./vendor/three.module.js">
+  <link rel="modulepreload" href="./vendor/three.core.min.js">
+  <link rel="modulepreload" href="./vendor/OrbitControls.js">
+  <link rel="modulepreload" href="./js/globe.js?v=6b5d14ab">
+  <link rel="modulepreload" href="./js/tour.js?v=6b5d14ab">
+  <link rel="modulepreload" href="./js/search.js?v=6b5d14ab">
 </head>
 <body>
   <!-- Full-screen interactive 3D Globe -->
   <div id="globeStage" class="globe-stage" aria-label="Interactive 3D weather globe"></div>
-  <div id="globeOverlay" class="globe-overlay" aria-hidden="true"></div>
+  <div id="globeOverlay" class="globe-overlay"></div>
 
-  <!-- Top-left: Country & City Search (Explore mode) -->
+  <!-- Top-left: Country & City Search + Report Schedule -->
   <header class="top-left-bar" id="exploreHeader">
     <div class="search-box" role="search">
       <svg class="search-icon" viewBox="0 0 20 20" aria-hidden="true">
@@ -55,23 +61,27 @@
       >
       <div id="searchResults" class="search-results" role="listbox" hidden></div>
     </div>
-    <div class="live-pill" id="liveBadge" aria-live="polite">
+    <div class="live-pill" id="liveBadge">
       <div class="live-pill-row">
-        <span class="live-dot"></span>
+        <span class="live-dot" aria-hidden="true"></span>
         <span id="liveTimestamp">Report created: Loading...</span>
       </div>
       <div class="live-pill-sub" id="nextReportTimestamp">Next report: --</div>
     </div>
   </header>
 
-  <!-- Local Weather Readout Card (shown only when searching or clicking on the globe in Explore mode) -->
+  <!-- Local Weather Readout Card (Explore mode) -->
   <aside id="spotCard" class="spot-card" hidden aria-live="polite">
     <div class="spot-header">
       <div>
         <div id="spotSub" class="spot-sub">Selected Location</div>
         <h2 id="spotTitle" class="spot-title">Dublin</h2>
       </div>
-      <button id="spotClose" class="icon-close" aria-label="Close location weather">×</button>
+      <button id="spotClose" class="icon-close" type="button" aria-label="Close location weather">
+        <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+          <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+        </svg>
+      </button>
     </div>
     <div class="spot-grid">
       <div class="spot-metric">
@@ -97,27 +107,40 @@
     </div>
   </aside>
 
-  <!-- Right side: Clear, Large Weather Layer Options (Explore mode) -->
+  <!-- Right side: Weather Layer Selector + Always-Visible Compact Legend -->
   <nav class="layer-rail" id="layerRail" aria-label="Weather layers">
+    <button
+      id="mobileLayersToggle"
+      class="mobile-layers-toggle"
+      type="button"
+      aria-expanded="false"
+      aria-controls="layerButtons"
+    >
+      <svg viewBox="0 0 20 20" width="18" height="18" aria-hidden="true">
+        <path d="M10 3L2.5 7 10 11l7.5-4L10 3zM2.5 11L10 15l7.5-4M2.5 14.5L10 18.5l7.5-4" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <span id="mobileLayersLabel">Layers</span>
+    </button>
+
     <div id="layerButtons" class="layer-buttons" role="radiogroup" aria-label="Choose weather variable">
-      <button class="layer-btn active" role="radio" aria-checked="true" data-layer="temperature">
-        <span class="layer-swatch swatch-temp"></span>
+      <button class="layer-btn active" type="button" role="radio" aria-checked="true" data-layer="temperature">
+        <span class="layer-swatch swatch-temp" aria-hidden="true"></span>
         <span class="layer-name">Temperature</span>
       </button>
-      <button class="layer-btn" role="radio" aria-checked="false" data-layer="anomaly">
-        <span class="layer-swatch swatch-anom"></span>
+      <button class="layer-btn" type="button" role="radio" aria-checked="false" data-layer="anomaly">
+        <span class="layer-swatch swatch-anom" aria-hidden="true"></span>
         <span class="layer-name">Temp Anomaly</span>
       </button>
-      <button class="layer-btn" role="radio" aria-checked="false" data-layer="wind">
-        <span class="layer-swatch swatch-wind"></span>
+      <button class="layer-btn" type="button" role="radio" aria-checked="false" data-layer="wind">
+        <span class="layer-swatch swatch-wind" aria-hidden="true"></span>
         <span class="layer-name">Winds</span>
       </button>
-      <button class="layer-btn" role="radio" aria-checked="false" data-layer="rain">
-        <span class="layer-swatch swatch-rain"></span>
+      <button class="layer-btn" type="button" role="radio" aria-checked="false" data-layer="rain">
+        <span class="layer-swatch swatch-rain" aria-hidden="true"></span>
         <span class="layer-name">Rainfall</span>
       </button>
-      <button class="layer-btn" role="radio" aria-checked="false" data-layer="pressure">
-        <span class="layer-swatch swatch-pres"></span>
+      <button class="layer-btn" type="button" role="radio" aria-checked="false" data-layer="pressure">
+        <span class="layer-swatch swatch-pres" aria-hidden="true"></span>
         <span class="layer-name">Pressure</span>
       </button>
     </div>
@@ -126,77 +149,93 @@
       <div id="legendTitle" class="legend-title">2 m Temperature</div>
       <div id="legendGradient" class="legend-gradient"></div>
       <div class="legend-labels">
-        <span id="legendMin">-40 °C</span>
-        <span id="legendMid">5 °C</span>
-        <span id="legendMax">45 °C</span>
+        <span id="legendMin">-45 °C</span>
+        <span id="legendMid">+2.5 °C</span>
+        <span id="legendMax">50 °C</span>
       </div>
     </div>
   </nav>
 
-  <!-- Bottom Centre: Large Simple Play Button + Label (Explore mode) -->
+  <!-- Bottom Centre: Play / Replay Button + Status Notice -->
   <div id="playLauncher" class="play-launcher">
+    <div id="tourStatusNotice" class="tour-status-notice" role="status" aria-live="polite" hidden></div>
     <button id="playTourBtn" class="play-tour-btn" type="button" aria-label="Play Headlines">
       <span class="play-circle">
         <svg class="play-triangle" viewBox="0 0 28 28" aria-hidden="true">
           <path d="M8.6 6.6c0-1 .95-1.58 1.82-1.06l11.2 6.84c.82.5.82 1.74 0 2.24l-11.2 6.84c-.87.52-1.82-.06-1.82-1.06V6.6z" fill="currentColor"/>
         </svg>
       </span>
-      <span class="play-caption">Play Headlines</span>
+      <span id="playTourCaption" class="play-caption">Play Headlines</span>
     </button>
   </div>
 
-  <!-- Presenter Spoken Script Overlay on Main Map (Shown when Voice is Off) -->
+  <!-- Spoken Script Box (Always shown during tour) -->
   <aside id="voiceScriptOverlay" class="voice-script-overlay" hidden aria-live="polite">
     <div id="voiceScriptText" class="voice-script-text"></div>
   </aside>
 
-  <!-- Compact BBC / Sky / CNN Floating Lower-Third Broadcast Banner (Active only when Play is clicked) -->
-  <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines Broadcast">
+  <!-- Simple Tour Bar: One Headline Line + Static Read-More Link + Single Row of Controls -->
+  <section id="tourHud" class="broadcast-chyron" hidden aria-label="World Weather Headlines">
     <div class="chyron-plate">
-      <!-- Compact Top Bar: Live Counter, Region, and Clear Large Action Buttons -->
-      <div class="chyron-strap">
-        <span class="strap-live">
-          <span class="strap-dot"></span>
-          <span id="tourCounter">1 / 5</span>
-        </span>
-        <span id="tourKicker" class="strap-location">WORLD WEATHER</span>
-        <span id="tourLayerTag" class="strap-metric"></span>
-
-        <div class="chyron-actions">
-          <button id="tourPrev" class="chyron-btn" type="button" aria-label="Previous story">◀ Prev</button>
-          <button id="tourNext" class="chyron-btn chyron-btn-next" type="button" aria-label="Next story">Next ▶</button>
-          <button id="tourTextBtn" class="chyron-btn chyron-btn-voice voice-on" type="button" aria-pressed="true" aria-label="Toggle on-map script text">
-            <span id="tourTextLabel">📝 Text On</span>
-          </button>
-          <button id="tourMuteBtn" class="chyron-btn chyron-btn-voice" type="button" aria-pressed="false" aria-label="Toggle presenter voice">
-            <span id="tourMuteLabel">🔇 Voice Off</span>
-          </button>
-          <button id="tourExit" class="chyron-btn chyron-btn-util" type="button" aria-label="Exit bulletin">✕</button>
-        </div>
-
-        <div class="strap-progress">
-          <div id="tourProgressBar" class="strap-progress-fill"></div>
-        </div>
+      <div class="strap-progress" aria-hidden="true">
+        <div id="tourProgressBar" class="strap-progress-fill"></div>
       </div>
 
-      <!-- Compact Broadcast Headline Banner -->
       <div class="chyron-headline-box">
+        <span id="tourCounter" class="strap-live">1 / 5</span>
         <h1 id="tourHeadline" class="chyron-headline"></h1>
       </div>
 
-      <!-- Ticker 1 (Faster): Event Story with Highlighted Key Words -->
-      <div class="chyron-ticker-bar">
-        <div class="ticker-tag">STORY</div>
-        <div id="tickerViewport" class="ticker-viewport">
-          <div id="tickerTrack" class="ticker-track"></div>
+      <div class="chyron-controls-row">
+        <div id="tourReadMoreWrap" class="read-more-wrap" hidden>
+          <a
+            id="tourReadMoreLink"
+            class="read-more-link"
+            href="#"
+            target="_blank"
+            rel="noopener noreferrer"
+          ></a>
         </div>
-      </div>
 
-      <!-- Ticker 2 (Different Speed, CNN-style): Scrolling Clickable Event News Links -->
-      <div class="chyron-links-bar">
-        <div class="links-tag">IN THE NEWS</div>
-        <div id="linksViewport" class="ticker-viewport">
-          <div id="tourNewsLinks" class="links-track"></div>
+        <div class="chyron-actions">
+          <button id="tourPrev" class="chyron-btn" type="button" aria-label="Previous story">
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <path d="M12.5 4.5L7 10l5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+            <span>Prev</span>
+          </button>
+
+          <button id="tourNext" class="chyron-btn chyron-btn-next" type="button" aria-label="Next story">
+            <span>Next</span>
+            <svg viewBox="0 0 20 20" width="16" height="16" aria-hidden="true">
+              <path d="M7.5 4.5L13 10l-5.5 5.5" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </button>
+
+          <button
+            id="tourMuteBtn"
+            class="chyron-btn chyron-btn-voice"
+            type="button"
+            aria-pressed="false"
+            aria-label="Toggle sound"
+          >
+            <svg id="iconSoundOff" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+              <path d="M3.5 7.5h3.2L11 3.8v12.4l-4.3-3.7H3.5V7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M14 7.5l4 5M18 7.5l-4 5" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"/>
+            </svg>
+            <svg id="iconSoundOn" viewBox="0 0 20 20" width="17" height="17" aria-hidden="true" hidden>
+              <path d="M3.5 7.5h3.2L11 3.8v12.4l-4.3-3.7H3.5V7.5z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/>
+              <path d="M14 6.8a4.5 4.5 0 010 6.4M16.4 4.6a7.6 7.6 0 010 10.8" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
+            </svg>
+            <span id="tourMuteLabel">Sound Off</span>
+          </button>
+
+          <button id="tourExit" class="chyron-btn chyron-btn-util" type="button" aria-label="Close headlines">
+            <svg viewBox="0 0 20 20" width="17" height="17" aria-hidden="true">
+              <path d="M5 5l10 10M15 5L5 15" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/>
+            </svg>
+            <span>Close</span>
+          </button>
         </div>
       </div>
     </div>
@@ -204,9 +243,9 @@
 
   <!-- Subtle Data Attribution (Explore mode) -->
   <footer class="attribution" id="attribFooter">
-    <span>Data: © ECMWF CC BY 4.0 · ERA5 (Copernicus C3S) · Guidance only</span>
+    <span>Forecast: © ECMWF CC BY 4.0 · Climatology: Copernicus ERA5 · Guidance only</span>
   </footer>
 
-  <script type="module" src="js/main.js?v=20261126y"></script>
+  <script type="module" src="js/main.js?v=6b5d14ab"></script>
 </body>
 </html>

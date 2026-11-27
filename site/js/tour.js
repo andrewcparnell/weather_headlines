@@ -1,11 +1,9 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=20261126y';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=6b5d14ab';
 
-const STORY_FLIGHT_MS = 1900;
+const STORY_FLIGHT_MS = 1850;
 const FALLBACK_STORY_SEC = 47;
-const SILENT_CLOCK_PACE = 0.80; // Gentle reading pace when presenter voice is switched off
-const STORY_TICKER_SPEED = 46;  // px/sec calm, readable story ticker speed
-const LINKS_TICKER_SPEED = 26;  // px/sec slower independent CNN-style web links ticker
+const SILENT_CLOCK_PACE = 0.82;
 const TOUR_TILT_DEG = 14.5;
 
 const LAYER_LABELS = {
@@ -41,23 +39,17 @@ function escapeHtml(str) {
     .replace(/"/g, '&quot;');
 }
 
-export function formatTickerClauseHtml(rawClause) {
-  const escaped = escapeHtml(rawClause);
-  const withHighlights = escaped.replace(/\*\*(.+?)\*\*/g, '<mark class="ticker-kw">$1</mark>');
-  return withHighlights + '<span class="ticker-sep" aria-hidden="true">◆</span>';
-}
-
-function formatLinksCopyHtml(links) {
-  return (links || [])
-    .map(
-      link =>
-        `<a class="news-article-link" href="${escapeHtml(link.url)}" target="_blank" rel="noopener noreferrer">` +
-        `<span class="news-outlet-badge">${escapeHtml(link.source)}</span>` +
-        `<span>${escapeHtml(link.title)}</span>` +
-        `<span aria-hidden="true">↗</span>` +
-        `</a><span class="links-sep" aria-hidden="true">•</span>`
-    )
-    .join('');
+export function safeHttpUrl(rawUrl) {
+  if (!rawUrl) return null;
+  try {
+    const parsed = new URL(String(rawUrl).trim(), window.location.origin);
+    if (parsed.protocol === 'http:' || parsed.protocol === 'https:') {
+      return parsed.href;
+    }
+  } catch {
+    // Reject malformed URLs
+  }
+  return null;
 }
 
 function normaliseStoryCues(story) {
@@ -68,7 +60,7 @@ function normaliseStoryCues(story) {
     const hasExplicitTimes = rawCues.every(
       c => Number.isFinite(Number(c.start_sec)) && Number.isFinite(Number(c.end_sec))
     );
-    const weights = rawCues.map(c => Math.max(15, String(c.ticker || c.spoken || '').length));
+    const weights = rawCues.map(c => Math.max(15, String(c.spoken || c.ticker || '').length));
     const totalW = weights.reduce((a, b) => a + b, 0);
     let accW = 0;
 
@@ -76,19 +68,18 @@ function normaliseStoryCues(story) {
       const propStart = (accW / totalW) * totalDur;
       accW += weights[idx];
       const propEnd = idx === rawCues.length - 1 ? totalDur : (accW / totalW) * totalDur;
-      const gentleBearing = -12 + (24 * idx) / Math.max(1, rawCues.length - 1);
+      const gentleBearing = -10 + (20 * idx) / Math.max(1, rawCues.length - 1);
       return {
         layer: c.layer || story.primary_layer || 'temperature',
         lat: Number(c.lat ?? story.centre.lat),
         lon: Number(c.lon ?? story.centre.lon),
         distance: Number(c.distance || 1.62),
-        bearing: gentleBearing,
+        bearing: Number.isFinite(Number(c.bearing)) ? Number(c.bearing) : gentleBearing,
         label: c.label || story.kicker || story.region || 'WORLD WEATHER',
         metric: c.metric || story.stats?.headline_metric || '',
         startSec: hasExplicitTimes ? Number(c.start_sec) : propStart,
         endSec: hasExplicitTimes ? Number(c.end_sec) : propEnd,
         spoken: c.spoken || String(c.ticker || '').replace(/\*\*/g, ''),
-        ticker: c.ticker || c.spoken || '',
       };
     });
   }
@@ -107,13 +98,12 @@ function normaliseStoryCues(story) {
       lat: wp.lat,
       lon: wp.lon,
       distance: wp.distance || 1.64,
-      bearing: -12 + (24 * idx) / Math.max(1, count - 1),
+      bearing: -10 + (20 * idx) / Math.max(1, count - 1),
       label: b.title || story.kicker || 'WORLD WEATHER',
       metric: story.stats?.headline_metric || b.tag || '',
       startSec: (idx / count) * totalDur,
       endSec: ((idx + 1) / count) * totalDur,
       spoken: String(b.text || '').replace(/\*\*/g, ''),
-      ticker: b.text || '',
     };
   });
 }
@@ -136,20 +126,22 @@ function buildCameraKnots(cues, totalDur) {
 }
 
 export class BroadcastTour {
-  constructor(globe, dom, { onLayerSync } = {}) {
+  constructor(globe, dom, { onLayerSync, onBulletinApplied } = {}) {
     this.globe = globe;
     this.dom = dom;
     this.onLayerSync = onLayerSync;
+    this.onBulletinApplied = onBulletinApplied;
 
     this.stories = [];
     this.bulletinStamp = '';
-    this.active = false;
+    this.bulletinFailed = false;
+    this._queuedBulletin = null;
     this._pendingStartIndex = null;
+    this._preTourLayer = null;
+    this._hasCompletedTour = false;
 
-    // Defaults: on-map script text ON, presenter voice OFF
-    this.textEnabled = true;
+    this.active = false;
     this.voiceEnabled = false;
-    this.linksHovered = false;
     this.storyIndex = 0;
     this.cueIndex = -1;
     this.cues = [];
@@ -157,35 +149,36 @@ export class BroadcastTour {
     this.storyDurationSec = FALLBACK_STORY_SEC;
     this.storyElapsedSec = 0;
 
-    this.phase = 'idle'; // 'flight' | 'cues'
+    this.phase = 'idle';
     this.phaseElapsedMs = 0;
     this.storyFinishedAt = null;
 
-    this.cueSpans = [];
-    this.storySingleWidth = 1800;
-    this.displayStoryPx = 0;
-    this.linksOffsetPx = 0;
-    this.linksSingleWidth = 1100;
     this.scriptWordEls = [];
     this.fastFlowSec = [];
     this.spokenCueFracs = [];
 
-    // Continuous camera state (eliminates duplicate transitions or velocity snaps)
+    const mq = window.matchMedia?.('(prefers-reduced-motion: reduce)');
+    this.reducedMotion = Boolean(mq?.matches);
+    mq?.addEventListener?.('change', e => {
+      this.reducedMotion = Boolean(e.matches);
+    });
+
     this.flightState = null;
     this.currentFocusVec = new THREE.Vector3(0, 0, 1);
     this.currentDist = 1.85;
     this.currentBearing = 0;
     this.currentTilt = 0;
+    this._flightQ = new THREE.Quaternion();
+    this._flightDir = new THREE.Vector3();
 
-    // Short, soft felt-timpani transition beat played on launch and between stories
-    this.stingAudio = new Audio('assets/bulletin-sting.wav');
-    this.stingAudio.preload = 'auto';
-    this.stingAudio.volume = 0.52;
-
+    // Lazy-loaded audio objects: nothing is downloaded until Sound is switched on
+    this.stingAudio = null;
     this.audio = new Audio();
-    this.audio.preload = 'auto';
+    this.audio.preload = 'none';
     this.audio.muted = true;
     this.audioAvailable = false;
+    this._loadedAudioSrc = '';
+    this._pendingMetaHandler = null;
 
     this.audio.addEventListener('ended', () => {
       if (this.active && this.voiceEnabled && this.phase === 'cues') {
@@ -197,64 +190,121 @@ export class BroadcastTour {
     });
 
     this._lastTick = performance.now();
-    this._syncVoiceButtonUi();
+    this._syncSoundButtonUi();
     this._bindControls();
     this._tick = this._tick.bind(this);
     requestAnimationFrame(this._tick);
   }
 
-  _syncVoiceButtonUi() {
-    if (this.dom.textBtn && this.dom.textLabel) {
-      this.dom.textBtn.setAttribute('aria-pressed', String(this.textEnabled));
-      this.dom.textBtn.classList.toggle('voice-on', this.textEnabled);
-      this.dom.textLabel.textContent = this.textEnabled ? '📝 Text On' : '📝 Text Off';
+  _clearPendingMetaListener() {
+    if (this._pendingMetaHandler) {
+      this.audio.removeEventListener('loadedmetadata', this._pendingMetaHandler);
+      this._pendingMetaHandler = null;
     }
+  }
+
+  _syncSoundButtonUi() {
     if (this.dom.muteBtn && this.dom.muteLabel) {
       this.dom.muteBtn.setAttribute('aria-pressed', String(this.voiceEnabled));
       this.dom.muteBtn.classList.toggle('voice-on', this.voiceEnabled);
-      this.dom.muteLabel.textContent = this.voiceEnabled ? '🔊 Voice On' : '🔇 Voice Off';
+      this.dom.muteLabel.textContent = this.voiceEnabled ? 'Sound On' : 'Sound Off';
+    }
+    if (this.dom.iconSoundOff && this.dom.iconSoundOn) {
+      this.dom.iconSoundOff.hidden = this.voiceEnabled;
+      this.dom.iconSoundOn.hidden = !this.voiceEnabled;
     }
     if (this.dom.scriptOverlay) {
-      this.dom.scriptOverlay.hidden = !(this.active && this.textEnabled && this.phase === 'cues');
+      this.dom.scriptOverlay.hidden = !(this.active && this.phase === 'cues');
     }
   }
 
-  toggleText() {
-    this.textEnabled = !this.textEnabled;
-    this._syncVoiceButtonUi();
+  _showUnavailableNotice(message) {
+    if (!this.dom.statusNotice) return;
+    this.dom.statusNotice.textContent = message;
+    this.dom.statusNotice.hidden = false;
   }
 
-  _playSoftSting() {
-    if (!this.voiceEnabled) return;
-    this.stingAudio.currentTime = 0;
-    this.stingAudio.play().catch(() => {});
+  _hideUnavailableNotice() {
+    if (!this.dom.statusNotice) return;
+    this.dom.statusNotice.hidden = true;
+    this.dom.statusNotice.textContent = '';
+  }
+
+  setBulletinError() {
+    this.bulletinFailed = true;
+    this._pendingStartIndex = null;
+  }
+
+  _applyBulletinData(bulletin) {
+    this.stories = bulletin?.stories || [];
+    this.bulletinStamp = encodeURIComponent(bulletin?.generated_utc || 'latest');
+    this.bulletinFailed = false;
+    this._hideUnavailableNotice();
+    this.onBulletinApplied?.(bulletin);
   }
 
   setBulletin(bulletin) {
-    this.stories = bulletin?.stories || [];
-    this.bulletinStamp = encodeURIComponent(bulletin?.generated_utc || Date.now());
+    if (!bulletin || !Array.isArray(bulletin.stories) || !bulletin.stories.length) {
+      return;
+    }
+    if (this.active) {
+      // Queue mid-tour bulletin updates cleanly for the next story boundary instead of interrupting mid-sentence
+      this._queuedBulletin = bulletin;
+      return;
+    }
+    this._applyBulletinData(bulletin);
     if (this._pendingStartIndex !== null && this.stories.length) {
       const idx = this._pendingStartIndex;
       this._pendingStartIndex = null;
       this.start(idx);
-      return;
     }
-    if (this.active && this.stories.length) {
-      this.goToStory(this.storyIndex, { playSting: false });
+  }
+
+  _playSoftSting() {
+    if (!this.voiceEnabled) return;
+    if (!this.stingAudio) {
+      this.stingAudio = new Audio('assets/bulletin-sting.mp4');
+      this.stingAudio.preload = 'auto';
+      this.stingAudio.volume = 0.5;
     }
+    this.stingAudio.currentTime = 0;
+    this.stingAudio.play().catch(() => {});
+  }
+
+  _storyAudioUrl(story, storyIndex) {
+    const base = story.audio_url || `data/audio/story-${storyIndex + 1}.mp3`;
+    return base.includes('?') ? base : `${base}?v=${this.bulletinStamp}`;
+  }
+
+  _ensureStoryAudioLoaded(story, storyIndex) {
+    const targetSrc = this._storyAudioUrl(story, storyIndex);
+    if (this._loadedAudioSrc !== targetSrc) {
+      this._clearPendingMetaListener();
+      this.audio.pause();
+      this.audio.src = targetSrc;
+      this._loadedAudioSrc = targetSrc;
+      this.audio.load();
+    }
+    this.audio.muted = !this.voiceEnabled;
+    this.audioAvailable = true;
   }
 
   start(startIndex = 0) {
     if (!this.stories.length) {
-      this._pendingStartIndex = startIndex;
+      this._pendingStartIndex = null;
+      this._showUnavailableNotice('Headlines unavailable, please try again shortly');
       return;
     }
     this._pendingStartIndex = null;
+    this._hideUnavailableNotice();
+
     if ('speechSynthesis' in window) {
       window.speechSynthesis.cancel();
     }
 
-    // Capture exact Explore camera position so frame 1 of the flight has zero jump
+    // Save the user's pre-tour layer so we restore it cleanly when the tour finishes
+    this._preTourLayer = this.globe.currentLayer;
+
     const camNow = this.globe.getCurrentCameraGeo();
     this.currentFocusVec.copy(latLonToVec3(camNow.lat, camNow.lon, 1).normalize());
     this.currentDist = camNow.distance;
@@ -265,40 +315,71 @@ export class BroadcastTour {
     document.body.classList.add('tour-active');
     this.dom.playLauncher.hidden = true;
     this.dom.tourHud.hidden = false;
-    this._syncVoiceButtonUi();
+    this._syncSoundButtonUi();
     this.globe.setTourMode(true);
     this.goToStory(startIndex, { playSting: true });
+    this.dom.nextBtn?.focus();
   }
 
-  stop() {
+  stop({ completed = false } = {}) {
     this.active = false;
     this.phase = 'idle';
     this._pendingStartIndex = null;
-    this.stingAudio.pause();
+    this._clearPendingMetaListener();
+    this.stingAudio?.pause();
     this.audio.pause();
     this.audio.removeAttribute('src');
+    this._loadedAudioSrc = '';
+
+    if (this._queuedBulletin) {
+      const pending = this._queuedBulletin;
+      this._queuedBulletin = null;
+      this._applyBulletinData(pending);
+    }
+
+    if (completed) {
+      this._hasCompletedTour = true;
+    }
+    if (this._hasCompletedTour) {
+      if (this.dom.playCaption) {
+        this.dom.playCaption.textContent = 'Replay headlines';
+      }
+      this.dom.playTourBtn?.setAttribute('aria-label', 'Replay headlines');
+    }
+
     document.body.classList.remove('tour-active');
     this.dom.tourHud.hidden = true;
     this.dom.playLauncher.hidden = false;
-    this._syncVoiceButtonUi();
+    this._syncSoundButtonUi();
+
+    if (this._preTourLayer) {
+      this.globe.setLayer(this._preTourLayer);
+      this.onLayerSync?.(this._preTourLayer);
+    }
+
     this.globe.setTourMode(false);
     this.globe.highlightStoryPin(-1);
+    this.dom.playTourBtn?.focus();
   }
 
   toggleMute() {
     this.voiceEnabled = !this.voiceEnabled;
     this.audio.muted = !this.voiceEnabled;
+    this._clearPendingMetaListener();
+
     if (!this.voiceEnabled) {
-      this.stingAudio.pause();
+      this.stingAudio?.pause();
       this.audio.pause();
-      this._syncVoiceButtonUi();
+      this._syncSoundButtonUi();
       return;
     }
-    this._syncVoiceButtonUi();
+    this._syncSoundButtonUi();
 
-    if (!this.active) return;
+    if (!this.active || !this.stories[this.storyIndex]) return;
 
-    // Align spoken playback cleanly to the start of the active on-screen sentence cue
+    const story = this.stories[this.storyIndex];
+    this._ensureStoryAudioLoaded(story, this.storyIndex);
+
     const activeCueStart =
       this.phase === 'cues' && this.cueIndex >= 0 && this.cues[this.cueIndex]
         ? this.cues[this.cueIndex].startSec
@@ -307,7 +388,10 @@ export class BroadcastTour {
     if (this.phase === 'cues') {
       this.storyElapsedSec = activeCueStart;
       this.storyFinishedAt = null;
+      const expectedStoryIdx = this.storyIndex;
       const startFromCue = () => {
+        this._pendingMetaHandler = null;
+        if (!this.active || !this.voiceEnabled || this.storyIndex !== expectedStoryIdx) return;
         try {
           this.audio.currentTime = Math.min(
             Math.max(0, (this.audio.duration || activeCueStart + 1) - 0.15),
@@ -321,45 +405,75 @@ export class BroadcastTour {
       if (this.audio.readyState >= 1) {
         startFromCue();
       } else {
+        this._pendingMetaHandler = startFromCue;
         this.audio.addEventListener('loadedmetadata', startFromCue, { once: true });
-        this.audio.load();
       }
     }
   }
 
   goToStory(index, { playSting = true } = {}) {
+    if (this._queuedBulletin) {
+      const pending = this._queuedBulletin;
+      this._queuedBulletin = null;
+      this._applyBulletinData(pending);
+    }
     if (!this.stories.length) return;
     if (!this.active) {
       this.start(index);
       return;
     }
 
+    // End the tour cleanly after Story 5 rather than looping forever
+    if (index >= this.stories.length) {
+      this.stop({ completed: true });
+      return;
+    }
+
+    this._clearPendingMetaListener();
+    this.audio.pause();
+
     if (playSting) {
       this._playSoftSting();
     }
 
-    this.storyIndex = ((index % this.stories.length) + this.stories.length) % this.stories.length;
+    this.storyIndex = Math.max(0, index);
     const story = this.stories[this.storyIndex];
     this.cues = normaliseStoryCues(story);
-    this.storyDurationSec = this.cues[this.cues.length - 1]?.endSec || Number(story.duration_sec) || FALLBACK_STORY_SEC;
+    this.storyDurationSec =
+      this.cues[this.cues.length - 1]?.endSec || Number(story.duration_sec) || FALLBACK_STORY_SEC;
     this.cameraKnots = buildCameraKnots(this.cues, this.storyDurationSec);
     this.storyElapsedSec = 0;
     this.storyFinishedAt = null;
     this.cueIndex = -1;
-    this.linksOffsetPx = 0;
 
     this.globe.highlightStoryPin(this.storyIndex);
 
-    const audioUrl = story.audio_url || `data/audio/story-${this.storyIndex + 1}.mp3`;
-    this.audio.pause();
-    this.audio.src = `${audioUrl}?v=${this.bulletinStamp}`;
-    this.audio.muted = !this.voiceEnabled;
-    this.audio.currentTime = 0;
-    this.audio.load();
-    this.audioAvailable = true;
+    // Lazy-load story MP3 only when sound is turned on
+    if (this.voiceEnabled) {
+      this._ensureStoryAudioLoaded(story, this.storyIndex);
+      try {
+        this.audio.currentTime = 0;
+      } catch (_) {}
+    } else {
+      this.audioAvailable = false;
+    }
 
-    // Single great-circle flight directly onto Knot 0 of the new story (never duplicated!)
+    this._renderChyron(story);
+    this._activateCue(0);
+
     const startKnot = this.cameraKnots[0];
+    if (this.reducedMotion) {
+      this.currentFocusVec.copy(startKnot.vec);
+      this.currentDist = startKnot.distance;
+      this.currentBearing = 0;
+      this.currentTilt = TOUR_TILT_DEG;
+      const { lat, lon } = vec3ToLatLon(startKnot.vec);
+      this.globe.setTourCameraPose(lat, lon, startKnot.distance, 0, TOUR_TILT_DEG);
+      this.flightState = null;
+      this._beginCuesPhase();
+      return;
+    }
+
     const fromDir = this.currentFocusVec.clone().normalize();
     const toDir = startKnot.vec.clone().normalize();
     const angle = fromDir.angleTo(toDir);
@@ -374,26 +488,23 @@ export class BroadcastTour {
       fromTilt: this.currentTilt,
       toTilt: TOUR_TILT_DEG,
       arcBoost: Math.min(0.68, 0.12 + angle * 0.32),
-      duration: Math.max(1350, Math.min(STORY_FLIGHT_MS, 1050 + angle * 550)),
+      duration: Math.max(1300, Math.min(STORY_FLIGHT_MS, 1000 + angle * 550)),
     };
 
     this.phase = 'flight';
     this.phaseElapsedMs = 0;
-    this._syncVoiceButtonUi();
-
-    this._renderChyron(story);
-    this._activateCue(0);
+    this._syncSoundButtonUi();
   }
 
   _beginCuesPhase() {
     this.phase = 'cues';
     this.storyElapsedSec = 0;
-    this._syncVoiceButtonUi();
+    this._syncSoundButtonUi();
     this.audio.muted = !this.voiceEnabled;
-    try {
-      this.audio.currentTime = 0;
-    } catch (_) {}
     if (this.voiceEnabled) {
+      try {
+        this.audio.currentTime = 0;
+      } catch (_) {}
       this.audio.play().catch(() => {
         this.audioAvailable = false;
       });
@@ -405,13 +516,9 @@ export class BroadcastTour {
     this.cueIndex = cueIdx;
     const cue = this.cues[cueIdx];
 
-    // Smoothly cross-fade weather variable & update read-only legend + strap badge
     this.globe.setLayer(cue.layer);
     this.onLayerSync?.(cue.layer);
-    const metricPrefix = cue.metric ? `${cue.metric} · ` : '';
-    this.dom.layerTag.textContent = `${metricPrefix}${LAYER_LABELS[cue.layer] || cue.layer.toUpperCase()}`;
 
-    // Glide on-globe surface spotlight ring & location callout to this sentence's coordinates
     this.globe.setTourFocusCallout({
       lat: cue.lat,
       lon: cue.lon,
@@ -420,9 +527,11 @@ export class BroadcastTour {
       layer: cue.layer,
     });
 
-    this.dom.tickerTrack.querySelectorAll('.ticker-cue').forEach(el => {
-      el.classList.toggle('active', Number(el.dataset.cue) === cueIdx);
-    });
+    if (this.reducedMotion) {
+      this.currentFocusVec.copy(latLonToVec3(cue.lat, cue.lon, 1).normalize());
+      this.currentDist = cue.distance;
+      this.globe.setTourCameraPose(cue.lat, cue.lon, cue.distance, 0, TOUR_TILT_DEG);
+    }
 
     this._prepareCueScriptWords(cue.spoken);
   }
@@ -441,13 +550,11 @@ export class BroadcastTour {
       return;
     }
 
-    // 1. Voice OFF: quick 0.48-second animated word cascade, then hold steady until next point
-    const flowWindowSec = Math.min(0.48, words.length * 0.022);
+    const flowWindowSec = Math.min(0.45, words.length * 0.02);
     this.fastFlowSec = words.map((_, idx) =>
       words.length <= 1 ? 0 : (idx / (words.length - 1)) * flowWindowSec
     );
 
-    // 2. Voice ON: natural presenter speech cadence matching Sonia's spoken voice across the cue
     const weights = words.map(w => Math.max(2, w.length) + (/[.,;:]/.test(w) ? 3.5 : 0.8));
     const totalW = weights.reduce((a, b) => a + b, 0);
     let acc = 0;
@@ -457,14 +564,15 @@ export class BroadcastTour {
       return frac;
     });
 
+    const initialClass = this.reducedMotion ? 'script-word spoken' : 'script-word';
     this.dom.scriptText.innerHTML = words
-      .map(w => `<span class="script-word">${escapeHtml(w)}</span>`)
+      .map(w => `<span class="${initialClass}">${escapeHtml(w)}</span>`)
       .join(' ');
     this.scriptWordEls = Array.from(this.dom.scriptText.querySelectorAll('.script-word'));
   }
 
   _updateScriptWordsProgress(cueElapsedSec, cueU) {
-    if (!this.scriptWordEls.length) return;
+    if (!this.scriptWordEls.length || this.reducedMotion) return;
     for (let i = 0; i < this.scriptWordEls.length; i++) {
       const visible = this.voiceEnabled
         ? cueU >= this.spokenCueFracs[i]
@@ -527,105 +635,51 @@ export class BroadcastTour {
 
   _renderChyron(story) {
     this.dom.counter.textContent = `${this.storyIndex + 1} / ${this.stories.length}`;
-    this.dom.kicker.textContent = story.kicker || story.region || 'WORLD WEATHER';
-    this.dom.headline.textContent = story.headline;
+    this.dom.headline.textContent = story.headline || '';
     this.dom.progressBar.style.width = '0%';
+    if (this.dom.prevBtn) {
+      this.dom.prevBtn.disabled = this.storyIndex === 0;
+    }
 
-    const copyInner = this.cues
-      .map(
-        (c, idx) =>
-          `<span class="ticker-cue${idx === 0 ? ' active' : ''}" data-cue="${idx}">` +
-          formatTickerClauseHtml(c.ticker) +
-          `</span>`
-      )
-      .join('');
-
-    // Repeat enough copies to span ultra-wide 4K monitors seamlessly
-    this.dom.tickerTrack.innerHTML =
-      `<div class="ticker-copy">${copyInner}</div>` +
-      `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>` +
-      `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>` +
-      `<div class="ticker-copy" aria-hidden="true">${copyInner}</div>`;
-
-    const linksHtml = formatLinksCopyHtml(story.news_links || []);
-    this.dom.newsLinks.innerHTML =
-      `<div class="links-copy">${linksHtml}</div>` +
-      `<div class="links-copy">${linksHtml}</div>` +
-      `<div class="links-copy">${linksHtml}</div>` +
-      `<div class="links-copy">${linksHtml}</div>` +
-      `<div class="links-copy">${linksHtml}</div>` +
-      `<div class="links-copy">${linksHtml}</div>`;
-    this.dom.newsLinks.style.transform = 'translate3d(0px, 0, 0)';
-
-    this.cueSpans = [];
-    this.displayStoryPx = -65;
-
-    requestAnimationFrame(() => {
-      const firstStoryCopy = this.dom.tickerTrack.querySelector('.ticker-copy');
-      if (firstStoryCopy && firstStoryCopy.offsetWidth > 100) {
-        this.storySingleWidth = firstStoryCopy.offsetWidth;
-        const cueEls = Array.from(firstStoryCopy.querySelectorAll('.ticker-cue'));
-        let runningLeft = 0;
-        this.cueSpans = cueEls.map(el => {
-          const w = Math.max(40, el.offsetWidth);
-          const span = { leftPx: runningLeft, widthPx: w };
-          runningLeft += w;
-          return span;
-        });
-      }
-      const firstLinksCopy = this.dom.newsLinks.querySelector('.links-copy');
-      if (firstLinksCopy && firstLinksCopy.offsetWidth > 80) {
-        this.linksSingleWidth = firstLinksCopy.offsetWidth;
-      }
-    });
+    // Static "Read more: <source>" link validated strictly for http:/https:
+    const validLink = (story.news_links || []).find(lk => lk && safeHttpUrl(lk.url));
+    if (validLink && this.dom.readMoreWrap && this.dom.readMoreLink) {
+      const cleanHref = safeHttpUrl(validLink.url);
+      const sourceName = String(validLink.source || 'Source').trim();
+      this.dom.readMoreLink.href = cleanHref;
+      this.dom.readMoreLink.textContent = `Read more: ${sourceName} ↗`;
+      this.dom.readMoreLink.title = validLink.title || sourceName;
+      this.dom.readMoreWrap.hidden = false;
+    } else if (this.dom.readMoreWrap) {
+      this.dom.readMoreWrap.hidden = true;
+    }
   }
 
   _bindControls() {
     this.dom.playTourBtn?.addEventListener('click', () => this.start(0));
-    this.dom.prevBtn?.addEventListener('click', () =>
-      this.goToStory(this.storyIndex - 1, { playSting: true })
-    );
+    this.dom.prevBtn?.addEventListener('click', () => {
+      if (this.storyIndex > 0) {
+        this.goToStory(this.storyIndex - 1, { playSting: true });
+      }
+    });
     this.dom.nextBtn?.addEventListener('click', () =>
       this.goToStory(this.storyIndex + 1, { playSting: true })
     );
-    this.dom.textBtn?.addEventListener('click', () => this.toggleText());
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
-    this.dom.exitBtn?.addEventListener('click', () => this.stop());
-
-    this.dom.linksViewport?.addEventListener('mouseenter', () => {
-      this.linksHovered = true;
-    });
-    this.dom.linksViewport?.addEventListener('mouseleave', () => {
-      this.linksHovered = false;
-    });
+    this.dom.exitBtn?.addEventListener('click', () => this.stop({ completed: false }));
 
     document.addEventListener('keydown', e => {
       if (!this.active || document.activeElement?.tagName === 'INPUT') return;
       if (e.key === 'Escape') {
-        this.stop();
+        this.stop({ completed: false });
       } else if (e.key === 'ArrowRight') {
         this.goToStory(this.storyIndex + 1, { playSting: true });
-      } else if (e.key === 'ArrowLeft') {
+      } else if (e.key === 'ArrowLeft' && this.storyIndex > 0) {
         this.goToStory(this.storyIndex - 1, { playSting: true });
       } else if (e.key.toLowerCase() === 'm') {
         this.toggleMute();
-      } else if (e.key.toLowerCase() === 't') {
-        this.toggleText();
       }
     });
-  }
-
-  _updateLinksTicker(dtSec) {
-    const linkSpeed = this.linksHovered ? LINKS_TICKER_SPEED * 0.28 : LINKS_TICKER_SPEED;
-    this.linksOffsetPx = (this.linksOffsetPx + linkSpeed * dtSec) % Math.max(1, this.linksSingleWidth);
-    this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
-  }
-
-  _applyStoryTickerOffset(rawPx) {
-    const leadInPx = 28;
-    const w = Math.max(1, this.storySingleWidth);
-    const wrapped = (((rawPx - leadInPx) % w) + w) % w;
-    this.dom.tickerTrack.style.transform = `translate3d(${-wrapped.toFixed(1)}px, 0, 0)`;
   }
 
   _tick(now) {
@@ -636,33 +690,26 @@ export class BroadcastTour {
 
     if (!this.active || !this.stories.length || !this.cues.length) return;
 
-    this._updateLinksTicker(dtSec);
-
-    // Phase 1: Single smooth great-circle flight onto Knot 0 of the story
     if (this.phase === 'flight' && this.flightState) {
       this.phaseElapsedMs += dtMs;
       const t = Math.min(1, this.phaseElapsedMs / this.flightState.duration);
       const ease = quinticEase(t);
 
-      const q = new THREE.Quaternion().slerpQuaternions(this.flightState.fromQuat, this.flightState.toQuat, ease);
-      const dir = new THREE.Vector3(0, 0, 1).applyQuaternion(q).normalize();
+      this._flightQ.slerpQuaternions(this.flightState.fromQuat, this.flightState.toQuat, ease);
+      this._flightDir.set(0, 0, 1).applyQuaternion(this._flightQ).normalize();
       const dist =
         THREE.MathUtils.lerp(this.flightState.fromDist, this.flightState.toDist, ease) +
         Math.sin(t * Math.PI) * this.flightState.arcBoost;
       const bearing = THREE.MathUtils.lerp(this.flightState.fromBearing, this.flightState.toBearing, ease);
       const tilt = THREE.MathUtils.lerp(this.flightState.fromTilt, this.flightState.toTilt, ease);
 
-      this.currentFocusVec.copy(dir);
+      this.currentFocusVec.copy(this._flightDir);
       this.currentDist = dist;
       this.currentBearing = bearing;
       this.currentTilt = tilt;
 
-      const { lat, lon } = vec3ToLatLon(dir);
+      const { lat, lon } = vec3ToLatLon(this._flightDir);
       this.globe.setTourCameraPose(lat, lon, dist, bearing, tilt);
-
-      this.displayStoryPx = THREE.MathUtils.lerp(-65, 0, ease);
-      this._applyStoryTickerOffset(this.displayStoryPx);
-      this._updateScriptWordsProgress(-0.01, -0.01);
 
       if (t >= 1) {
         this._beginCuesPhase();
@@ -670,7 +717,6 @@ export class BroadcastTour {
       return;
     }
 
-    // Phase 2: Continuous spline glide + sentence-synchronised variable switches & calm ticker scroll
     const useAudioClock =
       this.voiceEnabled &&
       this.audioAvailable &&
@@ -710,34 +756,22 @@ export class BroadcastTour {
 
     this._updateScriptWordsProgress(cueElapsedSec, cueU);
 
-    if (this.cueSpans.length === this.cues.length) {
-      const span = this.cueSpans[this.cueIndex];
-      const targetPx = span.leftPx + cueU * span.widthPx;
-      if (Math.abs(targetPx - this.displayStoryPx) > this.storySingleWidth * 0.5) {
-        this.displayStoryPx = targetPx;
-      } else {
-        this.displayStoryPx += (targetPx - this.displayStoryPx) * Math.min(1, dtSec * 6.5);
-      }
-    } else {
-      this.displayStoryPx = (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
-    }
-    this._applyStoryTickerOffset(this.displayStoryPx);
-
     if (this.storyFinishedAt !== null && now - this.storyFinishedAt >= 800) {
       this.goToStory(this.storyIndex + 1, { playSting: true });
       return;
     }
 
-    // Evaluate continuous Catmull-Rom spline + silky exponential damper (zero jumps at sentence boundaries!)
-    const targetPose = this._sampleStorySpline(this.storyElapsedSec);
-    const damp = 1 - Math.exp(-dtSec * 3.8);
+    if (!this.reducedMotion) {
+      const targetPose = this._sampleStorySpline(this.storyElapsedSec);
+      const damp = 1 - Math.exp(-dtSec * 3.8);
 
-    this.currentFocusVec.lerp(targetPose.vec, damp).normalize();
-    this.currentDist = THREE.MathUtils.lerp(this.currentDist, targetPose.distance, damp);
-    this.currentBearing = THREE.MathUtils.lerp(this.currentBearing, targetPose.bearing, damp);
-    this.currentTilt = THREE.MathUtils.lerp(this.currentTilt, TOUR_TILT_DEG, damp);
+      this.currentFocusVec.lerp(targetPose.vec, damp).normalize();
+      this.currentDist = THREE.MathUtils.lerp(this.currentDist, targetPose.distance, damp);
+      this.currentBearing = THREE.MathUtils.lerp(this.currentBearing, targetPose.bearing, damp);
+      this.currentTilt = THREE.MathUtils.lerp(this.currentTilt, TOUR_TILT_DEG, damp);
 
-    const { lat, lon } = vec3ToLatLon(this.currentFocusVec);
-    this.globe.setTourCameraPose(lat, lon, this.currentDist, this.currentBearing, this.currentTilt);
+      const { lat, lon } = vec3ToLatLon(this.currentFocusVec);
+      this.globe.setTourCameraPose(lat, lon, this.currentDist, this.currentBearing, this.currentTilt);
+    }
   }
 }

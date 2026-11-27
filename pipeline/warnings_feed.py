@@ -33,21 +33,35 @@ def _fetch_json(url: str, timeout: int = 12) -> dict | list | None:
         return None
 
 
-def fetch_global_warnings(days_back: int = 7) -> list[dict]:
-    """Return active Orange/Red GDACS disaster alerts worldwide with coordinates and report URLs."""
+def is_gdacs_event_current(props: dict) -> bool:
+    """Return True only when GDACS `iscurrent` is genuinely true (handles string 'false' as False)."""
+    raw = props.get("iscurrent", True)
+    if isinstance(raw, bool):
+        return raw
+    if isinstance(raw, (int, float)):
+        return bool(raw)
+    if isinstance(raw, str):
+        return raw.strip().lower() not in {"false", "0", "no", "n", "inactive"}
+    return True
+
+
+def fetch_global_warnings(days_back: int = 7, raw_payload: dict | None = None) -> list[dict]:
+    """Return active current Orange/Red GDACS disaster alerts worldwide with coordinates and report URLs."""
     today = datetime.now(timezone.utc).date()
     start = today - timedelta(days=days_back)
     url = (
         "https://www.gdacs.org/gdacsapi/api/events/geteventlist/SEARCH?"
         f"eventlist={';'.join(GDACS_TYPES)}&alertlevel=Orange;Red&fromdate={start}&todate={today}"
     )
-    payload = _fetch_json(url, timeout=12)
+    payload = raw_payload if raw_payload is not None else _fetch_json(url, timeout=12)
     if not isinstance(payload, dict):
         return []
 
     alerts: list[dict] = []
     for feat in payload.get("features") or []:
         props = feat.get("properties") or {}
+        if not is_gdacs_event_current(props):
+            continue
         geom = feat.get("geometry") or {}
         coords = geom.get("coordinates") if geom.get("type") == "Point" else None
         lon = float(coords[0]) if coords and len(coords) >= 2 else None
@@ -60,7 +74,7 @@ def fetch_global_warnings(days_back: int = 7) -> list[dict]:
                 "name": props.get("name") or props.get("eventname") or "Active alert",
                 "country": props.get("country") or "",
                 "alert_level": props.get("alertlevel") or "Orange",
-                "is_current": bool(props.get("iscurrent", True)),
+                "is_current": True,
                 "lat": lat,
                 "lon": lon,
                 "from_date": props.get("fromdate"),

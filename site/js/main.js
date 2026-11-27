@@ -1,6 +1,6 @@
-import { WeatherGlobe } from './globe.js?v=20261126y';
-import { LocationSearch } from './search.js?v=20261126y';
-import { BroadcastTour } from './tour.js?v=20261126y';
+import { WeatherGlobe, sampleLayerColourAtValue } from './globe.js?v=6b5d14ab';
+import { LocationSearch } from './search.js?v=6b5d14ab';
+import { BroadcastTour } from './tour.js?v=6b5d14ab';
 
 const $ = id => document.getElementById(id);
 
@@ -21,7 +21,6 @@ function formatUtcStamp(dt) {
 }
 
 function nextScheduledReportUtc(createdDt) {
-  // Next 6-hourly cron slot (`25 1,7,13,19 * * *` -> live ~:30 UTC) strictly after `createdDt`
   const afterMs = createdDt.getTime() + 20 * 60_000;
   const base = new Date(afterMs);
   const y = base.getUTCFullYear();
@@ -37,6 +36,19 @@ function nextScheduledReportUtc(createdDt) {
     }
   }
   return new Date(afterMs + 6 * 3600_000);
+}
+
+function isNearScheduledReportWindow(nowMs = Date.now()) {
+  const dt = new Date(nowMs);
+  const minsOfDay = dt.getUTCHours() * 60 + dt.getUTCMinutes();
+  // Scheduled cron runs at 01:25, 07:25, 13:25, 19:25 UTC -> live around :30 UTC
+  for (const hr of [1, 7, 13, 19]) {
+    const targetMins = hr * 60 + 30;
+    if (Math.abs(minsOfDay - targetMins) <= 22) {
+      return true;
+    }
+  }
+  return false;
 }
 
 function updateReportScheduleUi(isoString) {
@@ -66,7 +78,8 @@ function updateReportScheduleUi(isoString) {
 function formatTemp(c, isDiff = false) {
   if (c == null || Number.isNaN(c)) return '--';
   const sign = isDiff && c > 0 ? '+' : '';
-  return `${sign}${c.toFixed(1)} °C`;
+  const rounded = Number.isInteger(c) ? String(c) : c.toFixed(1);
+  return `${sign}${rounded} °C`;
 }
 
 function formatWind(ms) {
@@ -74,43 +87,54 @@ function formatWind(ms) {
   return `${Math.round(ms * 3.6)} km/h`;
 }
 
+export function buildLegendGradientCss(spec) {
+  const sampleCount = 16;
+  const parts = [];
+  for (let i = 0; i <= sampleCount; i++) {
+    const p = i / sampleCount;
+    const norm = spec.scale === 'sqrt' ? p * p : p;
+    const val = spec.lo + norm * (spec.hi - spec.lo);
+    const [r, g, b] = sampleLayerColourAtValue(spec, val);
+    parts.push(`rgb(${r}, ${g}, ${b}) ${(p * 100).toFixed(1)}%`);
+  }
+  return `linear-gradient(90deg, ${parts.join(', ')})`;
+}
+
 function updateLegend(layerId) {
   if (!manifestData) return;
   const spec = manifestData.layers.find(l => l.id === layerId);
   if (!spec) return;
 
-  $('legendTitle').textContent = spec.label;
+  $('legendGradient').style.background = buildLegendGradientCss(spec);
 
-  const cssStops = spec.stops
-    .map(([val, hex]) => {
-      const pct = Math.max(0, Math.min(100, ((val - spec.lo) / (spec.hi - spec.lo)) * 100));
-      const rgbHex = hex.slice(0, 7);
-      return `${rgbHex} ${pct.toFixed(1)}%`;
-    })
-    .join(', ');
-  $('legendGradient').style.background = `linear-gradient(90deg, ${cssStops})`;
+  const midNorm = spec.scale === 'sqrt' ? 0.25 : 0.5;
+  const midVal = spec.lo + midNorm * (spec.hi - spec.lo);
 
-  const mid = 0.5 * (spec.lo + spec.hi);
   if (layerId === 'temperature') {
+    $('legendTitle').textContent = '2 m Temperature';
     $('legendMin').textContent = formatTemp(spec.lo);
-    $('legendMid').textContent = '0 °C';
+    $('legendMid').textContent = formatTemp(midVal, true);
     $('legendMax').textContent = formatTemp(spec.hi);
   } else if (layerId === 'anomaly') {
+    $('legendTitle').textContent = 'Temp Anomaly';
     $('legendMin').textContent = formatTemp(spec.lo, true);
     $('legendMid').textContent = '0 °C';
     $('legendMax').textContent = formatTemp(spec.hi, true);
   } else if (layerId === 'wind') {
-    $('legendMin').textContent = '0';
-    $('legendMid').textContent = formatWind(20);
+    $('legendTitle').textContent = '10 m Wind Speed';
+    $('legendMin').textContent = '0 km/h';
+    $('legendMid').textContent = formatWind(midVal);
     $('legendMax').textContent = formatWind(spec.hi);
   } else if (layerId === 'rain') {
+    $('legendTitle').textContent = '24 h Rainfall';
     $('legendMin').textContent = '0 mm';
-    $('legendMid').textContent = '40 mm';
-    $('legendMax').textContent = `${spec.hi} mm`;
+    $('legendMid').textContent = `${Math.round(midVal)} mm`;
+    $('legendMax').textContent = `${Math.round(spec.hi)} mm`;
   } else {
-    $('legendMin').textContent = `${spec.lo} hPa`;
-    $('legendMid').textContent = `${Math.round(mid)} hPa`;
-    $('legendMax').textContent = `${spec.hi} hPa`;
+    $('legendTitle').textContent = 'Pressure (hPa)';
+    $('legendMin').textContent = `${Math.round(spec.lo)}`;
+    $('legendMid').textContent = `${Math.round(midVal)}`;
+    $('legendMax').textContent = `${Math.round(spec.hi)} hPa`;
   }
 }
 
@@ -140,20 +164,41 @@ function showSpotReadout(globe, { name, sub, lat, lon }) {
 
 async function init() {
   let tour = null;
+  const layerRail = $('layerRail');
+  const mobileLayersToggle = $('mobileLayersToggle');
+
+  const closeMobileLayersMenu = () => {
+    layerRail.classList.remove('layers-open');
+    mobileLayersToggle.setAttribute('aria-expanded', 'false');
+  };
+
+  mobileLayersToggle.addEventListener('click', e => {
+    e.stopPropagation();
+    const isOpen = layerRail.classList.toggle('layers-open');
+    mobileLayersToggle.setAttribute('aria-expanded', String(isOpen));
+  });
+
+  document.addEventListener('click', e => {
+    if (!layerRail.contains(e.target)) {
+      closeMobileLayersMenu();
+    }
+  });
 
   const globe = new WeatherGlobe($('globeStage'), $('globeOverlay'), {
     onSpotClick: (lat, lon) => {
       const ns = lat >= 0 ? 'N' : 'S';
       const ew = lon >= 0 ? 'E' : 'W';
+      globe.clearSearchMarker();
       showSpotReadout(globe, {
         name: `${Math.abs(lat).toFixed(1)}°${ns}, ${Math.abs(lon).toFixed(1)}°${ew}`,
-        sub: 'Surface Point Readout',
+        sub: 'Forecast Point Readout',
         lat,
         lon,
       });
     },
     onPinClick: storyIdx => {
       $('spotCard').hidden = true;
+      closeMobileLayersMenu();
       tour?.start(storyIdx);
     },
   });
@@ -163,28 +208,29 @@ async function init() {
     {
       playLauncher: $('playLauncher'),
       playTourBtn: $('playTourBtn'),
+      playCaption: $('playTourCaption'),
+      statusNotice: $('tourStatusNotice'),
       tourHud: $('tourHud'),
       prevBtn: $('tourPrev'),
       nextBtn: $('tourNext'),
-      textBtn: $('tourTextBtn'),
-      textLabel: $('tourTextLabel'),
       muteBtn: $('tourMuteBtn'),
       muteLabel: $('tourMuteLabel'),
+      iconSoundOff: $('iconSoundOff'),
+      iconSoundOn: $('iconSoundOn'),
       exitBtn: $('tourExit'),
       counter: $('tourCounter'),
-      kicker: $('tourKicker'),
-      layerTag: $('tourLayerTag'),
       progressBar: $('tourProgressBar'),
       headline: $('tourHeadline'),
-      tickerViewport: $('tickerViewport'),
-      tickerTrack: $('tickerTrack'),
-      linksViewport: $('linksViewport'),
-      newsLinks: $('tourNewsLinks'),
+      readMoreWrap: $('tourReadMoreWrap'),
+      readMoreLink: $('tourReadMoreLink'),
       scriptOverlay: $('voiceScriptOverlay'),
       scriptText: $('voiceScriptText'),
     },
     {
       onLayerSync: layerId => setActiveLayerButtons(layerId),
+      onBulletinApplied: bulletin => {
+        globe.setStoryPins(bulletin.stories, tour.active ? tour.storyIndex : -1);
+      },
     }
   );
 
@@ -193,15 +239,18 @@ async function init() {
       const layerId = btn.dataset.layer;
       globe.setLayer(layerId);
       setActiveLayerButtons(layerId);
+      closeMobileLayersMenu();
     });
   });
 
   $('spotClose').addEventListener('click', () => {
     $('spotCard').hidden = true;
+    globe.clearSearchMarker();
   });
 
   const search = new LocationSearch($('searchInput'), $('searchResults'), place => {
-    if (tour.active) tour.stop();
+    if (tour.active) tour.stop({ completed: false });
+    globe.setSearchMarker(place.lat, place.lon, place.name);
     globe.flyTo(place.lat, place.lon, place.distance || 1.6, 1750);
     showSpotReadout(globe, {
       name: place.name,
@@ -214,15 +263,24 @@ async function init() {
   void globe.loadBasemap();
 
   const fetchLatestBulletin = async (isPoll = false) => {
+    if (isPoll && document.hidden) return;
     try {
-      const r = await fetch(`data/headlines.json?t=${Date.now()}`, { cache: 'no-store' });
-      if (!r.ok) return;
+      const r = await fetch('data/headlines.json', { cache: 'no-cache' });
+      if (!r.ok) {
+        if (!isPoll) tour.setBulletinError();
+        return;
+      }
       const bulletin = await r.json();
-      if (!bulletin) return;
+      if (!bulletin || !Array.isArray(bulletin.stories)) {
+        if (!isPoll) tour.setBulletinError();
+        return;
+      }
       const changed = Boolean(bulletin.generated_utc && bulletin.generated_utc !== reportCreatedIso);
       if (!isPoll || changed) {
         tour.setBulletin(bulletin);
-        globe.setStoryPins(bulletin.stories, tour.active ? tour.storyIndex : -1);
+        if (!tour.active) {
+          globe.setStoryPins(bulletin.stories, -1);
+        }
         if (bulletin.generated_utc) {
           updateReportScheduleUi(bulletin.generated_utc);
         }
@@ -234,12 +292,34 @@ async function init() {
       }
     } catch (err) {
       console.error('Failed loading headlines:', err);
+      if (!isPoll) tour.setBulletinError();
     }
   };
 
   void fetchLatestBulletin(false);
-  setInterval(() => updateReportScheduleUi(), 30_000);
-  setInterval(() => void fetchLatestBulletin(true), 90_000);
+  setInterval(() => {
+    if (!document.hidden) updateReportScheduleUi();
+  }, 30_000);
+
+  // Poll every 60s around scheduled [1, 7, 13, 19]:30 UTC update windows, and every 5 min otherwise
+  let pollTimerId = null;
+  const scheduleNextPoll = () => {
+    const delayMs = isNearScheduledReportWindow() ? 60_000 : 300_000;
+    pollTimerId = setTimeout(async () => {
+      await fetchLatestBulletin(true);
+      scheduleNextPoll();
+    }, delayMs);
+  };
+  scheduleNextPoll();
+
+  document.addEventListener('visibilitychange', () => {
+    if (!document.hidden) {
+      updateReportScheduleUi();
+      if (isNearScheduledReportWindow()) {
+        void fetchLatestBulletin(true);
+      }
+    }
+  });
 
   try {
     const manifest = await globe.loadWeatherManifest('data/manifest.json');
