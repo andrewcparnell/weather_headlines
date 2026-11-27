@@ -1,6 +1,6 @@
-import { WeatherGlobe, sampleLayerColourAtValue } from './globe.js?v=c499fb13';
-import { LocationSearch } from './search.js?v=c499fb13';
-import { BroadcastTour } from './tour.js?v=c499fb13';
+import { WeatherGlobe, sampleLayerColourAtValue } from './globe.js?v=8595d78b';
+import { LocationSearch } from './search.js?v=8595d78b';
+import { BroadcastTour } from './tour.js?v=8595d78b';
 
 const $ = id => document.getElementById(id);
 

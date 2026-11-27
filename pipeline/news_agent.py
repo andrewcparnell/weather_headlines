@@ -417,8 +417,9 @@ def resolve_country_and_region(lat: float, lon: float, cand: dict | None = None)
         country = str(best_country["name"]).strip()
 
     gp = (cand or {}).get("grid_point") or {}
-    land_frac = float((cand or {}).get("land_fraction_local", gp.get("land_fraction_local", 1.0)) or 0.0)
-    is_offshore = (land_frac < 0.10 and d_any > 180.0) or d_any > 420.0
+    raw_lf = (cand or {}).get("land_fraction_local", gp.get("land_fraction_local"))
+    land_frac = float(raw_lf) if raw_lf is not None else 1.0
+    is_offshore = land_frac < 0.15 and d_any > 140.0
 
     # Only name a specific gazetteer city if it lies well inside the 150 km geographic validator radius
     if best_city is not None and d_city <= 80.0 and str(best_city.get("name")) != country:
@@ -450,98 +451,278 @@ _COUNTRY_RSS_TOKENS: dict[str, tuple[str, ...]] = {
     "south africa": ("south africa", "south african"),
 }
 
+REPUTABLE_PUBLISHER_DOMAINS: tuple[str, ...] = (
+    "bbc.com",
+    "bbc.co.uk",
+    "theguardian.com",
+    "reuters.com",
+    "apnews.com",
+    "aljazeera.com",
+    "cnn.com",
+    "france24.com",
+    "dw.com",
+    "euronews.com",
+    "sky.com",
+    "npr.org",
+    "pbs.org",
+    "nytimes.com",
+    "washingtonpost.com",
+    "independent.co.uk",
+    "ft.com",
+    "bloomberg.com",
+    "time.com",
+    "economist.com",
+    "abc.net.au",
+    "abcnews.go.com",
+    "sbs.com.au",
+    "rnz.co.nz",
+    "nzherald.co.nz",
+    "cbc.ca",
+    "globalnews.ca",
+    "theglobeandmail.com",
+    "rte.ie",
+    "irishtimes.com",
+    "independent.ie",
+    "japantimes.co.jp",
+    "nhk.or.jp",
+    "mainichi.jp",
+    "kyodonews.net",
+    "asahi.com",
+    "e.vnexpress.net",
+    "vnexpress.net",
+    "vietnamplus.vn",
+    "tuoitrenews.vn",
+    "vietnamnews.vn",
+    "channelnewsasia.com",
+    "straitstimes.com",
+    "scmp.com",
+    "thehindu.com",
+    "indianexpress.com",
+    "hindustantimes.com",
+    "bangkokpost.com",
+    "inquirer.net",
+    "rappler.com",
+    "mexiconewsdaily.com",
+    "batimes.com.ar",
+    "mercopress.com",
+    "icelandmonitor.mbl.is",
+    "icelandreview.com",
+    "ruv.is",
+    "thelocal.com",
+    "africanews.com",
+    "dailymaverick.co.za",
+    "news24.com",
+    "nation.africa",
+    "rfi.fr",
+    "lemonde.fr",
+    "elpais.com",
+    "swissinfo.ch",
+    "reliefweb.int",
+    "wmo.int",
+    "un.org",
+    "who.int",
+    "ifrc.org",
+    "gdacs.org",
+    "metoffice.gov.uk",
+    "met.ie",
+    "noaa.gov",
+    "weather.gov",
+    "climate.gov",
+    "nasa.gov",
+    "copernicus.eu",
+    "ecmwf.int",
+    "phys.org",
+    "carbonbrief.org",
+    "yaleclimateconnections.org",
+    "scientificamerican.com",
+    "nature.com",
+)
 
-def fetch_google_news_rss_links(country: str, hazard: str, max_links: int = 3) -> list[dict]:
-    """Fetch 1-3 live, event-relevant news links from Google News RSS without requiring an API key."""
-    hazard_terms = {
-        "cyclone": "storm OR winds OR gales OR cyclone OR weather warning",
-        "wind": "winds OR gales OR storm OR weather warning",
-        "rain": "heavy rain OR flooding OR flood warning OR downpours",
-        "heat": "heat OR high temperatures OR warm weather OR drought",
-        "cold": "cold weather OR snow OR freeze OR winter storm",
-        "pressure": "weather OR high pressure OR storm",
-    }.get(hazard, "weather warning OR storm OR rain")
 
-    query = f'"{country}" ({hazard_terms}) when:21d'
-    rss_url = (
-        "https://news.google.com/rss/search?"
-        + urllib.parse.urlencode({"q": query, "hl": "en-GB", "gl": "GB", "ceid": "GB:en"})
-    )
-    req = urllib.request.Request(
-        rss_url,
-        headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8"},
-    )
+def _is_reputable_source(source_url: str, source_name: str) -> bool:
+    """Return True if the RSS `<source url=...>` belongs to a reputable news, scientific, or official agency."""
+    s_name_low = (source_name or "").lower()
+    if any(bad in s_name_low for bad in ("nature world news", "ftn news", "oilprice", "audacy", "aol", "msn")):
+        return False
+    if not source_url:
+        return False
     try:
-        with urllib.request.urlopen(req, timeout=6) as resp:
-            xml_bytes = resp.read()
-        root = ET.fromstring(xml_bytes)
+        host = urllib.parse.urlparse(source_url.strip()).netloc.lower().removeprefix("www.")
     except Exception:
-        return []
+        return False
+    if not host:
+        return False
+    if host.endswith((".gov", ".gov.uk", ".gob.mx", ".go.jp", ".gov.au", ".int", ".edu", ".ac.uk")):
+        return True
+    return any(host == dom or host.endswith("." + dom) for dom in REPUTABLE_PUBLISHER_DOMAINS)
 
-    weather_kw = (
-        "weather",
-        "storm",
-        "rain",
-        "flood",
-        "wind",
-        "gale",
-        "cyclone",
-        "typhoon",
-        "hurricane",
-        "heat",
-        "warm",
-        "cold",
-        "snow",
-        "freeze",
-        "blizzard",
-        "drought",
-        "warning",
-        "alert",
-        "forecast",
-        "temperature",
-        "monsoon",
-        "landslide",
-    )
+
+def _region_query_and_tokens(lat: float, lon: float, country: str) -> tuple[str, tuple[str, ...]]:
+    c_low = country.lower().strip()
+    if -35.0 <= lat <= 37.0 and -20.0 <= lon <= 52.0:
+        if lat >= 5.0:
+            return "Sahel OR Africa", (c_low, "sahel", "africa", "african", "lake chad")
+        return "Africa", (c_low, "africa", "african")
+    if -56.0 <= lat <= 13.0 and -85.0 <= lon <= -34.0:
+        return "Ecuador OR Peru OR Andes OR South America", (
+            c_low,
+            "south america",
+            "andes",
+            "andean",
+            "galapagos",
+            "galápagos",
+            "pacific",
+        )
+    if 8.0 <= lat <= 33.0 and -118.0 <= lon <= -60.0:
+        return "Mexico OR Central America", (c_low, "mexican", "central america", "caribbean")
+    if -12.0 <= lat <= 24.0 and 92.0 <= lon <= 142.0:
+        return "Vietnam OR Southeast Asia", (c_low, "vietnamese", "southeast asia", "mekong")
+    if 20.0 <= lat <= 50.0 and 120.0 <= lon <= 150.0:
+        return "Japan OR Northwest Pacific", (c_low, "japanese", "tokyo", "hokkaido", "pacific")
+    if 35.0 <= lat <= 72.0 and -35.0 <= lon <= 40.0:
+        return "Europe OR North Atlantic", (c_low, "europe", "european", "north atlantic", "atlantic")
+    return country, (c_low,)
+
+
+_IDIOM_EXCLUSIONS = (
+    "storm in a",
+    "takes by storm",
+    "took by storm",
+    "take by storm",
+    "hot air",
+    "hot seat",
+    "hot topic",
+    "cold war",
+    "cold shoulder",
+    "cold case",
+    "political storm",
+    "firestorm",
+    "brainstorm",
+)
+
+
+def fetch_google_news_rss_links(
+    country: str,
+    hazard: str,
+    max_links: int = 3,
+    lat: float = 0.0,
+    lon: float = 0.0,
+) -> list[dict]:
+    """Fetch 1-3 live, hazard-coherent news links exclusively from reputable outlets via Google News RSS."""
+    hazard_cfg = {
+        "cyclone": (
+            '"weather warning" OR cyclone OR typhoon OR hurricane OR gales OR "severe weather"',
+            r"\b(cyclone|typhoon|hurricane|gales?|gusts?|wind\w*|storm\w*|weather|flood\w*|rain\w*|blizzard\w*)\b",
+            r"\b(heatwave|scorching)\b",
+        ),
+        "wind": (
+            '"high winds" OR gales OR "weather warning" OR storm',
+            r"\b(gales?|gusts?|winds?|storm\w*|weather\s+warning|severe\s+weather)\b",
+            r"\b(heatwave|scorching)\b",
+        ),
+        "rain": (
+            'flooding OR floods OR "heavy rain" OR downpours OR landslides OR typhoon',
+            r"\b(rain\w*|flood\w*|downpours?|deluge|monsoon|landslides?|typhoon|cyclone|hurricane|mudslides?)\b",
+            r"\b(blizzard|ski\s+resorts?|heatwave)\b",
+        ),
+        "heat": (
+            'heatwave OR "high temperatures" OR "warm weather" OR drought OR "El Nino" OR climate',
+            r"\b(heatwave|heat|temperatures?|drought|el\s+ni[nñ]o|warmer|warming|climate|wildfires?)\b",
+            r"\b(cold\s+weather|bitter\s+cold|winter\s+storm|snow\w*|blizzard\w*|ski\s+resorts?|freez\w*|frost|arctic)\b",
+        ),
+        "cold": (
+            '"winter storm" OR "cold weather" OR snowfall OR freeze OR "cold front"',
+            r"\b(cold|chill|freez\w*|frost|snow\w*|winter\s+storm|blizzard\w*|sub-zero|temperatures?)\b",
+            r"\b(heatwave|scorching|record\s+heat|wildfires?)\b",
+        ),
+        "pressure": (
+            '"weather warning" OR "high pressure" OR storm OR forecast',
+            r"\b(weather|forecast|pressure|storm\w*|winds?|rain\w*|temperatures?)\b",
+            r"$^",
+        ),
+    }
+    hazard_query, must_pat_str, forbid_pat_str = hazard_cfg.get(hazard, hazard_cfg["pressure"])
+    must_re = re.compile(must_pat_str, flags=re.I)
+    forbid_re = re.compile(forbid_pat_str, flags=re.I)
+
     c_low = country.lower().strip()
     stem = c_low[:-1] if len(c_low) >= 6 else c_low
     country_tokens = _COUNTRY_RSS_TOKENS.get(c_low, (c_low, stem))
+    region_query, region_tokens = _region_query_and_tokens(lat, lon, country)
+
+    # Keep queries concise (well under Google News's 32-word operator limit) and filter publisher domains in Python
+    queries = [
+        (f'"{country}" ({hazard_query}) when:35d', country_tokens),
+        (f'"{country}" (weather OR flood OR drought OR temperatures OR El Nino OR storm) when:90d', country_tokens),
+        (f"({region_query}) ({hazard_query}) when:45d", region_tokens),
+    ]
 
     out: list[dict] = []
     seen_titles: set[str] = set()
-    for item in root.findall("./channel/item"):
-        raw_title = (item.findtext("title") or "").strip()
-        link = (item.findtext("link") or "").strip()
-        source_el = item.find("source")
-        source = (source_el.text if source_el is not None and source_el.text else "").strip()
-        if not raw_title or not link or not is_specific_event_url(link):
-            continue
-        if source and raw_title.endswith(f" - {source}"):
-            clean_title = raw_title[: -len(f" - {source}")].strip()
-        elif " - " in raw_title:
-            parts = raw_title.rsplit(" - ", 1)
-            clean_title = parts[0].strip()
-            source = source or parts[1].strip()
-        else:
-            clean_title = raw_title
 
-        t_low = clean_title.lower()
-        if not any(k in t_low for k in weather_kw):
-            continue
-        if not any(re.search(r"\b" + re.escape(tok.strip()), t_low) for tok in country_tokens if tok):
-            continue
-        dedup_key = re.sub(r"[^a-z0-9]+", "", t_low)[:45]
-        if dedup_key in seen_titles:
-            continue
-        seen_titles.add(dedup_key)
-        out.append(
-            {
-                "source": source or "News Report",
-                "title": clean_title[:115],
-                "url": link,
-            }
-        )
+    for query_str, geo_tokens in queries:
         if len(out) >= max_links:
             break
+        rss_url = (
+            "https://news.google.com/rss/search?"
+            + urllib.parse.urlencode({"q": query_str, "hl": "en-GB", "gl": "GB", "ceid": "GB:en"})
+        )
+        req = urllib.request.Request(
+            rss_url,
+            headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8"},
+        )
+        try:
+            with urllib.request.urlopen(req, timeout=6) as resp:
+                xml_bytes = resp.read()
+            root = ET.fromstring(xml_bytes)
+        except Exception:
+            continue
+
+        for item in root.findall("./channel/item"):
+            raw_title = (item.findtext("title") or "").strip()
+            link = (item.findtext("link") or "").strip()
+            source_el = item.find("source")
+            source = (source_el.text if source_el is not None and source_el.text else "").strip()
+            source_url = (source_el.get("url") if source_el is not None else "") or ""
+
+            if not raw_title or not link or not is_specific_event_url(link):
+                continue
+            if not _is_reputable_source(source_url, source):
+                continue
+
+            if source and raw_title.endswith(f" - {source}"):
+                clean_title = raw_title[: -len(f" - {source}")].strip()
+            elif " - " in raw_title:
+                parts = raw_title.rsplit(" - ", 1)
+                clean_title = parts[0].strip()
+                source = source or parts[1].strip()
+            else:
+                clean_title = raw_title
+
+            t_low = clean_title.lower()
+            if any(idiom in t_low for idiom in _IDIOM_EXCLUSIONS):
+                continue
+            if not must_re.search(clean_title):
+                continue
+            if forbid_re.search(clean_title):
+                continue
+            if not any(re.search(r"\b" + re.escape(tok.strip()), t_low) for tok in geo_tokens if tok):
+                continue
+
+            dedup_key = re.sub(r"[^a-z0-9]+", "", t_low)[:45]
+            if dedup_key in seen_titles:
+                continue
+            seen_titles.add(dedup_key)
+            out.append(
+                {
+                    "source": source or "News Report",
+                    "title": clean_title[:115],
+                    "url": link,
+                }
+            )
+            if len(out) >= max_links:
+                break
+
     return out
 
 
@@ -574,8 +755,26 @@ def build_deterministic_bulletin(
     fetch_live_rss: bool = False,
 ) -> dict:
     """Build an engaging, broadcast-style 5-story bulletin without reading out technical jargon or over-precise figures."""
-    picked = enriched_candidates[:5]
     valid_gdacs = [w for w in warnings if w.get("url") and is_specific_event_url(str(w["url"]))]
+    rss_precache: dict[int, list[dict]] = {}
+
+    if fetch_live_rss and len(enriched_candidates) > 5:
+        scored_pool: list[tuple[float, int, dict]] = []
+        for idx_c, cand in enumerate(enriched_candidates[:9]):
+            la, lo = float(cand["lat"]), float(cand["lon"])
+            ctry, _, _, _ = resolve_country_and_region(la, lo, cand)
+            rss_lks = fetch_google_news_rss_links(ctry, cand["kind"], max_links=3, lat=la, lon=lo)
+            rss_precache[id(cand)] = rss_lks
+            gp = cand.get("grid_point") or {}
+            land_frac = float(cand.get("land_fraction_local", gp.get("land_fraction_local", 0.5)) or 0.0)
+            land_bonus = 2.0 if land_frac >= 0.15 or cand["kind"] == "cyclone" else 0.0
+            news_bonus = min(3, len(rss_lks)) * 1.5
+            scored_pool.append((news_bonus + land_bonus - idx_c * 0.25, idx_c, cand))
+        scored_pool.sort(key=lambda item: item[0], reverse=True)
+        picked = [item[2] for item in scored_pool[:5]]
+    else:
+        picked = enriched_candidates[:5]
+
     stories = []
     month_name = weather.valid_time.strftime("%B")
 
@@ -1110,9 +1309,15 @@ def build_deterministic_bulletin(
                     break
 
         if fetch_live_rss and len(links) < 3:
-            for rss_lk in fetch_google_news_rss_links(country, kind, max_links=3 - len(links)):
+            cached_rss = rss_precache.get(
+                id(cand),
+                fetch_google_news_rss_links(country, kind, max_links=3 - len(links), lat=lat, lon=lon),
+            )
+            for rss_lk in cached_rss:
                 if all(rss_lk["url"] != existing["url"] for existing in links):
                     links.append(rss_lk)
+                if len(links) >= 3:
+                    break
 
         ticker_joined = "  ///  ".join(c["ticker"] for c in cues if c.get("ticker"))
         if len(ticker_joined) < 65:

@@ -941,15 +941,21 @@ body.tour-active .layer-rail {
   font-size: 13px;
 }
 
-/* Row 4: Independent-Speed Scrolling Clickable News Links Bar */
+/* Row 4: Independent-Speed Scrolling Clickable News Links Bar (Stops on Hover) */
 .chyron-links-bar {
   display: flex;
   align-items: stretch;
   min-height: 44px;
   padding-bottom: env(safe-area-inset-bottom, 0px);
   background: #040a15;
-  border-top: 1px solid rgba(255, 255, 255, 0.16);
+  border-top: 1px solid rgba(255, 255, 255, 0.2);
   overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.chyron-links-bar:hover {
+  background: #081326;
+  border-top-color: rgba(253, 224, 71, 0.65);
 }
 
 .links-tag {
