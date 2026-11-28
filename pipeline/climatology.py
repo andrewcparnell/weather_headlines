@@ -110,6 +110,13 @@ def load_precomputed_climatology(path: Path = PRECOMPUTED_CLIMO_PATH) -> Precomp
     )
 
 
+def orography_is_plausible(ifs_elev_m: np.ndarray, era5_elev_m: np.ndarray) -> bool:
+    """The two model terrains differ by a few hundred metres at most in typical places; a field that is
+    kilometres off everywhere (e.g. a pressure-level height read by mistake) must never be used."""
+    diff = np.asarray(ifs_elev_m, dtype=np.float32) - np.asarray(era5_elev_m, dtype=np.float32)
+    return bool(np.isfinite(diff).any() and abs(float(np.nanmedian(diff))) < 50.0 and float(np.nanpercentile(np.abs(diff), 99)) < 1500.0)
+
+
 def load_era5_historical_context(
     valid_time: datetime,
     ifs_elev_m: np.ndarray | None = None,
@@ -141,8 +148,15 @@ def load_era5_historical_context(
     label = "ERA5 ±7-day seasonal baseline (precomputed)"
     if ifs_elev_m is not None and ifs_elev_m.shape == climo.era5_elev_025_m.shape:
         orog_diff_m = ifs_elev_m - climo.era5_elev_025_m
-        mean_025_c = (mean_025_c - LAPSE_RATE_C_PER_M * orog_diff_m).astype(np.float32)
-        label = "ERA5 ±7-day seasonal baseline (6.5 °C/km lapse-rate adjusted)"
+        if not orography_is_plausible(ifs_elev_m, climo.era5_elev_025_m):
+            print(
+                "[climatology] ERROR: forecast surface elevation looks wrong "
+                f"(median difference from ERA5 {float(np.nanmedian(orog_diff_m)):.0f} m); skipping the lapse-rate adjustment.",
+                file=sys.stderr,
+            )
+        else:
+            mean_025_c = (mean_025_c - LAPSE_RATE_C_PER_M * orog_diff_m).astype(np.float32)
+            label = "ERA5 ±7-day seasonal baseline (6.5 °C/km lapse-rate adjusted)"
 
     return mean_025_c, std_025_c, label, climo
 
@@ -552,6 +566,10 @@ def enrich_all_candidates(
         ifs_elev = float(weather.ifs_elev_m[iy025, ix025]) if weather.ifs_elev_m is not None else 0.0
         era5_elev = float(climo.era5_elev_025_m[iy025, ix025]) if climo is not None else ifs_elev
         elev_diff = round(ifs_elev - era5_elev, 0)
+        if weather.ifs_elev_m is not None and climo is not None and not orography_is_plausible(
+            weather.ifs_elev_m, climo.era5_elev_025_m
+        ):
+            ifs_elev = era5_elev  # bad elevation field: no adjustment rather than a wrong one
         lapse_adj_c = -LAPSE_RATE_C_PER_M * (ifs_elev - era5_elev)
 
         place_ctx = nearest_gazetteer_place(lat, lon)

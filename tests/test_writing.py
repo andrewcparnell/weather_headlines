@@ -575,3 +575,28 @@ def test_hourly_freshness_check_only_runs_when_a_new_forecast_is_out():
     assert bulletin_due(dict(fresh, generated_utc="2026-11-28T05:00:00Z"), run06, now)[0] is True  # too old
     assert bulletin_due(None, run06, now)[0] is True
     assert bulletin_due(dict(fresh, generator="era5-deterministic"), run06, now)[0] is True
+
+
+def test_surface_fields_never_pick_a_pressure_level():
+    """Live bug: the index lists `z` on pressure levels and at the surface, in varying order. Taking the
+    first `z` returned the 300 hPa height (~9 km) as terrain and turned the whole anomaly map red."""
+    from pipeline.opendata import select_index_row
+
+    rows = [
+        {"param": "z", "levtype": "pl", "levelist": "300", "_offset": 1},
+        {"param": "z", "levtype": "pl", "levelist": "500", "_offset": 2},
+        {"param": "z", "levtype": "sfc", "_offset": 3},
+    ]
+    assert select_index_row(rows, "z")["_offset"] == 3
+    assert select_index_row(rows, "z", levelist=500)["_offset"] == 2
+    assert select_index_row(rows[:2], "z") is None
+
+
+def test_implausible_elevation_field_is_never_used_for_the_lapse_rate():
+    from pipeline.climatology import orography_is_plausible
+
+    era5 = np.zeros((10, 10), dtype=np.float32)
+    era5[2:4, 2:4] = 3000.0
+    good = era5 + np.random.default_rng(0).normal(0, 80, era5.shape).astype(np.float32)
+    assert orography_is_plausible(good, era5)
+    assert not orography_is_plausible(era5 + 9100.0, era5)  # a 300 hPa height field

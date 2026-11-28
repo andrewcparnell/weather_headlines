@@ -136,25 +136,36 @@ def get_index_rows(rel: str) -> tuple[str, list[dict]]:
     raise RuntimeError(f"Unable to download index for {rel}")
 
 
+def select_index_row(rows: list[dict], param: str, levelist: int | None = None) -> dict | None:
+    """Pick the GRIB message for `param`: a surface field unless a pressure level is given.
+
+    Several parameters (notably `z`, geopotential) exist both at the surface and on pressure levels, and
+    the order of rows in the index varies between runs. Taking "the first `z`" sometimes returned the
+    300 hPa height (~9 km) as the surface elevation, which shifted the whole temperature anomaly map
+    by about +60 °C.
+    """
+    want_levtype = "pl" if levelist is not None else "sfc"
+    for r in rows:
+        if r.get("param") != param:
+            continue
+        if levelist is not None and str(r.get("levelist")) != str(levelist):
+            continue
+        if (r.get("levtype") or "sfc") != want_levtype:
+            continue
+        return r
+    return None
+
+
 def fetch_grib_message(run: datetime, stream: str, step: int, param: str, levelist: int | None = None) -> Path:
     """Download a single GRIB2 message using its byte offset in the .index file (cached on disk)."""
-    lev_tag = f"_{levelist}" if levelist is not None else ""
+    lev_tag = f"_pl{levelist}" if levelist is not None else "_sfc"
     out_path = CACHE_DIR / "opendata" / f"{run:%Y%m%d%H}_{stream}" / f"{param}{lev_tag}_step{step:03d}.grib2"
     if out_path.exists() and out_path.stat().st_size > 0:
         return out_path
 
     rel = rel_path(run, stream, step)
     root, rows = get_index_rows(rel)
-    match = next(
-        (
-            r
-            for r in rows
-            if r.get("param") == param
-            and (levelist is None or str(r.get("levelist")) == str(levelist))
-            and (r.get("levtype") in (None, "sfc", "pl"))
-        ),
-        None,
-    )
+    match = select_index_row(rows, param, levelist)
     if match is None:
         raise KeyError(f"Parameter {param!r} not found in {rel}.index")
 
