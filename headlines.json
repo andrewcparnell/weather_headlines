@@ -1,0 +1,825 @@
+{
+  "version": 1,
+  "generated_utc": "2026-11-28T14:46:56Z",
+  "model_run_utc": "2026-11-28T06:00:00Z",
+  "valid_time_utc": "2026-11-28T15:00:00Z",
+  "edition_title": "World Weather Headlines - 14:46 UTC, 28 November 2026",
+  "generator": "anthropic:claude-sonnet-5-5",
+  "stories": [
+    {
+      "id": "2026-11-khanh-hoa-rain",
+      "rank": 1,
+      "kicker": "HEAVY RAIN · KHANH HOA",
+      "headline": "Vietnam: Nha Trang's streets turn to waterways as more heavy rain is forecast",
+      "ticker": "Up to around **260 mm** of rain forecast in 24 hours on Khanh Hoa coast /// Dan Tri: **Nha Trang** streets flooded, travel disrupted across Khanh Hoa /// Lao Dong: roads in **Nha Trang** and **Ninh Hoa** flooded, landslides reported /// Past 28 days about **410 mm**, **194%** of normal, against 210 mm expected /// Gusts of about **42 km/h** forecast, flooding the main risk",
+      "voice_script": "Vietnam: on the coast north-east of Nha Trang, up to around 260 mm of rain is forecast in the 24 hours from this morning. Local outlet Dan Tri reports that prolonged heavy rain has flooded several streets in Nha Trang, disrupting travel and raising safety concerns across Khanh Hoa Province. Lao Dong newspaper says overnight downpours left roads in Nha Trang and Ninh Hoa locally flooded, with landslides reported on the early morning of 28 November. The ground is already sodden. About 410 mm has fallen over the past four weeks here, roughly 194% of what is normal for the period. Winds are not the main worry, with gusts of about 42 km/h forecast. The danger is the water, running off hillsides into already swollen streets and rivers.",
+      "region": "Khanh Hoa",
+      "country": "Vietnam",
+      "hazard": "rain",
+      "primary_layer": "rain",
+      "centre": {
+        "lat": 12.5,
+        "lon": 109.5
+      },
+      "stats": {
+        "headline_metric": "260 mm",
+        "metric_label": "forecast 24 h rain",
+        "era5_rank": "",
+        "persistence": "194% of 28-day normal"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 12.15,
+          "lon": 109.04,
+          "distance": 1.82
+        },
+        {
+          "lat": 12.38,
+          "lon": 109.36,
+          "distance": 1.68
+        },
+        {
+          "lat": 12.65,
+          "lon": 109.66,
+          "distance": 1.64
+        },
+        {
+          "lat": 12.85,
+          "lon": 109.96,
+          "distance": 1.76
+        }
+      ],
+      "cues": [
+        {
+          "layer": "rain",
+          "lat": 12.5,
+          "lon": 109.5,
+          "distance": 1.82,
+          "bearing": -10.0,
+          "label": "KHANH HOA COAST",
+          "metric": "260 mm",
+          "spoken": "Vietnam: on the coast north-east of Nha Trang, up to around 260 mm of rain is forecast in the 24 hours from this morning.",
+          "ticker": "Up to around **260 mm** of rain forecast in 24 hours on Khanh Hoa coast",
+          "start_sec": 0.0,
+          "end_sec": 9.17
+        },
+        {
+          "layer": "rain",
+          "lat": 12.25,
+          "lon": 109.19,
+          "distance": 1.71,
+          "bearing": -5.0,
+          "label": "NHA TRANG",
+          "metric": "",
+          "spoken": "Local outlet Dan Tri reports that prolonged heavy rain has flooded several streets in Nha Trang, disrupting travel and raising safety concerns across Khanh Hoa Province.",
+          "ticker": "Dan Tri: **Nha Trang** streets flooded, travel disrupted across Khanh Hoa",
+          "start_sec": 9.17,
+          "end_sec": 19.68
+        },
+        {
+          "layer": "rain",
+          "lat": 12.49,
+          "lon": 109.12,
+          "distance": 1.66,
+          "bearing": 0.0,
+          "label": "NINH HOA",
+          "metric": "",
+          "spoken": "Lao Dong newspaper says overnight downpours left roads in Nha Trang and Ninh Hoa locally flooded, with landslides reported on the early morning of 28 November.",
+          "ticker": "Lao Dong: roads in **Nha Trang** and **Ninh Hoa** flooded, landslides reported",
+          "start_sec": 19.68,
+          "end_sec": 30.31
+        },
+        {
+          "layer": "rain",
+          "lat": 12.5,
+          "lon": 109.5,
+          "distance": 1.67,
+          "bearing": 5.0,
+          "label": "SOAKED GROUND",
+          "metric": "194%",
+          "spoken": "The ground is already sodden. About 410 mm has fallen over the past four weeks here, roughly 194% of what is normal for the period.",
+          "ticker": "Past 28 days about **410 mm**, **194%** of normal, against 210 mm expected",
+          "start_sec": 30.31,
+          "end_sec": 41.16
+        },
+        {
+          "layer": "rain",
+          "lat": 12.5,
+          "lon": 109.5,
+          "distance": 1.76,
+          "bearing": 10.0,
+          "label": "WIND",
+          "metric": "42 km/h",
+          "spoken": "Winds are not the main worry, with gusts of about 42 km/h forecast. The danger is the water, running off hillsides into already swollen streets and rivers.",
+          "ticker": "Gusts of about **42 km/h** forecast, flooding the main risk",
+          "start_sec": 41.16,
+          "end_sec": 52.39
+        }
+      ],
+      "beats": [
+        {
+          "tag": "THE FORECAST",
+          "title": "The forecast",
+          "layer": "rain",
+          "text": "Vietnam: on the coast north-east of Nha Trang, up to around 260 mm of rain is forecast in the 24 hours from this morning."
+        },
+        {
+          "tag": "WHAT IT MEANS",
+          "title": "What it means",
+          "layer": "rain",
+          "text": "Local outlet Dan Tri reports that prolonged heavy rain has flooded several streets in Nha Trang, disrupting travel and raising safety concerns across Khanh Hoa Province."
+        },
+        {
+          "tag": "THE BACKGROUND",
+          "title": "The background",
+          "layer": "rain",
+          "text": "Lao Dong newspaper says overnight downpours left roads in Nha Trang and Ninh Hoa locally flooded, with landslides reported on the early morning of 28 November. The ground is already sodden. About 410 mm has fallen over the past four weeks here, roughly 194% of what is normal for the period."
+        },
+        {
+          "tag": "IN CONTEXT",
+          "title": "In context",
+          "layer": "rain",
+          "text": "Winds are not the main worry, with gusts of about 42 km/h forecast. The danger is the water, running off hillsides into already swollen streets and rivers."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "Dan Tri",
+          "title": "Heavy rain turns streets in Nha Trang into flooded waterways",
+          "url": "https://dtinews.dantri.com.vn/vietnam-today/heavy-rain-turns-streets-in-nha-trang-into-flooded-waterways-20261128141336129.htm"
+        },
+        {
+          "source": "Lao Dong",
+          "title": "Rain covers the sky, many areas in Khanh Hoa are locally flooded, landslides",
+          "url": "https://news.laodong.vn/xa-hoi/mua-trang-troi-nhieu-khu-vuc-o-khanh-hoa-ngap-cuc-bo-sat-lo-1807997.ldo"
+        },
+        {
+          "source": "VietNamNet",
+          "title": "Historic flooding hits Vietnam's Ly Son Island, submerging homes",
+          "url": "https://vietnamnet.vn/en/historic-flooding-hits-vietnam-s-ly-son-island-submerging-homes-2579661.html"
+        }
+      ],
+      "news_facts": [
+        {
+          "claim": "Prolonged heavy rain has flooded several streets in Nha Trang and other areas of Khanh Hoa Province, disrupting travel",
+          "source_url": "https://dtinews.dantri.com.vn/vietnam-today/heavy-rain-turns-streets-in-nha-trang-into-flooded-waterways-20261128141336129.htm"
+        },
+        {
+          "claim": "Heavy rain overnight on November 28 caused roads in Nha Trang and Ninh Hoa to be locally flooded, with landslides",
+          "source_url": "https://news.laodong.vn/xa-hoi/mua-trang-troi-nhieu-khu-vuc-o-khanh-hoa-ngap-cuc-bo-sat-lo-1807997.ldo"
+        }
+      ],
+      "audio_url": "data/audio/story-1-20261128T144656Z.mp3",
+      "duration_sec": 52.39
+    },
+    {
+      "id": "2026-11-aegean-greece-gale",
+      "rank": 2,
+      "kicker": "GALES · AEGEAN GREECE",
+      "headline": "Greece: Aegean gusts near 110 km/h forecast as the storm spell drags on",
+      "ticker": "Gusts could reach about **110 km/h** in the northern Aegean /// **Volos** port lies about **90 km** from the strongest winds /// About **44 mm** of rain forecast over 24 hours /// News 24/7: heavy rain expected across Greece, worst on **Sunday 29 November** /// Among the highest gusts for the season since **1940** here",
+      "voice_script": "Greece: out in the northern Aegean, gusts could reach around 110 km/h, enough to make life difficult for ferries and small boats. Volos, the port on the mainland coast, lies about 90 km from the sea area where the strongest winds are forecast. Rain accompanies the wind, with about 44 mm forecast over the day. That is a fair share of what this area normally gets in a month. News 24/7 reports that thunderstorms, strong winds and snow are sweeping Greece, and a meteorologist there warns of particularly heavy rainfall on Sunday, 29 November. Gusts this strong are among the highest for this time of year since 1940 at this spot, where 65 km/h is already a strong blow.",
+      "region": "Aegean Sea",
+      "country": "Greece",
+      "hazard": "cyclone",
+      "primary_layer": "wind",
+      "centre": {
+        "lat": 39.5,
+        "lon": 24.0
+      },
+      "stats": {
+        "headline_metric": "110 km/h",
+        "metric_label": "forecast peak gust",
+        "era5_rank": "",
+        "persistence": ""
+      },
+      "camera_waypoints": [
+        {
+          "lat": 39.15,
+          "lon": 23.42,
+          "distance": 1.82
+        },
+        {
+          "lat": 39.38,
+          "lon": 23.83,
+          "distance": 1.68
+        },
+        {
+          "lat": 39.65,
+          "lon": 24.2,
+          "distance": 1.64
+        },
+        {
+          "lat": 39.85,
+          "lon": 24.58,
+          "distance": 1.76
+        }
+      ],
+      "cues": [
+        {
+          "layer": "wind",
+          "lat": 39.5,
+          "lon": 24.0,
+          "distance": 1.82,
+          "bearing": -10.0,
+          "label": "NORTH AEGEAN",
+          "metric": "110 km/h",
+          "spoken": "Greece: out in the northern Aegean, gusts could reach around 110 km/h, enough to make life difficult for ferries and small boats.",
+          "ticker": "Gusts could reach about **110 km/h** in the northern Aegean",
+          "start_sec": 0.0,
+          "end_sec": 9.12
+        },
+        {
+          "layer": "wind",
+          "lat": 39.4,
+          "lon": 22.9,
+          "distance": 1.71,
+          "bearing": -5.0,
+          "label": "VOLOS",
+          "metric": "",
+          "spoken": "Volos, the port on the mainland coast, lies about 90 km from the sea area where the strongest winds are forecast.",
+          "ticker": "**Volos** port lies about **90 km** from the strongest winds",
+          "start_sec": 9.12,
+          "end_sec": 16.92
+        },
+        {
+          "layer": "rain",
+          "lat": 39.5,
+          "lon": 24.0,
+          "distance": 1.66,
+          "bearing": 0.0,
+          "label": "RAIN",
+          "metric": "44 mm",
+          "spoken": "Rain accompanies the wind, with about 44 mm forecast over the day. That is a fair share of what this area normally gets in a month.",
+          "ticker": "About **44 mm** of rain forecast over 24 hours",
+          "start_sec": 16.92,
+          "end_sec": 26.06
+        },
+        {
+          "layer": "rain",
+          "lat": 39.5,
+          "lon": 24.0,
+          "distance": 1.67,
+          "bearing": 5.0,
+          "label": "SUNDAY OUTLOOK",
+          "metric": "",
+          "spoken": "News 24/7 reports that thunderstorms, strong winds and snow are sweeping Greece, and a meteorologist there warns of particularly heavy rainfall on Sunday, 29 November.",
+          "ticker": "News 24/7: heavy rain expected across Greece, worst on **Sunday 29 November**",
+          "start_sec": 26.06,
+          "end_sec": 37.3
+        },
+        {
+          "layer": "wind",
+          "lat": 39.5,
+          "lon": 24.0,
+          "distance": 1.76,
+          "bearing": 10.0,
+          "label": "RARE GUSTS",
+          "metric": "",
+          "spoken": "Gusts this strong are among the highest for this time of year since 1940 at this spot, where 65 km/h is already a strong blow.",
+          "ticker": "Among the highest gusts for the season since **1940** here",
+          "start_sec": 37.3,
+          "end_sec": 46.25
+        }
+      ],
+      "beats": [
+        {
+          "tag": "THE FORECAST",
+          "title": "The forecast",
+          "layer": "wind",
+          "text": "Greece: out in the northern Aegean, gusts could reach around 110 km/h, enough to make life difficult for ferries and small boats."
+        },
+        {
+          "tag": "WHAT IT MEANS",
+          "title": "What it means",
+          "layer": "wind",
+          "text": "Volos, the port on the mainland coast, lies about 90 km from the sea area where the strongest winds are forecast."
+        },
+        {
+          "tag": "THE BACKGROUND",
+          "title": "The background",
+          "layer": "rain",
+          "text": "Rain accompanies the wind, with about 44 mm forecast over the day. That is a fair share of what this area normally gets in a month. News 24/7 reports that thunderstorms, strong winds and snow are sweeping Greece, and a meteorologist there warns of particularly heavy rainfall on Sunday, 29 November."
+        },
+        {
+          "tag": "IN CONTEXT",
+          "title": "In context",
+          "layer": "wind",
+          "text": "Gusts this strong are among the highest for this time of year since 1940 at this spot, where 65 km/h is already a strong blow."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "News 24/7",
+          "title": "Greece in the grip of severe weather, with thunderstorms, strong winds and snow",
+          "url": "https://www.news247.gr/en/greece-in-the-grip-of-severe-weather-with-thunderstorms-strong-winds-and-snow-the-areas-most-at-risk/"
+        },
+        {
+          "source": "Proto Thema",
+          "title": "Greece weather forecast: Where the heaviest rain is expected by Sunday",
+          "url": "https://en.protothema.gr/2026/11/27/greece-weather-forecast-where-the-heaviest-rain-is-expected-by-sunday-and-what-the-maps-show-for-athens-and-attica/"
+        },
+        {
+          "source": "News 24/7",
+          "title": "Greece weather: Five days of heavy rainfall ahead",
+          "url": "https://www.news247.gr/en/greece-weather-five-days-of-heavy-rainfall-ahead-meteorologist-warns-of-extreme-rainfall-on-sunday/"
+        }
+      ],
+      "news_facts": [
+        {
+          "claim": "Severe weather continues to sweep across Greece, bringing heavy rainfall and thunderstorms",
+          "source_url": "https://www.news247.gr/en/greece-in-the-grip-of-severe-weather-with-thunderstorms-strong-winds-and-snow-the-areas-most-at-risk/"
+        },
+        {
+          "claim": "Meteorologist Thodoris Kolydas warns of particularly high rainfall totals forecast for Sunday, November 29",
+          "source_url": "https://www.news247.gr/en/greece-weather-five-days-of-heavy-rainfall-ahead-meteorologist-warns-of-extreme-rainfall-on-sunday/"
+        }
+      ],
+      "audio_url": "data/audio/story-2-20261128T144656Z.mp3",
+      "duration_sec": 46.25
+    },
+    {
+      "id": "2026-11-nagano-rain",
+      "rank": 3,
+      "kicker": "RAIN · NAGANO REGION",
+      "headline": "Japan: a wet autumn near Nagano gets another 80 mm on saturated hillsides",
+      "ticker": "About **80 mm** of rain forecast in 24 hours north of Nagano /// **490 mm** in 28 days, **226%** of normal, **15 of 28** days wet /// Japan News: **Level 4** landslide warning in southern Niigata Prefecture /// Saturated slopes raise landslide risk on mountain roads /// Gusts about **60 km/h**, temperatures **0.7 °C** to **12 °C**",
+      "voice_script": "Japan: north of Nagano, in the mountains of central Honshu, about 80 mm of rain is forecast over the next 24 hours. It has been a very wet month. Around 490 mm has fallen in four weeks, about 226% of normal, with 15 of the last 28 days heavy. The Japan News reported on 22 November that a Level 4 landslide warning was issued in southern Niigata Prefecture because of heavy rain and snow. With soil already saturated, even a moderate downpour can loosen slopes, so rivers and mountain roads are the places to watch. Gusts of about 60 km/h are forecast, and temperatures should range from near 1 °C overnight to about 12 °C in the afternoon.",
+      "region": "Nagano",
+      "country": "Japan",
+      "hazard": "rain",
+      "primary_layer": "rain",
+      "centre": {
+        "lat": 37.0,
+        "lon": 138.0
+      },
+      "stats": {
+        "headline_metric": "80 mm",
+        "metric_label": "forecast 24 h rain",
+        "era5_rank": "",
+        "persistence": "15 of 28 days wet"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 36.65,
+          "lon": 137.44,
+          "distance": 1.82
+        },
+        {
+          "lat": 36.88,
+          "lon": 137.83,
+          "distance": 1.68
+        },
+        {
+          "lat": 37.15,
+          "lon": 138.2,
+          "distance": 1.64
+        },
+        {
+          "lat": 37.35,
+          "lon": 138.56,
+          "distance": 1.76
+        }
+      ],
+      "cues": [
+        {
+          "layer": "rain",
+          "lat": 37.0,
+          "lon": 138.0,
+          "distance": 1.82,
+          "bearing": -10.0,
+          "label": "NORTH OF NAGANO",
+          "metric": "80 mm",
+          "spoken": "Japan: north of Nagano, in the mountains of central Honshu, about 80 mm of rain is forecast over the next 24 hours.",
+          "ticker": "About **80 mm** of rain forecast in 24 hours north of Nagano",
+          "start_sec": 0.0,
+          "end_sec": 8.62
+        },
+        {
+          "layer": "rain",
+          "lat": 37.0,
+          "lon": 138.0,
+          "distance": 1.71,
+          "bearing": -5.0,
+          "label": "WET MONTH",
+          "metric": "226%",
+          "spoken": "It has been a very wet month. Around 490 mm has fallen in four weeks, about 226% of normal, with 15 of the last 28 days heavy.",
+          "ticker": "**490 mm** in 28 days, **226%** of normal, **15 of 28** days wet",
+          "start_sec": 8.62,
+          "end_sec": 20.26
+        },
+        {
+          "layer": "rain",
+          "lat": 37.2,
+          "lon": 138.9,
+          "distance": 1.66,
+          "bearing": 0.0,
+          "label": "NIIGATA",
+          "metric": "",
+          "spoken": "The Japan News reported on 22 November that a Level 4 landslide warning was issued in southern Niigata Prefecture because of heavy rain and snow.",
+          "ticker": "Japan News: **Level 4** landslide warning in southern Niigata Prefecture",
+          "start_sec": 20.26,
+          "end_sec": 29.66
+        },
+        {
+          "layer": "rain",
+          "lat": 37.0,
+          "lon": 138.0,
+          "distance": 1.67,
+          "bearing": 5.0,
+          "label": "HILLSIDES",
+          "metric": "",
+          "spoken": "With soil already saturated, even a moderate downpour can loosen slopes, so rivers and mountain roads are the places to watch.",
+          "ticker": "**Saturated slopes raise landslide** risk on mountain roads",
+          "start_sec": 29.66,
+          "end_sec": 37.68
+        },
+        {
+          "layer": "wind",
+          "lat": 37.0,
+          "lon": 138.0,
+          "distance": 1.76,
+          "bearing": 10.0,
+          "label": "GUSTS",
+          "metric": "60 km/h",
+          "spoken": "Gusts of about 60 km/h are forecast, and temperatures should range from near 1 °C overnight to about 12 °C in the afternoon.",
+          "ticker": "Gusts about **60 km/h**, temperatures **0.7 °C** to **12 °C**",
+          "start_sec": 37.68,
+          "end_sec": 47.38
+        }
+      ],
+      "beats": [
+        {
+          "tag": "THE FORECAST",
+          "title": "The forecast",
+          "layer": "rain",
+          "text": "Japan: north of Nagano, in the mountains of central Honshu, about 80 mm of rain is forecast over the next 24 hours."
+        },
+        {
+          "tag": "WHAT IT MEANS",
+          "title": "What it means",
+          "layer": "rain",
+          "text": "It has been a very wet month. Around 490 mm has fallen in four weeks, about 226% of normal, with 15 of the last 28 days heavy."
+        },
+        {
+          "tag": "THE BACKGROUND",
+          "title": "The background",
+          "layer": "rain",
+          "text": "The Japan News reported on 22 November that a Level 4 landslide warning was issued in southern Niigata Prefecture because of heavy rain and snow. With soil already saturated, even a moderate downpour can loosen slopes, so rivers and mountain roads are the places to watch."
+        },
+        {
+          "tag": "IN CONTEXT",
+          "title": "In context",
+          "layer": "wind",
+          "text": "Gusts of about 60 km/h are forecast, and temperatures should range from near 1 °C overnight to about 12 °C in the afternoon."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "The Japan News",
+          "title": "Snow, Rain Triggers Landslide Warning in Japan's Niigata Prefecture",
+          "url": "https://japannews.yomiuri.co.jp/society/general-news/20261122-360234/"
+        },
+        {
+          "source": "NHKニュース",
+          "title": "Chiba rice farmers struggle with flood recovery | NHK WORLD-JAPAN News",
+          "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1PTDZqNTNfTF9PcXQ2LW16Vi1SbXllXzFfT3ctU2VLNVM4QlpVVnozTDNVTlBFZlNRZjhtZzJqRXdJWGVfOFprZHRKUmo4dHBpeUdQaE41ZThqLUhpWUdWRTdSSQ?oc=5"
+        },
+        {
+          "source": "NHKニュース",
+          "title": "Heavy rain, snow continue to hit parts of Japan",
+          "url": "https://news.google.com/rss/articles/CBMiY0FVX3lxTE1kTDQyejQzRXFBTFpZLWVJN1UzQXhKb0l4bkxRRHN2RV9QOFRyYVlmXy1VRjJiQ2VaazJlQllmNFJwMDJNSEk4aGt1Y3RuM0M3ZndrdTNRMjVSZGdvM3ozcXBqaw?oc=5"
+        }
+      ],
+      "news_facts": [
+        {
+          "claim": "A Level 4 warning for landslide has been issued in the southern part of Niigata Prefecture due to heavy rain and snow, according to the Japan Meteorological Agency",
+          "source_url": "https://japannews.yomiuri.co.jp/society/general-news/20261122-360234/"
+        }
+      ],
+      "audio_url": "data/audio/story-3-20261128T144656Z.mp3",
+      "duration_sec": 47.38
+    },
+    {
+      "id": "2026-11-new-mexico-wind",
+      "rank": 4,
+      "kicker": "HIGH WINDS · NEW MEXICO",
+      "headline": "New Mexico, USA: gusts near 110 km/h forecast over the Sangre de Cristo foothills",
+      "ticker": "Gusts could reach about **110 km/h** north-west of Las Vegas, NM /// Among the highest gusts for the season since **1940** here /// Gusts over **65 km/h** on **10 of 28** days /// Highs near **2 °C**, lows around **-6.2 °C** with strong wind /// Le Monde: over **900,000** homes without power after major US storm",
+      "voice_script": "New Mexico, USA: north-west of Las Vegas, in the high country, gusts could reach around 110 km/h, strong enough to bring down trees and power lines. For this time of year, that is among the highest gusts since 1940 at this location, where 75 km/h counts as a notably windy day. It is not a one-off. Gusts have topped 65 km/h on 10 of the last 28 days, so people here are used to a battering. Temperatures are forecast to stay low, from about minus 6.2 °C overnight to a high near 2 °C, which will make the wind feel harsher. Elsewhere, Le Monde reported a major storm left more than 900,000 homes without power across central and eastern states for Thanksgiving.",
+      "region": "New Mexico",
+      "country": "United States",
+      "hazard": "wind",
+      "primary_layer": "wind",
+      "centre": {
+        "lat": 36.0,
+        "lon": -105.5
+      },
+      "stats": {
+        "headline_metric": "110 km/h",
+        "metric_label": "forecast peak gust",
+        "era5_rank": "Among highest since 1940",
+        "persistence": "10 of 28 days over 65 km/h"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 35.65,
+          "lon": -106.06,
+          "distance": 1.82
+        },
+        {
+          "lat": 35.88,
+          "lon": -105.67,
+          "distance": 1.68
+        },
+        {
+          "lat": 36.15,
+          "lon": -105.31,
+          "distance": 1.64
+        },
+        {
+          "lat": 36.35,
+          "lon": -104.94,
+          "distance": 1.76
+        }
+      ],
+      "cues": [
+        {
+          "layer": "wind",
+          "lat": 36.0,
+          "lon": -105.5,
+          "distance": 1.82,
+          "bearing": -10.0,
+          "label": "NORTH OF LAS VEGAS",
+          "metric": "110 km/h",
+          "spoken": "New Mexico, USA: north-west of Las Vegas, in the high country, gusts could reach around 110 km/h, strong enough to bring down trees and power lines.",
+          "ticker": "Gusts could reach about **110 km/h** north-west of Las Vegas, NM",
+          "start_sec": 0.0,
+          "end_sec": 11.16
+        },
+        {
+          "layer": "wind",
+          "lat": 36.0,
+          "lon": -105.5,
+          "distance": 1.71,
+          "bearing": -5.0,
+          "label": "RARITY",
+          "metric": "",
+          "spoken": "For this time of year, that is among the highest gusts since 1940 at this location, where 75 km/h counts as a notably windy day.",
+          "ticker": "Among the highest gusts for the season since **1940** here",
+          "start_sec": 11.16,
+          "end_sec": 20.59
+        },
+        {
+          "layer": "wind",
+          "lat": 36.0,
+          "lon": -105.5,
+          "distance": 1.66,
+          "bearing": 0.0,
+          "label": "RUN OF WIND",
+          "metric": "10 of 28 days",
+          "spoken": "It is not a one-off. Gusts have topped 65 km/h on 10 of the last 28 days, so people here are used to a battering.",
+          "ticker": "Gusts over **65 km/h** on **10 of 28** days",
+          "start_sec": 20.59,
+          "end_sec": 29.47
+        },
+        {
+          "layer": "temperature",
+          "lat": 36.0,
+          "lon": -105.5,
+          "distance": 1.67,
+          "bearing": 5.0,
+          "label": "COLD",
+          "metric": "-6.2 °C",
+          "spoken": "Temperatures are forecast to stay low, from about minus 6.2 °C overnight to a high near 2 °C, which will make the wind feel harsher.",
+          "ticker": "Highs near **2 °C**, lows around **-6.2 °C** with strong wind",
+          "start_sec": 29.47,
+          "end_sec": 39.24
+        },
+        {
+          "layer": "wind",
+          "lat": 36.0,
+          "lon": -105.5,
+          "distance": 1.76,
+          "bearing": 10.0,
+          "label": "US STORM",
+          "metric": "",
+          "spoken": "Elsewhere, Le Monde reported a major storm left more than 900,000 homes without power across central and eastern states for Thanksgiving.",
+          "ticker": "Le Monde: over **900,000** homes without power after major US storm",
+          "start_sec": 39.24,
+          "end_sec": 47.76
+        }
+      ],
+      "beats": [
+        {
+          "tag": "THE FORECAST",
+          "title": "The forecast",
+          "layer": "wind",
+          "text": "New Mexico, USA: north-west of Las Vegas, in the high country, gusts could reach around 110 km/h, strong enough to bring down trees and power lines."
+        },
+        {
+          "tag": "WHAT IT MEANS",
+          "title": "What it means",
+          "layer": "wind",
+          "text": "For this time of year, that is among the highest gusts since 1940 at this location, where 75 km/h counts as a notably windy day."
+        },
+        {
+          "tag": "THE BACKGROUND",
+          "title": "The background",
+          "layer": "wind",
+          "text": "It is not a one-off. Gusts have topped 65 km/h on 10 of the last 28 days, so people here are used to a battering. Temperatures are forecast to stay low, from about minus 6.2 °C overnight to a high near 2 °C, which will make the wind feel harsher."
+        },
+        {
+          "tag": "IN CONTEXT",
+          "title": "In context",
+          "layer": "wind",
+          "text": "Elsewhere, Le Monde reported a major storm left more than 900,000 homes without power across central and eastern states for Thanksgiving."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "Le Monde",
+          "title": "Major US storm leaves more than 900,000 homes without power for Thanksgiving",
+          "url": "https://www.lemonde.fr/en/environment/article/2026/11/27/major-us-storm-leaves-more-than-900-000-homes-without-power-for-thanksgiving_6789796_114.html"
+        },
+        {
+          "source": "NPR",
+          "title": "Powerful storms disrupt holiday travel, as Macy's Thanksgiving Day Parade is postponed",
+          "url": "https://www.npr.org/2026/11/26/nx-s1-6054079/storms-expected-on-both-coasts-as-millions-travel-for-thanksgiving"
+        }
+      ],
+      "news_facts": [
+        {
+          "claim": "A major US storm left more than 900,000 homes without power for Thanksgiving",
+          "source_url": "https://www.lemonde.fr/en/environment/article/2026/11/27/major-us-storm-leaves-more-than-900-000-homes-without-power-for-thanksgiving_6789796_114.html"
+        }
+      ],
+      "audio_url": "data/audio/story-4-20261128T144656Z.mp3",
+      "duration_sec": 47.76
+    },
+    {
+      "id": "2026-11-iceland-gale",
+      "rank": 5,
+      "kicker": "GALES · ICELAND",
+      "headline": "Iceland: ferries and roads disrupted as gusts near 130 km/h are forecast offshore",
+      "ticker": "Gusts could reach about **130 km/h**, steady wind near **72 km/h** /// Iceland Review: gales, **10-metre** waves, ferry sailing cancelled /// Pressure about **980 hPa**, low **165 km** to the west /// About **12 mm** rain forecast, temperatures **4.7** to **8.9 °C** /// Gusts over **65 km/h** on **14 of 28** days",
+      "voice_script": "Iceland: out at sea south-east of the coast, gusts could reach about 130 km/h, with steady winds near 72 km/h. Iceland Review reports gales, 10-metre waves and landslide risk disrupting travel, including a cancelled Herjólfur ferry sailing. Pressure is low, about 980 hPa here, with a centre of low pressure about 165 km to the west driving the storm. Rain is part of the picture, with about 12 mm forecast over 24 hours, and temperatures between roughly 5 and 9 °C. Gusts have topped 65 km/h on 14 of the last 28 days, so Icelanders have had little respite from this run of Atlantic weather.",
+      "region": "East of Iceland",
+      "country": "Iceland",
+      "hazard": "cyclone",
+      "primary_layer": "wind",
+      "centre": {
+        "lat": 62.5,
+        "lon": -16.0
+      },
+      "stats": {
+        "headline_metric": "130 km/h",
+        "metric_label": "forecast peak gust",
+        "era5_rank": "",
+        "persistence": "14 of 28 days over 65 km/h"
+      },
+      "camera_waypoints": [
+        {
+          "lat": 62.15,
+          "lon": -16.97,
+          "distance": 1.82
+        },
+        {
+          "lat": 62.38,
+          "lon": -16.29,
+          "distance": 1.68
+        },
+        {
+          "lat": 62.65,
+          "lon": -15.66,
+          "distance": 1.64
+        },
+        {
+          "lat": 62.85,
+          "lon": -15.03,
+          "distance": 1.76
+        }
+      ],
+      "cues": [
+        {
+          "layer": "wind",
+          "lat": 62.5,
+          "lon": -16.0,
+          "distance": 1.82,
+          "bearing": -10.0,
+          "label": "SOUTH-EAST OFFSHORE",
+          "metric": "130 km/h",
+          "spoken": "Iceland: out at sea south-east of the coast, gusts could reach about 130 km/h, with steady winds near 72 km/h.",
+          "ticker": "Gusts could reach about **130 km/h**, steady wind near **72 km/h**",
+          "start_sec": 0.0,
+          "end_sec": 9.46
+        },
+        {
+          "layer": "wind",
+          "lat": 63.5,
+          "lon": -20.3,
+          "distance": 1.71,
+          "bearing": -5.0,
+          "label": "FERRY",
+          "metric": "",
+          "spoken": "Iceland Review reports gales, 10-metre waves and landslide risk disrupting travel, including a cancelled Herjólfur ferry sailing.",
+          "ticker": "Iceland Review: gales, **10-metre** waves, ferry sailing cancelled",
+          "start_sec": 9.46,
+          "end_sec": 17.98
+        },
+        {
+          "layer": "pressure",
+          "lat": 62.5,
+          "lon": -16.0,
+          "distance": 1.66,
+          "bearing": 0.0,
+          "label": "DEEP LOW",
+          "metric": "980 hPa",
+          "spoken": "Pressure is low, about 980 hPa here, with a centre of low pressure about 165 km to the west driving the storm.",
+          "ticker": "Pressure about **980 hPa**, low **165 km** to the west",
+          "start_sec": 17.98,
+          "end_sec": 27.65
+        },
+        {
+          "layer": "rain",
+          "lat": 62.5,
+          "lon": -16.0,
+          "distance": 1.67,
+          "bearing": 5.0,
+          "label": "RAIN",
+          "metric": "12 mm",
+          "spoken": "Rain is part of the picture, with about 12 mm forecast over 24 hours, and temperatures between roughly 5 and 9 °C.",
+          "ticker": "About **12 mm** rain forecast, temperatures **4.7** to **8.9 °C**",
+          "start_sec": 27.65,
+          "end_sec": 36.62
+        },
+        {
+          "layer": "wind",
+          "lat": 62.5,
+          "lon": -16.0,
+          "distance": 1.76,
+          "bearing": 10.0,
+          "label": "REPEAT GALES",
+          "metric": "14 of 28 days",
+          "spoken": "Gusts have topped 65 km/h on 14 of the last 28 days, so Icelanders have had little respite from this run of Atlantic weather.",
+          "ticker": "Gusts over **65 km/h** on **14 of 28** days",
+          "start_sec": 36.62,
+          "end_sec": 45.84
+        }
+      ],
+      "beats": [
+        {
+          "tag": "THE FORECAST",
+          "title": "The forecast",
+          "layer": "wind",
+          "text": "Iceland: out at sea south-east of the coast, gusts could reach about 130 km/h, with steady winds near 72 km/h."
+        },
+        {
+          "tag": "WHAT IT MEANS",
+          "title": "What it means",
+          "layer": "wind",
+          "text": "Iceland Review reports gales, 10-metre waves and landslide risk disrupting travel, including a cancelled Herjólfur ferry sailing."
+        },
+        {
+          "tag": "THE BACKGROUND",
+          "title": "The background",
+          "layer": "pressure",
+          "text": "Pressure is low, about 980 hPa here, with a centre of low pressure about 165 km to the west driving the storm. Rain is part of the picture, with about 12 mm forecast over 24 hours, and temperatures between roughly 5 and 9 °C."
+        },
+        {
+          "tag": "IN CONTEXT",
+          "title": "In context",
+          "layer": "wind",
+          "text": "Gusts have topped 65 km/h on 14 of the last 28 days, so Icelanders have had little respite from this run of Atlantic weather."
+        }
+      ],
+      "news_links": [
+        {
+          "source": "Iceland Review",
+          "title": "Gales, 10-Metre Waves and Ferry Cancellations Hit Iceland",
+          "url": "https://www.icelandreview.com/news/iceland-gales-waves-ferry-cancellations-november-27-2026/"
+        },
+        {
+          "source": "Iceland Review",
+          "title": "Heavy Rain and Landslide Risk Disrupt Travel Across Iceland",
+          "url": "https://news.google.com/rss/articles/CBMikwFBVV95cUxOVEczZjBxVlhFdE1TbGZYV3E5UU9ydUNKRFc2WWoxR1lOM3ZvNGg2NHRXLWtQVE5xY2prSTRHTnlyQ3g3SXAtZU43MldTazVsYVAxa2dPbWxVSTh3bHphQmNrYjJkbVdYRTBQa2pIUkpkRUxvYTMxZjZiS1p4elFJU1FTeDhnelQyZ1JFRWYxSVNqQ3c?oc=5"
+        },
+        {
+          "source": "Iceland Review",
+          "title": "Iceland Yellow Weather Warnings for South and West - Nov. 21",
+          "url": "https://www.icelandreview.com/news/iceland-yellow-weather-warnings-south-west-november-21-2026/"
+        }
+      ],
+      "news_facts": [
+        {
+          "claim": "Gales, 10-metre waves, landslide risk and a cancelled Herjólfur sailing are disrupting Friday travel across Iceland",
+          "source_url": "https://www.icelandreview.com/news/iceland-gales-waves-ferry-cancellations-november-27-2026/"
+        }
+      ],
+      "audio_url": "data/audio/story-5-20261128T144656Z.mp3",
+      "duration_sec": 45.84
+    }
+  ],
+  "stories_model_run_utc": "2026-11-28T06:00:00Z",
+  "voice": "en-GB-SoniaNeural"
+}
