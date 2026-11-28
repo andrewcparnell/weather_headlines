@@ -29,7 +29,7 @@ def _redact_secrets(msg: str) -> str:
 def _is_recent_valid_bulletin(bulletin: dict | None, max_age_hours: float = 18.0) -> bool:
     if not isinstance(bulletin, dict):
         return False
-    _, errs = validate_and_clean_bulletin(bulletin)
+    _, errs = validate_and_clean_bulletin(bulletin, require_links=False)
     if errs:
         return False
     gen = str(bulletin.get("generated_utc") or "").strip()

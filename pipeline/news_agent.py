@@ -287,6 +287,10 @@ def _restrict_news_to_leads(draft: dict, lead_urls: set[str]) -> None:
         st["news_facts"] = [nf for nf in (st.get("news_facts") or []) if isinstance(nf, dict) and nf.get("source_url") in lead_urls]
 
 
+class WriterValidationError(RuntimeError):
+    """The writer's stories kept failing the fact check: use template text rather than paying for another model."""
+
+
 class UsageMeter:
     """Accumulate token usage across calls and estimate the cost of a run."""
 
@@ -446,7 +450,11 @@ def generate_headlines_with_claude(
                     salvaged = salvage_bulletin(last_cleaned, last_errors, weather, enriched_candidates)
                     if salvaged is not None:
                         return salvaged
-                raise RuntimeError(f"Claude output failed validation after {MAX_ATTEMPTS} attempts on {model_name}")
+                raise WriterValidationError(
+                    f"Claude output failed validation after {MAX_ATTEMPTS} attempts on {model_name}: {last_errors}"
+                )
+            except WriterValidationError:
+                raise
             except anthropic.AuthenticationError as auth_exc:
                 raise RuntimeError(f"Anthropic authentication failed (check ANTHROPIC_API_KEY secret): {auth_exc}") from auth_exc
             except anthropic.BadRequestError as bad_exc:
@@ -820,7 +828,7 @@ def salvage_bulletin(
         cand = unused.pop(0)
         stories[i] = build_fallback_story(cand, weather, picker, _safe_news(cand), rank=i + 1)
     draft = dict(cleaned, stories=stories)
-    fixed, errs = validate_and_clean_bulletin(draft, candidates=candidates, verify_urls=False)
+    fixed, errs = validate_and_clean_bulletin(draft, candidates=candidates, verify_urls=False, require_links=False)
     if errs:
         return None
     print(f"[news_agent] Published Claude bulletin with {len(bad)} template story(ies) replacing failed ones.", file=sys.stderr)

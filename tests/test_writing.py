@@ -370,3 +370,101 @@ def test_usage_meter_estimates_cost():
     # 1k x $2 + 6k x $10 + 4k x $2.5 per million = $0.072
     assert abs(m.cost_usd() - 0.072) < 1e-9
     assert "about $0.072" in m.summary()
+
+
+def test_negative_temperatures_may_be_written_as_magnitudes():
+    """'8 °C below freezing' for a typical high of -8.2 °C must pass (seen in a live run)."""
+    from pipeline.validator import validate_story_numbers_against_candidates
+
+    cand = _cand(1, "heat", 53.5, -94.5)
+    cand["era5"]["wmo_tmax_normal_c"] = -8.2
+    story = {
+        "centre": {"lat": 53.5, "lon": -94.5},
+        "headline": "Manitoba, Canada: winter on hold",
+        "stats": {},
+        "cues": [{"spoken": "Normally, afternoons here barely climb past 8 °C below freezing at this time of year."}],
+        "beats": [],
+        "news_facts": [],
+    }
+    assert validate_story_numbers_against_candidates("stories[0]", story, [cand]) == []
+
+
+def _fake_claude(monkeypatch, replies):
+    import types
+
+    import anthropic
+
+    from pipeline import news_agent
+
+    calls: list[dict] = []
+
+    class FakeStream:
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):
+            text = replies[min(len(calls), len(replies)) - 1]
+            return types.SimpleNamespace(stop_reason="end_turn", content=[types.SimpleNamespace(type="text", text=text)])
+
+    class FakeMessages:
+        def stream(self, **kw):
+            calls.append(kw)
+            return FakeStream()
+
+    monkeypatch.setattr(anthropic, "Anthropic", lambda api_key=None: types.SimpleNamespace(messages=FakeMessages()))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setattr(news_agent, "_safe_news", lambda c: [])
+    monkeypatch.setattr("pipeline.validator.check_url_resolves", lambda u, timeout=8: True)
+    return calls
+
+
+def _five_cands():
+    from pipeline.places import attach_location_context
+
+    now = datetime(2026, 11, 28, 3, tzinfo=timezone.utc)
+    weather = _weather(now)
+    cands = attach_location_context(
+        [
+            _cand(1, "heat", 35.5, -97.5),
+            _cand(2, "heat", -25.0, 135.0),
+            _cand(3, "rain", 15.5, 108.5),
+            _cand(4, "rain", 14.0, 121.0),
+            _cand(5, "cold", 61.0, 95.0),
+            _cand(6, "rain", 45.0, 10.0),
+        ],
+        weather,
+    )
+    return weather, cands
+
+
+def test_one_failing_story_without_links_is_salvaged_not_rerun_on_another_model(monkeypatch):
+    from pipeline import news_agent
+
+    weather, cands = _five_cands()
+    stories = news_agent.build_deterministic_bulletin(weather, cands[:5], warnings=[], fetch_live_rss=False)["stories"]
+    for i, st in enumerate(stories):
+        st["id"] = f"claude-{i}"
+        st["news_links"] = []  # no-search mode: links are optional
+    stories[4]["headline"] = stories[4]["headline"] + " and 999 mm of rain"
+    calls = _fake_claude(monkeypatch, [json.dumps({"stories": stories})])
+
+    bulletin = news_agent.generate_headlines_with_claude(weather, cands, [], None)
+    assert {c["model"] for c in calls} == {"claude-sonnet-5-5"}  # never paid for a second model
+    assert bulletin["generator"] == "anthropic:claude-sonnet-5-5"
+    assert bulletin["stories"][4]["id"].startswith("auto-")
+    assert [st["id"] for st in bulletin["stories"][:4]] == [f"claude-{i}" for i in range(4)]
+
+
+def test_unusable_bulletin_falls_back_to_template_without_trying_another_model(monkeypatch):
+    import pytest
+
+    from pipeline import news_agent
+
+    weather, cands = _five_cands()
+    calls = _fake_claude(monkeypatch, [json.dumps({"stories": []})])
+    with pytest.raises(news_agent.WriterValidationError):
+        news_agent.generate_headlines_with_claude(weather, cands, [], None)
+    assert {c["model"] for c in calls} == {"claude-sonnet-5-5"}

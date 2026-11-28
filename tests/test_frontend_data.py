@@ -45,7 +45,8 @@ def test_generated_headlines_bulletin_is_valid_and_style_compliant():
     assert "utilize" not in raw_text.lower()
 
     payload = json.loads(raw_text)
-    cleaned, errors = validate_and_clean_bulletin(payload)
+    # News links are optional: in the default no-search mode a story without news leads has none
+    cleaned, errors = validate_and_clean_bulletin(payload, require_links=False)
     assert errors == []
     assert len(cleaned["stories"]) == 5
     for idx, st in enumerate(cleaned["stories"], start=1):

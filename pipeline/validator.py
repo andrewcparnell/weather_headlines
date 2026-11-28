@@ -1119,7 +1119,13 @@ def validate_story_numbers_against_candidates(
     fact_nums = extract_numbers_by_unit(fact_text)
 
     allowed_temps_signed = allowed["temp_signed"] + [v for v, _ in fact_nums["temp_c"]]
-    allowed_temps_unsigned = allowed_temps_signed + allowed["temp_diff_abs"] + [abs(v) for v, _ in fact_nums["temp_c"]]
+    # An unsigned figure may be a magnitude ("8 °C below freezing" for -8 °C), so allow absolute values too
+    allowed_temps_unsigned = (
+        allowed_temps_signed
+        + [abs(v) for v in allowed_temps_signed]
+        + allowed["temp_diff_abs"]
+        + [abs(v) for v, _ in fact_nums["temp_c"]]
+    )
     allowed_rains = allowed["rain_mm"] + fact_nums["rain_mm"]
     allowed_press = allowed["pres_hpa"] + fact_nums["pres_hpa"]
     allowed_speeds = allowed["speed_ms"] + [v for v, _ in fact_nums["speed_ms"]]
