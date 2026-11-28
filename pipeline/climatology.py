@@ -245,43 +245,97 @@ def fetch_batched_recent_persistence(candidates: list[dict]) -> list[dict]:
     return [{} for _ in candidates]
 
 
-def _parse_era5_daily_payload(daily: dict) -> dict | None:
-    times = daily.get("time") or []
-    if len(times) < 25_000:
-        return None
-    years = np.array([int(t[:4]) for t in times], dtype=np.int16)
-    months = np.array([int(t[5:7]) for t in times], dtype=np.int8)
-    days = np.array([int(t[8:10]) for t in times], dtype=np.int8)
-    doys = np.array(
-        [datetime(int(y), int(m), int(d)).timetuple().tm_yday for y, m, d in zip(years, months, days)],
-        dtype=np.int16,
-    )
-
-    def _arr(key: str) -> np.ndarray:
-        raw = daily.get(key) or []
-        return np.array([np.nan if v is None else float(v) for v in raw], dtype=np.float32)
-
-    return {
-        "years": years,
-        "doys": doys,
-        "tmax": _arr("temperature_2m_max"),
-        "tmin": _arr("temperature_2m_min"),
-        "rain": _arr("precipitation_sum"),
-        "gust": _arr("wind_gusts_10m_max"),
-    }
+ERA5_ARCHIVE_URL = "https://archive-api.open-meteo.com/v1/archive"
+ERA5_HISTORY_YEARS = range(1940, 2026)  # complete years; "since 1940" in the prose
+ERA5_DAILY_VARS = "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max"
+OPEN_METEO_BUDGET_PER_MIN = 540.0  # free tier allows 600 "calls" per minute; one call = one location x <=14 days
 
 
-def _fetch_batched_era5_daily_1940_2025(candidates: list[dict]) -> list[dict | None]:
-    """Fetch 1940-2025 daily 24h ERA5 series in small multi-point batches to respect Open-Meteo rate limits."""
+class _MinuteBudget:
+    """Thread-safe sliding one-minute budget for Open-Meteo's per-location call weights."""
+
+    def __init__(self, per_minute: float) -> None:
+        import threading
+
+        self.per_minute = per_minute
+        self.events: list[tuple[float, float]] = []
+        self.lock = threading.Lock()
+
+    def take(self, cost: float) -> None:
+        import time
+
+        while True:
+            with self.lock:
+                now = time.monotonic()
+                self.events = [(t, c) for t, c in self.events if now - t < 60.0]
+                used = sum(c for _, c in self.events)
+                if used + cost <= self.per_minute:
+                    self.events.append((now, cost))
+                    return
+                wait = 60.0 - (now - self.events[0][0]) + 0.05
+            time.sleep(max(0.05, wait))
+
+
+def _season_window(center, year: int):
+    """Dates [centre - 7 days, centre + 6 days] in `year` (14 days, so each location costs one API call)."""
+    from datetime import timedelta
+
+    try:
+        c = center.replace(year=year)
+    except ValueError:  # 29 February
+        c = center.replace(year=year, day=28)
+    return c - timedelta(days=7), c + timedelta(days=6)
+
+
+def _get_json_with_rate_limit(url: str, timeout: int = 45) -> list | dict:
+    """GET JSON from Open-Meteo, waiting out a 429 (rate limit) once before giving up."""
     import time
+    import urllib.error
+    import urllib.request
+
+    from .config import USER_AGENT
+
+    for attempt in range(4):
+        req = urllib.request.Request(url, headers={"User-Agent": USER_AGENT})
+        try:
+            with urllib.request.urlopen(req, timeout=timeout) as resp:
+                return json.loads(resp.read())
+        except urllib.error.HTTPError as exc:
+            if exc.code == 429 and attempt < 1:
+                time.sleep(65.0)
+                continue
+            if exc.code >= 500 and attempt < 3:
+                time.sleep(2.0 * (attempt + 1))
+                continue
+            raise
+        except (urllib.error.URLError, TimeoutError, ConnectionError):
+            if attempt < 3:
+                time.sleep(2.0 * (attempt + 1))
+                continue
+            raise
+    raise IOError(f"Unreachable: {url}")
+
+
+def fetch_era5_seasonal_windows(candidates: list[dict], valid_time: datetime, max_points: int = 12) -> list[dict | None]:
+    """Daily ERA5 history (1940-2025) for the 14 days around this date in every year, for each candidate.
+
+    Requesting only the seasonal window costs 86 API calls per location instead of ~2,200 for the full
+    daily record, so every candidate can be ranked within Open-Meteo's free limits. One request per year
+    covers all uncached locations at once, paced to stay under the per-minute budget.
+    Returns per-candidate dicts {years, doys, tmax, tmin, rain, gust} (or None if unavailable).
+    """
+    from datetime import date, timedelta
+
+    center = valid_time.astimezone(timezone.utc).date()
+    latest_ok = datetime.now(timezone.utc).date() - timedelta(days=6)  # ERA5 lags real time by ~5 days
+    years = [y for y in ERA5_HISTORY_YEARS if _season_window(center, y)[1] <= latest_ok]
 
     results: list[dict | None] = [None] * len(candidates)
-    uncached_indices: list[tuple[int, float, float, Path]] = []
-
-    for idx, cand in enumerate(candidates):
-        qlat = round(float(cand["lat"]) * 2.0) / 2.0
-        qlon = round(float(cand["lon"]) * 2.0) / 2.0
-        cache_file = CACHE_DIR / "era5_points" / f"era5_daily_1940_2025_{qlat:+06.1f}_{qlon:+07.1f}.npz"
+    todo: list[tuple[int, float, float, Path]] = []
+    for idx, cand in enumerate(candidates[:max_points]):
+        qlat = round(float(cand["lat"]) * 4.0) / 4.0
+        qlon = round(float(cand["lon"]) * 4.0) / 4.0
+        cache_file = CACHE_DIR / "era5_points" / f"era5_window_{qlat:+07.2f}_{qlon:+08.2f}_{center:%m%d}.npz"
         if cache_file.exists():
             try:
                 npz = np.load(cache_file)
@@ -289,35 +343,83 @@ def _fetch_batched_era5_daily_1940_2025(candidates: list[dict]) -> list[dict | N
                 continue
             except Exception:
                 pass
-        uncached_indices.append((idx, qlat, qlon, cache_file))
+        todo.append((idx, qlat, qlon, cache_file))
+    if not todo or not years:
+        return results
 
-    # Query at most 2 uncached top candidates individually (keeps daily API weight < 4,500; aborts immediately on 429)
-    for orig_idx, la, lo, cfile in uncached_indices[:2]:
+    budget = _MinuteBudget(OPEN_METEO_BUDGET_PER_MIN)
+    lat_str = ",".join(f"{la:.2f}" for _, la, _, _ in todo)
+    lon_str = ",".join(f"{lo:.2f}" for _, _, lo, _ in todo)
+
+    def _fetch_year(year: int):
+        start, end = _season_window(center, year)
         qs = urllib.parse.urlencode(
             {
-                "latitude": f"{la:.2f}",
-                "longitude": f"{lo:.2f}",
-                "start_date": "1940-01-01",
-                "end_date": "2025-12-31",
+                "latitude": lat_str,
+                "longitude": lon_str,
+                "start_date": start.isoformat(),
+                "end_date": end.isoformat(),
                 "models": "era5",
-                "daily": "temperature_2m_max,temperature_2m_min,precipitation_sum,wind_gusts_10m_max",
+                "daily": ERA5_DAILY_VARS,
                 "timezone": "UTC",
                 "wind_speed_unit": "ms",
             }
         )
-        url = f"https://archive-api.open-meteo.com/v1/archive?{qs}"
+        budget.take(float(len(todo)))
         try:
-            raw_bytes = http_get(url, timeout=20, attempts=1)
-            payload = json.loads(raw_bytes)
-            parsed = _parse_era5_daily_payload((payload or {}).get("daily") or {})
-            if parsed is not None:
-                cfile.parent.mkdir(parents=True, exist_ok=True)
-                np.savez_compressed(cfile, **parsed)
-                results[orig_idx] = parsed
+            payload = _get_json_with_rate_limit(f"{ERA5_ARCHIVE_URL}?{qs}")
         except Exception as exc:
-            print(f"[climatology] Info: using precomputed 0.5 deg ERA5 percentiles for ({la}, {lo}) ({exc})", file=sys.stderr)
-            if "429" in str(exc):
-                break
+            return year, None, str(exc)
+        if isinstance(payload, dict):
+            payload = [payload]
+        return year, payload, ""
+
+    with ThreadPoolExecutor(max_workers=6) as pool:
+        year_rows = list(pool.map(_fetch_year, years))
+    # Second pass for transient failures (timeouts / 5xx), one at a time
+    for i, (year, payload, _) in enumerate(year_rows):
+        if payload is None or len(payload) != len(todo):
+            year_rows[i] = _fetch_year(year)
+
+    failed = [(y, err) for y, p, err in year_rows if p is None or len(p) != len(todo)]
+    if len(failed) > 2:
+        print(
+            f"[climatology] ERA5 seasonal history incomplete ({len(failed)} of {len(years)} years failed, "
+            f"e.g. {failed[0][1][:80]}); no historical ranks this run.",
+            file=sys.stderr,
+        )
+        return results
+
+    for k, (idx, _, _, cache_file) in enumerate(todo):
+        cols: dict[str, list] = {"years": [], "doys": [], "tmax": [], "tmin": [], "rain": [], "gust": []}
+        for year, payload, _ in year_rows:
+            if payload is None or len(payload) != len(todo):
+                continue
+            daily = (payload[k] or {}).get("daily") or {}
+            for i, t in enumerate(daily.get("time") or []):
+                d = date.fromisoformat(t)
+                cols["years"].append(year)
+                cols["doys"].append(d.timetuple().tm_yday)
+                for key, var in (
+                    ("tmax", "temperature_2m_max"),
+                    ("tmin", "temperature_2m_min"),
+                    ("rain", "precipitation_sum"),
+                    ("gust", "wind_gusts_10m_max"),
+                ):
+                    v = (daily.get(var) or [None] * (i + 1))[i]
+                    cols[key].append(np.nan if v is None else float(v))
+        hist = {
+            "years": np.array(cols["years"], dtype=np.int16),
+            "doys": np.array(cols["doys"], dtype=np.int16),
+            **{key: np.array(cols[key], dtype=np.float32) for key in ("tmax", "tmin", "rain", "gust")},
+        }
+        if len(np.unique(hist["years"])) < 80:
+            continue
+        cache_file.parent.mkdir(parents=True, exist_ok=True)
+        np.savez_compressed(cache_file, **hist)
+        results[idx] = hist
+    n_ok = sum(r is not None for r in results)
+    print(f"[climatology] ERA5 seasonal history available for {n_ok} of {len(candidates)} hotspots.", file=sys.stderr)
     return results
 
 
@@ -421,7 +523,7 @@ def enrich_all_candidates(
         return []
 
     recent_list = fetch_batched_recent_persistence(candidates)
-    hist_list = _fetch_batched_era5_daily_1940_2025(candidates)
+    hist_list = fetch_era5_seasonal_windows(candidates, weather.valid_time)
 
     vt = weather.valid_time.astimezone(timezone.utc)
     target_doy = vt.timetuple().tm_yday
@@ -529,7 +631,10 @@ def enrich_all_candidates(
                 pool_mask = win_mask & np.isfinite(rain_s)
                 pool = rain_s[pool_mask]
                 pool_years = years[pool_mask]
-                live_val = float(cand["rain_24h_mm"])
+                # Rank the forecast rain averaged over 3x3 grid cells (~80 km): the forecast model resolves
+                # sharper downpours than ERA5, so a single-cell value would make "wettest since 1940" too easy.
+                rain_box = weather.rain_24h_mm[max(0, iy025 - 1) : iy025 + 2, [(ix025 + d) % 1440 for d in (-1, 0, 1)]]
+                live_val = float(np.nanmean(rain_box)) if np.isfinite(rain_box).any() else float(cand["rain_24h_mm"])
                 climo_normal = round(climo_daily_rain_mm, 1)
                 var_ranked = "24 h accumulated precipitation"
                 tail = "high"
@@ -556,6 +661,24 @@ def enrich_all_candidates(
             years_exceeded = int(len(np.unique(pool_years[more_ext_mask])))
             n_years = int(len(np.unique(pool_years)))
             rank = more_ext_days + 1
+
+            # Previous most extreme day in the record (value and year), and whether the forecast beats it
+            # by a clear margin. Forecast models run hotter/wetter/gustier than ERA5, and we scan the whole
+            # planet for extremes, so a bare "#1" is often a near-tie rather than a genuine new high.
+            if len(pool):
+                rec_i = int(np.argmin(pool) if tail == "low" else np.argmax(pool))
+                prev_rec_val = float(pool[rec_i])
+                prev_rec_year = int(pool_years[rec_i])
+                margin = (prev_rec_val - live_val) if tail == "low" else (live_val - prev_rec_val)
+                if kind in ("heat", "cold"):
+                    needed = 0.5
+                elif kind == "rain":
+                    needed = max(10.0, 0.10 * prev_rec_val)
+                else:
+                    needed = max(2.0, 0.07 * prev_rec_val)
+                clear_record = bool(rank == 1 and margin >= needed)
+            else:
+                prev_rec_val, prev_rec_year, margin, clear_record = None, None, None, False
             pct = round(100.0 * (1.0 - (rank - 0.5) / n_samples), 1)
 
             early_t = tmean_s[win_mask & (years >= 1940) & (years <= 1979)]
@@ -611,8 +734,13 @@ def enrich_all_candidates(
             era_info = {
                 "variable_ranked": var_ranked,
                 "live_24h_value": round(live_val, 1),
+                **(
+                    {"ranked_value_note": "Rain is ranked using the forecast averaged over ~80 km, to match the historical record's resolution."}
+                    if kind == "rain"
+                    else {}
+                ),
                 "units": units,
-                "window_description": "±7-day seasonal window (15 days x 86 years, 1940-2025) for this time of year",
+                "window_description": "14-day seasonal window around this date in each year 1940-2025",
                 "rank_since_1940": rank,
                 "rank_available": True,
                 "samples_compared": n_samples,
@@ -620,6 +748,10 @@ def enrich_all_candidates(
                 "years_with_more_extreme_day": years_exceeded,
                 "percentile": pct,
                 "is_highest_for_time_of_year_since_1940": rank == 1,
+                "clear_record": clear_record,
+                "previous_record_value": round(prev_rec_val, 1) if prev_rec_val is not None else None,
+                "previous_record_year": prev_rec_year,
+                "beats_previous_record_by": round(margin, 1) if margin is not None and margin > 0 else None,
                 "seasonal_normal_1991_2020": climo_normal,
                 "wmo_tmax_normal_c": round(wmo_tmax_mean, 1),
                 "wmo_tmin_normal_c": round(wmo_tmin_mean, 1),

@@ -946,12 +946,22 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
         temps_signed.append(w)
         temps_diffs_abs.append(abs(w))
 
+    prev_rec = era.get("previous_record_value")
+    if prev_rec is not None and era.get("units") == "°C":
+        temps_signed.append(float(prev_rec))
+    if prev_rec is not None and era.get("units") == "°C" and era.get("beats_previous_record_by") is not None:
+        temps_diffs_abs.append(abs(float(era["beats_previous_record_by"])))
+
     rains: list[float] = []
     if cand.get("rain_24h_mm") is not None:
         rains.append(float(cand["rain_24h_mm"]))
     for k in ("daily_rain_normal_mm", "rain_14d_mm", "expected_rain_14d_mm", "rain_28d_mm", "expected_rain_28d_mm"):
         if pers.get(k) is not None:
             rains.append(float(pers[k]))
+    if era.get("units") == "mm" and prev_rec is not None:
+        rains.append(float(prev_rec))
+    if era.get("units") == "mm" and era.get("live_24h_value") is not None:
+        rains.append(float(era["live_24h_value"]))
     if era.get("units") == "mm" and era.get("seasonal_normal_1991_2020") is not None:
         rains.append(float(era["seasonal_normal_1991_2020"]))
 
@@ -966,6 +976,8 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
             speeds_ms.append(float(cand[k]))
     if pers.get("local_gust_p90_kmh") is not None:
         speeds_ms.append(float(pers["local_gust_p90_kmh"]) / 3.6)
+    if era.get("units") == "m/s" and prev_rec is not None:
+        speeds_ms.append(float(prev_rec))
     if era.get("units") == "m/s" and era.get("seasonal_normal_1991_2020") is not None:
         speeds_ms.append(float(era["seasonal_normal_1991_2020"]))
 

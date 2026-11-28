@@ -196,3 +196,49 @@ def test_salvage_replaces_only_failing_claude_stories():
 
     # Bulletin-level problems cannot be salvaged
     assert salvage_bulletin(good, ["Expected 5 stories, got 3."], weather, cands) is None
+
+
+def test_era5_seasonal_windows_cost_one_call_per_location_per_year(monkeypatch, tmp_path):
+    """The ranking history is fetched as 14-day windows (1 API call per location per year), all years 1940-2025."""
+    from datetime import date
+
+    import pipeline.climatology as clim
+
+    monkeypatch.setattr(clim, "CACHE_DIR", tmp_path)
+    monkeypatch.setattr(clim, "OPEN_METEO_BUDGET_PER_MIN", 1e9)
+    calls: list[str] = []
+
+    def fake_get(url, timeout=45):
+        calls.append(url)
+        from urllib.parse import parse_qs, urlparse
+
+        q = parse_qs(urlparse(url).query)
+        start, end = date.fromisoformat(q["start_date"][0]), date.fromisoformat(q["end_date"][0])
+        assert (end - start).days == 13  # 14 days -> one call per location
+        n = len(q["latitude"][0].split(","))
+        days = [(start + timedelta(days=i)).isoformat() for i in range(14)]
+        year = start.year if start.month == 11 else end.year
+        return [
+            {
+                "daily": {
+                    "time": days,
+                    "temperature_2m_max": [20.0 + (year - 1940) * 0.01] * 14,
+                    "temperature_2m_min": [10.0] * 14,
+                    "precipitation_sum": [1.0] * 14,
+                    "wind_gusts_10m_max": [12.0] * 14,
+                }
+            }
+            for _ in range(n)
+        ]
+
+    monkeypatch.setattr(clim, "_get_json_with_rate_limit", fake_get)
+    cands = [_cand(1, "heat", 11.0, 18.5), _cand(2, "rain", 15.5, 108.5)]
+    vt = datetime(2026, 11, 28, 9, tzinfo=timezone.utc)
+    hist = clim.fetch_era5_seasonal_windows(cands, vt)
+    assert len(calls) == 86  # one request per year, both locations in each request
+    for h in hist:
+        assert h is not None and len(np.unique(h["years"])) == 86 and len(h["tmax"]) == 86 * 14
+
+    # Second run is served from the cache without any requests
+    calls.clear()
+    assert all(h is not None for h in clim.fetch_era5_seasonal_windows(cands, vt)) and calls == []

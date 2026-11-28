@@ -595,10 +595,49 @@ def _context_line(cand: dict, adj_window: str, adj_rank: str, p: PhrasePicker) -
     era = cand.get("era5") or {}
     shift = era.get("climate_shift") or {}
     rank = era.get("rank_since_1940") if era.get("rank_available", era.get("rank_since_1940") is not None) else None
-    if rank == 1:
+    prev_val, prev_year = era.get("previous_record_value"), era.get("previous_record_year")
+    units = era.get("units") or ""
+    if prev_val is not None and units == "m/s":
+        prev_txt = f"{fmt_2sf(float(prev_val) * 3.6)} km/h"
+    elif prev_val is not None:
+        prev_txt = f"{fmt_2sf(float(prev_val))} {units}".strip()
+    else:
+        prev_txt = ""
+    if rank == 1 and units == "mm":
+        # Rain is ranked on an area average (see climatology), so compare years, not the headline number
+        if era.get("clear_record", True):
+            when = f", beating a very wet day in {prev_year}" if prev_year else ""
+            return (
+                f"Averaged over the surrounding area, it would be the wettest day for this time of year here since at least 1940{when}.",
+                "Would be the **wettest for the time of year** since 1940",
+            )
+        when = f", alongside a deluge in {prev_year}" if prev_year else ""
+        return (
+            f"Averaged over the surrounding area, it would rank among the wettest days for this time of year here since 1940{when}.",
+            "Among the **wettest days** for the time of year since 1940",
+        )
+    if rank == 1 and era.get("clear_record", True):
+        if prev_txt and prev_year:
+            return (
+                p.pick(
+                    "record",
+                    [
+                        f"If the forecast is right, it would be the {adj_rank} day for this time of year here since at least 1940, beating {prev_txt} in {prev_year}.",
+                        f"That would set a new high for the time of year here: the previous {adj_rank} day since 1940 brought {prev_txt}, in {prev_year}.",
+                    ],
+                ),
+                f"Would beat the **{prev_year}** high for the time of year",
+            )
         return (
             f"If the forecast is right, this would be the {adj_rank} day for this time of year here in records going back to 1940.",
             f"Would be the **{adj_rank} for the time of year** since 1940",
+        )
+    if rank == 1:
+        # Ahead of the old high, but not by enough to be sure given the difference between forecast and history
+        tail = f", close to the {prev_txt} of {prev_year}" if prev_txt and prev_year else ""
+        return (
+            f"That would put it among the {adj_window} days for this time of year here since 1940{tail}.",
+            f"Among the **{adj_window} days** for the time of year since 1940",
         )
     if rank is not None and 2 <= int(rank) <= 5:
         return (
@@ -606,14 +645,14 @@ def _context_line(cand: dict, adj_window: str, adj_rank: str, p: PhrasePicker) -
             f"Would rank **#{int(rank)}** for the time of year since 1940",
         )
     warming = shift.get("local_seasonal_warming_c_since_1940_1979")
-    if warming is not None and float(warming) >= 0.4:
+    if warming is not None and 0.4 <= float(warming) <= 2.5:  # larger values are more likely early-record artefacts
         w = fmt_2sf(float(warming))
         return (
             p.pick(
                 "warming",
                 [
                     f"Over the long run, temperatures here at this time of year have risen by about {w} °C since the mid-twentieth century.",
-                    f"The backdrop is a warming climate: this time of year is now about {w} °C warmer here than it was 70 years ago.",
+                    f"The backdrop is a warming climate: this time of year is now about {w} °C warmer here than it was half a century ago.",
                 ],
             ),
             f"This time of year is now about **{w} °C** warmer here",
@@ -752,6 +791,8 @@ def _rank_stat(cand: dict) -> str:
     era = cand.get("era5") or {}
     rank = era.get("rank_since_1940")
     if rank is not None and era.get("rank_available", True):
+        if int(rank) == 1 and not era.get("clear_record", True):
+            return "Near the top for time of year since 1940"
         return f"#{int(rank)} for time of year since 1940"
     return "No historical rank this run"
 
