@@ -134,6 +134,7 @@ def run_pipeline(
     if has_key:
         try:
             bulletin = generate_headlines_with_claude(weather, enriched, warnings, previous_bulletin)
+            bulletin["stories_model_run_utc"] = run_iso  # lets the hourly check see what the stories were written from
         except Exception as exc:
             msg = _redact_secrets(str(exc)).replace("\n", " ")
             _annotate_error("Headline writing failed", msg)

@@ -561,3 +561,17 @@ def test_rain_brief_gives_the_record_year_but_not_the_incomparable_record_total(
                  previous_record_value=190.0, previous_record_year=1971, units="mm")
     hist = slim_candidate(cand)["history"]
     assert hist["previous_record_year"] == 1971 and "previous_record_value" not in hist
+
+
+def test_hourly_freshness_check_only_runs_when_a_new_forecast_is_out():
+    from pipeline.check_fresh import bulletin_due
+
+    now = datetime(2026, 11, 28, 14, 25, tzinfo=timezone.utc)
+    run06, run12 = datetime(2026, 11, 28, 6, tzinfo=timezone.utc), datetime(2026, 11, 28, 12, tzinfo=timezone.utc)
+    fresh = {"stories": [{}], "generator": "anthropic:x", "generated_utc": "2026-11-28T13:30:00Z",
+             "stories_model_run_utc": "2026-11-28T06:00:00Z"}
+    assert bulletin_due(fresh, run06, now)[0] is False  # nothing new yet: skip, no cost
+    assert bulletin_due(fresh, run12, now)[0] is True  # new ECMWF run: write a new bulletin
+    assert bulletin_due(dict(fresh, generated_utc="2026-11-28T05:00:00Z"), run06, now)[0] is True  # too old
+    assert bulletin_due(None, run06, now)[0] is True
+    assert bulletin_due(dict(fresh, generator="era5-deterministic"), run06, now)[0] is True

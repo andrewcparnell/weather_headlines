@@ -22,7 +22,8 @@ DEFAULT_CLAUDE_MODELS = [
 
 # Web searches are only used to top up stories that the free news lookup found fewer than 3 articles for.
 # Each costs $0.01 plus the tokens of the results it reads (roughly $0.02-0.04 in all). Set 0 to disable.
-WEB_SEARCHES_PER_REQUEST = int(os.environ.get("WEATHER_WEB_SEARCHES", "4") or 0)
+# (An unset GitHub repository variable arrives as an empty string, which means "use the default".)
+WEB_SEARCHES_PER_REQUEST = int(os.environ.get("WEATHER_WEB_SEARCHES", "").strip() or 4)
 NEWS_PER_STORY = 3
 
 # Effort controls how much the model thinks before writing; "low" keeps output tokens (the main cost) down.
