@@ -101,6 +101,7 @@ def build(cache_dir: Path) -> None:
     towns = _download("ne_10m_populated_places_simple", cache_dir)
 
     country_names = [""]
+    country_iso2 = [""]
     img0 = Image.new("I", (NX, NY), 0)
     d0 = ImageDraw.Draw(img0)
     # Draw large features first so small enclaves/islands drawn later stay visible
@@ -110,6 +111,8 @@ def build(cache_dir: Path) -> None:
         raw = str(p.get("NAME_EN") or p.get("NAME") or "").strip()
         name = COUNTRY_NAME_OVERRIDES.get(raw, raw)
         country_names.append(name)
+        iso2 = str(p.get("ISO_A2_EH") or p.get("ISO_A2") or "").strip()
+        country_iso2.append(iso2 if len(iso2) == 2 and iso2 != "-9" else "")
         _burn(d0, f["geometry"], len(country_names) - 1)
 
     state_names = [""]
@@ -137,6 +140,7 @@ def build(cache_dir: Path) -> None:
         admin0=a0,
         admin1=a1,
         country_names=np.array(country_names),
+        country_iso2=np.array(country_iso2),
         state_names=np.array(state_names),
         state_country=np.array(state_country),
     )

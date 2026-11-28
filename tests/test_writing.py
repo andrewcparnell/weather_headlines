@@ -316,8 +316,57 @@ def test_claude_retry_keeps_same_tools_and_has_room_to_finish(monkeypatch):
     monkeypatch.setattr(news_agent, "_safe_news", lambda c: [])
     monkeypatch.setattr("pipeline.validator.check_url_resolves", lambda u, timeout=8: True)
 
+    monkeypatch.setattr(news_agent, "WEB_SEARCHES_PER_REQUEST", 2)
     bulletin = news_agent.generate_headlines_with_claude(weather, cands, [], None)
     assert len(calls) == 2
     assert calls[0]["tools"] == calls[1]["tools"]
     assert calls[0]["max_tokens"] >= 32000
+    assert calls[0]["output_config"] == {"effort": "low"}
+    assert calls[0]["system"][0]["cache_control"] == {"type": "ephemeral"}
     assert bulletin["generator"].startswith("anthropic:")
+
+    # Default: no web search at all (the cheap mode), so no tools are sent
+    calls.clear()
+    monkeypatch.setattr(news_agent, "WEB_SEARCHES_PER_REQUEST", 0)
+    news_agent.generate_headlines_with_claude(weather, cands, [], None)
+    assert "tools" not in calls[0]
+
+
+def test_cheap_mode_brief_is_small_and_news_is_limited_to_leads():
+    from pipeline import news_agent
+    from pipeline.places import attach_location_context
+
+    now = datetime(2026, 11, 28, 3, tzinfo=timezone.utc)
+    weather = _weather(now)
+    cands = attach_location_context([_cand(i, k, la, lo) for i, (k, la, lo) in enumerate(
+        [("heat", 35.5, -97.5), ("heat", -25.0, 135.0), ("rain", 15.5, 108.5), ("rain", 14.0, 121.0),
+         ("cold", 61.0, 95.0), ("rain", 45.0, 10.0), ("cyclone", 62.5, -15.5), ("heat", 11.0, 18.5)])], weather)
+    payload = news_agent.build_writer_payload(weather, cands, [], [], fetch_news=False)
+    text = json.dumps(payload, separators=(",", ":"))
+    assert len(text) < 9000  # roughly 2-3k tokens for 8 hotspots
+    assert payload["candidate_hotspots"][0]["location"]["headline_prefix"] == "Oklahoma, USA"
+
+    draft = {"stories": [{
+        "cues": [{"spoken": f"Sentence {i}.", "ticker": f"**{i}**", "layer": "rain"} for i in range(5)],
+        "news_links": [{"url": "https://ok.example/a-1"}, {"url": "https://made-up.example/b-2"}],
+        "news_facts": [{"claim": "x", "source_url": "https://made-up.example/b-2"}],
+    }]}
+    news_agent.complete_story_fields(draft)
+    st = draft["stories"][0]
+    assert len(st["beats"]) == 4 and "**0**" in st["ticker"]
+    news_agent._restrict_news_to_leads(draft, {"https://ok.example/a-1"})
+    assert [lk["url"] for lk in st["news_links"]] == ["https://ok.example/a-1"] and st["news_facts"] == []
+
+
+def test_usage_meter_estimates_cost():
+    import types
+
+    from pipeline.news_agent import UsageMeter
+
+    m = UsageMeter()
+    usage = types.SimpleNamespace(input_tokens=1000, output_tokens=6000, cache_creation_input_tokens=4000,
+                                  cache_read_input_tokens=0, server_tool_use=None)
+    m.add("claude-sonnet-5-5", types.SimpleNamespace(usage=usage))
+    # 1k x $2 + 6k x $10 + 4k x $2.5 per million = $0.072
+    assert abs(m.cost_usd() - 0.072) < 1e-9
+    assert "about $0.072" in m.summary()

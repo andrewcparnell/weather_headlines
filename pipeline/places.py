@@ -50,6 +50,7 @@ def _admin() -> dict | None:
         "admin0": npz["admin0"],
         "admin1": npz["admin1"],
         "country_names": [str(x) for x in npz["country_names"]],
+        "country_iso2": [str(x) for x in npz["country_iso2"]] if "country_iso2" in npz.files else [],
         "state_names": [str(x) for x in npz["state_names"]],
         "state_country": [str(x) for x in npz["state_country"]],
     }
@@ -154,6 +155,7 @@ def describe_location(lat: float, lon: float) -> dict:
         "nearest_town_direction": "",
         "nearest_big_town": "",
         "nearest_big_town_km": None,
+        "country_domain": "",
     }
     if adm is None:
         return out
@@ -162,7 +164,10 @@ def describe_location(lat: float, lon: float) -> dict:
     if land is None:
         return out
     cy, cx, dist_km = land
-    country = adm["country_names"][int(adm["admin0"][cy, cx])]
+    c_idx = int(adm["admin0"][cy, cx])
+    country = adm["country_names"][c_idx]
+    iso2 = adm["country_iso2"][c_idx] if c_idx < len(adm["country_iso2"]) else ""
+    out["country_domain"] = {"GB": "uk"}.get(iso2, iso2.lower()) if iso2 else ""
     state = ""
     if country in LARGE_COUNTRIES:
         s_idx = int(adm["admin1"][cy, cx])

@@ -1235,6 +1235,7 @@ def validate_and_clean_bulletin(
     payload: dict,
     candidates: list[dict] | None = None,
     verify_urls: bool = False,
+    require_links: bool = True,
 ) -> tuple[dict, list[str]]:
     """Validate and sanitise a bulletin dict. Returns (cleaned_payload, errors)."""
     errors: list[str] = []
@@ -1249,7 +1250,7 @@ def validate_and_clean_bulletin(
         return payload, errors
 
     generator_tag = str(payload.get("generator") or "claude")
-    allow_empty_links = generator_tag == "era5-deterministic"
+    allow_empty_links = generator_tag == "era5-deterministic" or not require_links
 
     # Pre-verify candidate news URLs in parallel when live URL checking is enabled
     url_ok_map: dict[str, bool] = {}
