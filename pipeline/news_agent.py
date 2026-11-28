@@ -195,15 +195,23 @@ def generate_headlines_with_claude(
             last_cleaned: dict | None = None
             last_errors: list[str] = []
 
-            for attempt in range(3):
-                search_budget = 7 if attempt == 0 else 3
-                resp = client.messages.create(
+            # Keep `tools` identical for every request in this conversation: newer models bind their
+            # thinking blocks to the exact tool list, and reject a replay if it changes.
+            tools = [_web_search_tool(model_name, 8)]
+
+            def _call(msgs: list[dict]):
+                # Stream so a long answer (thinking + five stories of JSON) can't hit HTTP timeouts
+                with client.messages.stream(
                     model=model_name,
-                    max_tokens=14000,
+                    max_tokens=48000,
                     system=SYSTEM_PROMPT,
-                    tools=[_web_search_tool(model_name, search_budget)],
-                    messages=messages,
-                )
+                    tools=tools,
+                    messages=msgs,
+                ) as stream:
+                    return stream.get_final_message()
+
+            for attempt in range(3):
+                resp = _call(messages)
 
                 continuations = 0
                 accumulated_text_parts = [
@@ -221,17 +229,11 @@ def generate_headlines_with_claude(
                             "role": "user",
                             "content": (
                                 "Finish and return ONLY the complete valid JSON object matching "
-                                '{"edition_title": "...", "stories": [...]} with no prose outside the JSON.'
+                                '{"stories": [...]} with no prose outside the JSON.'
                             ),
                         }
                     )
-                    resp = client.messages.create(
-                        model=model_name,
-                        max_tokens=14000,
-                        system=SYSTEM_PROMPT,
-                        tools=[_web_search_tool(model_name, 2)],
-                        messages=messages,
-                    )
+                    resp = _call(messages)
                     accumulated_text_parts.extend(
                         block.text for block in resp.content if getattr(block, "type", None) == "text"
                     )

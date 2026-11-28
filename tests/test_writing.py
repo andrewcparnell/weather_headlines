@@ -242,3 +242,82 @@ def test_era5_seasonal_windows_cost_one_call_per_location_per_year(monkeypatch, 
     # Second run is served from the cache without any requests
     calls.clear()
     assert all(h is not None for h in clim.fetch_era5_seasonal_windows(cands, vt)) and calls == []
+
+
+def test_fact_check_accepts_spelled_out_units_and_supported_hedges():
+    from pipeline.validator import _speed_to_ms, extract_numbers_by_unit, remove_supported_hedged_figures
+
+    # "kilometres per hour" written out must not be read as metres per second
+    assert abs(_speed_to_ms(139.0, "kilometres per hour") - 38.6) < 0.1
+    (v, _), = extract_numbers_by_unit("gusts near 139 kilometres per hour")["speed_ms"]
+    assert abs(v - 38.6) < 0.1
+
+    pools = {"temp": [12.4, 0.9], "rain": [320.0], "speed": [38.7]}
+    assert remove_supported_hedged_figures("more than 10 °C above normal", pools).strip() == "above normal"
+    assert remove_supported_hedged_figures("10 mm or more", pools).strip() == ""
+    assert remove_supported_hedged_figures("nearly 140 km/h", pools).strip() == ""
+    # Unsupported claims stay in the text and are still checked
+    assert "400 mm" in remove_supported_hedged_figures("more than 400 mm", pools)
+    assert "15 °C" in remove_supported_hedged_figures("15 °C warmer", pools)
+
+
+def test_claude_retry_keeps_same_tools_and_has_room_to_finish(monkeypatch):
+    """A truncated first reply is retried in the same conversation with an identical tool list
+    (newer models reject thinking blocks replayed under a different tool list) and a large max_tokens."""
+    import types
+
+    import anthropic
+
+    from pipeline import news_agent
+    from pipeline.places import attach_location_context
+
+    now = datetime(2026, 11, 28, 3, tzinfo=timezone.utc)
+    weather = _weather(now)
+    cands = attach_location_context(
+        [
+            _cand(1, "heat", 35.5, -97.5),
+            _cand(2, "heat", -25.0, 135.0),
+            _cand(3, "rain", 15.5, 108.5),
+            _cand(4, "rain", 14.0, 121.0),
+            _cand(5, "cold", 61.0, 95.0),
+        ],
+        weather,
+    )
+    good = news_agent.build_deterministic_bulletin(weather, cands, warnings=[], fetch_live_rss=False)
+    for st in good["stories"]:
+        st["news_links"] = [{"source": "Example", "title": "x", "url": "https://example.org/news/2026/11/28/weather-story"}]
+    replies = [
+        ("max_tokens", '{"stories": [{"id": "trunc'),
+        ("end_turn", json.dumps({"stories": good["stories"]})),
+    ]
+    calls: list[dict] = []
+
+    class FakeStream:
+        def __init__(self, kw):
+            self.kw = kw
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *a):
+            return False
+
+        def get_final_message(self):
+            stop, text = replies[len(calls) - 1]
+            return types.SimpleNamespace(stop_reason=stop, content=[types.SimpleNamespace(type="text", text=text)])
+
+    class FakeMessages:
+        def stream(self, **kw):
+            calls.append(kw)
+            return FakeStream(kw)
+
+    monkeypatch.setattr(anthropic, "Anthropic", lambda api_key=None: types.SimpleNamespace(messages=FakeMessages()))
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+    monkeypatch.setattr(news_agent, "_safe_news", lambda c: [])
+    monkeypatch.setattr("pipeline.validator.check_url_resolves", lambda u, timeout=8: True)
+
+    bulletin = news_agent.generate_headlines_with_claude(weather, cands, [], None)
+    assert len(calls) == 2
+    assert calls[0]["tools"] == calls[1]["tools"]
+    assert calls[0]["max_tokens"] >= 32000
+    assert bulletin["generator"].startswith("anthropic:")

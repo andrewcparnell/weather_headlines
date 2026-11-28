@@ -692,7 +692,7 @@ _RE_DAYS_IN_WINDOW = re.compile(
 
 def _speed_to_ms(val: float, unit_raw: str) -> float:
     u = unit_raw.lower()
-    if "km" in u:
+    if "km" in u or "kilomet" in u:
         return val / 3.6
     if "mph" in u:
         return val * 0.44704
@@ -1034,6 +1034,60 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
     }
 
 
+_HEDGE_UNIT = (
+    r"([+-]?\d+(?:\.\d+)?)\s*(°\s*C\b|degrees(?:\s+Celsius)?\b|mm\b|millimet(?:re|er)s\b|km/h\b|"
+    r"kilomet(?:re|er)s\s+(?:per|an)\s+hour\b|m/s\b|met(?:re|er)s\s+per\s+second\b|mph\b|miles\s+(?:per|an)\s+hour\b)"
+)
+_RE_HEDGE_LOWER = re.compile(
+    r"\b(?:more\s+than|over|above|at\s+least|upwards\s+of|exceeding|in\s+excess\s+of|topping)\s+" + _HEDGE_UNIT,
+    flags=re.I,
+)
+_RE_HEDGE_LOWER_POST = re.compile(_HEDGE_UNIT + r"\s+(?:or\s+more|or\s+above|or\s+higher|plus)\b", flags=re.I)
+_RE_HEDGE_NEAR = re.compile(
+    r"\b(?:nearly|almost|close\s+to|about|around|roughly|some|approximately|getting\s+on\s+for)\s+" + _HEDGE_UNIT,
+    flags=re.I,
+)
+
+
+def _unit_family(unit_raw: str) -> str:
+    u = unit_raw.lower()
+    if "c" == u.replace("°", "").strip() or "degree" in u:
+        return "temp"
+    if u.startswith("mm") or "millimet" in u:
+        return "rain"
+    return "speed"
+
+
+def remove_supported_hedged_figures(text: str, pools: dict[str, list[float]]) -> str:
+    """Drop hedged figures that the data supports, so true statements like "more than 10 °C above normal"
+    (actual +12 °C) or "nearly 140 km/h" (actual 139) are not rejected for not matching a value exactly.
+
+    `pools` maps "temp" (absolute °C values), "rain" (mm) and "speed" (m/s) to the allowed values.
+    """
+
+    def _canon(val: float, unit: str) -> tuple[str, float]:
+        fam = _unit_family(unit)
+        if fam == "speed":
+            return fam, _speed_to_ms(val, unit) if "mile" not in unit.lower() else val * 0.44704
+        return fam, abs(val) if fam == "temp" else val
+
+    def _sub(pattern: re.Pattern, ok) -> None:
+        nonlocal text
+
+        def repl(m: re.Match) -> str:
+            fam, v = _canon(float(m.group(1)), m.group(2))
+            return "" if ok(v, pools.get(fam, [])) else m.group(0)
+
+        text = pattern.sub(repl, text)
+
+    lower_ok = lambda v, pool: any(abs(a) >= v - 1e-6 for a in pool)  # noqa: E731
+    near_ok = lambda v, pool: any(abs(abs(a) - v) <= max(1.0 if v < 20 else 0.0, 0.15 * abs(a)) for a in pool)  # noqa: E731
+    _sub(_RE_HEDGE_LOWER, lower_ok)
+    _sub(_RE_HEDGE_LOWER_POST, lower_ok)
+    _sub(_RE_HEDGE_NEAR, near_ok)
+    return text
+
+
 def validate_story_numbers_against_candidates(
     prefix: str,
     st: dict,
@@ -1085,7 +1139,15 @@ def validate_story_numbers_against_candidates(
         *(f"{c.get('metric', '')} {c.get('spoken', '')} {c.get('ticker', '')}" for c in (st.get("cues") or [])),
         *(str(b.get("text") or "") for b in (st.get("beats") or [])),
     ]
-    found = extract_numbers_by_unit(" \n ".join(story_segments))
+    story_text = remove_supported_hedged_figures(
+        " \n ".join(story_segments).replace("**", ""),
+        {
+            "temp": allowed_temps_unsigned,
+            "rain": allowed_rains,
+            "speed": allowed_speeds,
+        },
+    )
+    found = extract_numbers_by_unit(story_text)
 
     for t_val, has_sign in found["temp_c"]:
         pool = allowed_temps_signed if has_sign else allowed_temps_unsigned
