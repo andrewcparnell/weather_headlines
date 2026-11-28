@@ -502,6 +502,7 @@ def test_gather_news_keeps_recent_relevant_reputable_local_articles(monkeypatch)
     ]
     monkeypatch.setattr(news_leads, "search_bing_news", lambda q: articles)
     monkeypatch.setattr(news_leads, "search_google_news", lambda q: [])
+    monkeypatch.setattr("pipeline.validator.check_url_resolves", lambda u, timeout=8: True)
     cand = {"kind": "rain", "location": {"country": "Vietnam", "country_domain": "vn"}}
     leads = news_leads.gather_news(cand)
     assert [n["source"] for n in leads] == ["news.tuoitre"]
