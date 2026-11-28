@@ -58,7 +58,7 @@ PAYWALL_OR_WAF_DOMAINS = (
 )
 
 COUNTRY_SYNONYMS: dict[str, tuple[str, ...]] = {
-    "united states": ("united states", "u.s.", "america"),
+    "united states": ("united states", "u.s.", "usa", "america"),
     "united kingdom": (
         "united kingdom",
         "u.k.",
@@ -211,8 +211,12 @@ def check_url_resolves(url: str, timeout: int = 8) -> bool:
                 return True
             if hexc.code in (401, 403) and is_paywall_host:
                 return True
-            if method == "HEAD" and hexc.code in (403, 405, 406):
+            if method == "HEAD" and hexc.code in (403, 405, 406, 429):
                 continue
+            # Many news sites block automated clients (401/403/429/451) even though the article exists;
+            # only clear "gone" answers (404/410) or server errors count as a dead link.
+            if hexc.code in (401, 403, 429, 451):
+                return True
             return False
         except Exception:
             if method == "HEAD":
@@ -749,6 +753,23 @@ _BANNED_HYPE_PATTERNS: tuple[tuple[re.Pattern, str], ...] = (
 )
 
 
+def validate_headline_place(prefix: str, headline: str, matched_cand: dict | None) -> list[str]:
+    """Headlines must open with the place: 'State, USA: ...' for large countries, 'Country: ...' otherwise."""
+    if not matched_cand:
+        return []
+    loc = matched_cand.get("location") or {}
+    want = str(loc.get("headline_prefix") or "").strip()
+    if not want:
+        return []
+    opening = _strip_accents(headline[:60]).lower()
+    state = _strip_accents(str(loc.get("state") or "")).lower()
+    country = str(loc.get("country") or "").lower()
+    tokens = [state] if state else list(COUNTRY_SYNONYMS.get(country, (country,)))
+    if not any(tok and tok in opening for tok in tokens):
+        return [f"{prefix}.headline: must start with the place, e.g. {want + ': ...'!r}."]
+    return []
+
+
 def validate_editorial_tone_and_framing(
     prefix: str,
     st: dict,
@@ -935,6 +956,9 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
         rains.append(float(era["seasonal_normal_1991_2020"]))
 
     press = [float(cand["mslp_hpa"])] if cand.get("mslp_hpa") is not None else []
+    low = cand.get("low_centre") or {}
+    if low.get("mslp_hpa") is not None:
+        press.append(float(low["mslp_hpa"]))
 
     speeds_ms = [65.0 / 3.6]  # standard 65 km/h persistence threshold
     for k in ("wind_ms", "gust_ms"):
@@ -979,6 +1003,9 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
         m14 = float(pers["rain_14d_mm"]) / float(pers["expected_rain_14d_mm"])
         multiples.append(m14)
         pct_norms.append(m14 * 100.0)
+    daily_norm = pers.get("daily_rain_normal_mm")
+    if daily_norm is not None and float(daily_norm) >= 0.5 and cand.get("rain_24h_mm") is not None:
+        multiples.append(float(cand["rain_24h_mm"]) / float(daily_norm))
     if shift.get("frequency_claim_allowed") and shift.get("frequency_ratio") is not None:
         multiples.append(float(shift["frequency_ratio"]))
 
@@ -1272,7 +1299,9 @@ def validate_and_clean_bulletin(
                     "url": url,
                 }
             )
-        if not cleaned_links and not allow_empty_links:
+        # Template stories (ids "auto-...") may have no links, even inside an otherwise Claude-written bulletin
+        is_template_story = str(st.get("id") or "").startswith("auto-")
+        if not cleaned_links and not (allow_empty_links or is_template_story):
             if dead_urls:
                 errors.append(
                     f"{prefix}: news_links URLs {dead_urls!r} failed HTTP HEAD/GET check (404/unreachable); supply live resolving article URLs."
@@ -1350,6 +1379,7 @@ def validate_and_clean_bulletin(
                 key=lambda c: haversine_km(c_lat, c_lon, float(c["lat"]), float(c["lon"])),
                 default=None,
             )
+        errors.extend(validate_headline_place(prefix, headline, matched_cand))
         errors.extend(validate_editorial_tone_and_framing(prefix, story_obj, matched_cand=matched_cand))
         errors.extend(validate_internal_consistency(prefix, story_obj))
         if candidates is not None:

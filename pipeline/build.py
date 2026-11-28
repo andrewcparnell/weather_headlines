@@ -14,6 +14,7 @@ from .config import DATA_DIR
 from .news_agent import build_deterministic_bulletin, generate_headlines_with_claude
 from .opendata import fetch_live_weather
 from .pack_globe import package_globe_layers
+from .places import attach_location_context
 from .scanner import detect_global_candidates
 from .stamp_assets import stamp_frontend_assets
 from .tts import build_bulletin_audio
@@ -79,6 +80,7 @@ def run_pipeline(
     # 4. Enrich candidate hotspots with ±7-day 1940-present ERA5 24h rankings & 28-day persistence
     print(f"[build] Computing ±7-day 1940-present ERA5 rankings & 28-day persistence for {len(candidates)} hotspots...", file=sys.stderr)
     enriched = enrich_all_candidates(candidates, weather, era5_climo)
+    enriched = attach_location_context(enriched, weather, pressure_centres=manifest.get("pressure_centres"))
     warnings = fetch_global_warnings(days_back=7)
 
     if dump_candidates_path is not None:

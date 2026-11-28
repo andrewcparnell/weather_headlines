@@ -92,7 +92,10 @@ def test_section5_simplified_tour_ui_legend_accessibility_and_performance():
     assert 'id="tickerViewport"' in html and 'id="tickerTrack"' in html and ">STORY<" in html
     assert 'id="linksViewport"' in html and 'id="tourNewsLinks"' in html and ">IN THE NEWS<" in html
     assert "STORY_TICKER_SPEED" in tour_js and "LINKS_TICKER_SPEED" in tour_js
-    assert "if (this.linksHovered) return;" in tour_js
+    # Both tickers pause on hover only (never stuck after a link click)
+    assert "_isTickerPaused(this.dom.linksBar" in tour_js
+    assert "_isTickerPaused(this.dom.tickerTrack.closest" in tour_js
+    assert "link.blur()" in tour_js and "linksHovered" not in tour_js
     assert 'aria-hidden="true" inert' in tour_js
     assert 'id="voiceScriptOverlay"' in html
     for forbidden_emoji in ("🔊", "🔇", "📝", "◀", "▶", "✕"):

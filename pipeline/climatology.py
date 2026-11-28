@@ -614,6 +614,7 @@ def enrich_all_candidates(
                 "units": units,
                 "window_description": "±7-day seasonal window (15 days x 86 years, 1940-2025) for this time of year",
                 "rank_since_1940": rank,
+                "rank_available": True,
                 "samples_compared": n_samples,
                 "years_compared": n_years,
                 "years_with_more_extreme_day": years_exceeded,
@@ -695,22 +696,46 @@ def enrich_all_candidates(
                 fb_norm = round(gp90 / 1.45, 1)
                 z_est = 1.28 + max(0.0, (float(cand["gust_ms"]) - gp90) / 4.5)
 
-            est_pct = round(min(99.5, max(90.0, 50.0 * (1.0 + math.erf(z_est / math.sqrt(2.0))))), 1)
+            # Without the exact 1940-2025 daily series we cannot rank honestly, so publish NO percentile or
+            # rank (never a guessed "top 1%"). Instead give simple, defensible comparisons with the normal.
+            live_fb = float(cand["peak_value"])
+            if kind == "heat":
+                live_fb = float(cand.get("t2m_max_24h_c", cand["t2m_c"]))
+                vs_normal = f"{live_fb - wmo_tmax_fb:+.1f} °C compared with a typical daytime high of {wmo_tmax_fb:.0f} °C"
+            elif kind == "cold":
+                live_fb = float(cand.get("t2m_min_24h_c", cand["t2m_c"]))
+                vs_normal = f"{live_fb - wmo_tmin_fb:+.1f} °C compared with a typical overnight low of {wmo_tmin_fb:.0f} °C"
+            elif kind == "rain":
+                mult = live_fb / climo_daily_rain_mm if climo_daily_rain_mm >= 0.5 else None
+                vs_normal = (
+                    f"about {mult:.0f} times the average daily rainfall ({climo_daily_rain_mm:.1f} mm) for the time of year"
+                    if mult is not None and mult >= 2
+                    else "far above the usual daily rainfall for the time of year"
+                )
+            else:
+                vs_normal = (
+                    f"above the local 90th-percentile gust of {gp90 * 3.6:.0f} km/h"
+                    if float(cand["gust_ms"]) > gp90
+                    else f"close to the local 90th-percentile gust of {gp90 * 3.6:.0f} km/h"
+                )
             era_info = {
                 "variable_ranked": f"24 h {kind}",
-                "live_24h_value": round(float(cand["peak_value"]), 1),
+                "live_24h_value": round(live_fb, 1),
                 "units": cand["units"],
-                "window_description": "±7-day seasonal climatology (1990-2019 precomputed at 0.5 deg)",
+                "window_description": "±7-day seasonal climatology (1990-2019 precomputed at 0.5 deg); exact daily history unavailable this run",
                 "rank_since_1940": None,
-                "samples_compared": 450,
-                "years_compared": 30,
+                "rank_available": False,
+                "samples_compared": None,
+                "years_compared": None,
                 "years_with_more_extreme_day": None,
-                "percentile": est_pct,
+                "percentile": None,
+                "estimated_departure_sd": round(z_est, 1) if kind in ("heat", "cold") else None,
+                "comparison_with_normal": vs_normal,
                 "is_highest_for_time_of_year_since_1940": False,
                 "seasonal_normal_1991_2020": fb_norm,
                 "wmo_tmax_normal_c": round(wmo_tmax_fb, 1),
                 "wmo_tmin_normal_c": round(wmo_tmin_fb, 1),
-                "rank_summary": f"{est_pct}th percentile for this time of year (1990-2019 ERA5 ±7-day climatology)",
+                "rank_summary": f"No historical rank available this run; {vs_normal}.",
                 "persistence": {
                     "summary": fb_pers_summary,
                     "warm_days_above_p90_tmax_last_14": hot_14,
@@ -727,9 +752,9 @@ def enrich_all_candidates(
                     **rain_pers,
                 },
                 "climate_shift": {
-                    "local_seasonal_warming_c_since_1940_1979": 1.1,
-                    "p90_years_count_1940_1979_out_of_40": 0,
-                    "p90_years_count_1986_2025_out_of_40": 0,
+                    "local_seasonal_warming_c_since_1940_1979": None,
+                    "p90_years_count_1940_1979_out_of_40": None,
+                    "p90_years_count_1986_2025_out_of_40": None,
                     "count_unit": "years out of 40 years (NOT per decade)",
                     "frequency_claim_allowed": False,
                     "frequency_ratio": None,

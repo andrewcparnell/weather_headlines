@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=8595d78b';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=97f2d01a';
 
 const STORY_FLIGHT_MS = 1850;
 const FALLBACK_STORY_SEC = 47;
@@ -168,7 +168,8 @@ export class BroadcastTour {
 
     this.active = false;
     this.voiceEnabled = false;
-    this.linksHovered = false;
+    // Hover-to-pause only on devices with a real pointer; on touch screens :hover "sticks" after a tap
+    this.canHover = window.matchMedia?.('(hover: hover)').matches ?? true;
     this.storyIndex = 0;
     this.cueIndex = -1;
     this.cues = [];
@@ -743,20 +744,12 @@ export class BroadcastTour {
     this.dom.muteBtn?.addEventListener('click', () => this.toggleMute());
     this.dom.exitBtn?.addEventListener('click', () => this.stop({ completed: false }));
 
-    const linksHoverTarget = this.dom.linksBar || this.dom.linksViewport;
-    linksHoverTarget?.addEventListener('mouseenter', () => {
-      this.linksHovered = true;
-    });
-    linksHoverTarget?.addEventListener('mouseleave', () => {
-      this.linksHovered = false;
-    });
-    linksHoverTarget?.addEventListener('focusin', () => {
-      this.linksHovered = true;
-    });
-    linksHoverTarget?.addEventListener('focusout', e => {
-      if (!linksHoverTarget.contains(e.relatedTarget)) {
-        this.linksHovered = false;
-      }
+    // Tickers pause only while the mouse is actually over them (or a link has keyboard focus).
+    // After a click opens an article in a new tab, drop focus from the link: otherwise the browser
+    // re-focuses it when the user returns and the bar used to stay frozen for good.
+    this.dom.newsLinks?.addEventListener('click', e => {
+      const link = e.target.closest?.('a');
+      if (link) setTimeout(() => link.blur(), 0);
     });
 
     document.addEventListener('keydown', e => {
@@ -773,15 +766,26 @@ export class BroadcastTour {
     });
   }
 
+  _isTickerPaused(bar) {
+    if (!bar) return false;
+    if (this.canHover && bar.matches(':hover')) return true;
+    try {
+      return Boolean(bar.querySelector(':focus-visible'));
+    } catch {
+      return false;
+    }
+  }
+
   _updateLinksTicker(dtSec) {
     if (this.reducedMotion || !this.dom.newsLinks || this.dom.linksBar?.hidden) return;
-    if (this.linksHovered) return;
+    if (this._isTickerPaused(this.dom.linksBar || this.dom.linksViewport)) return;
     this.linksOffsetPx = (this.linksOffsetPx + LINKS_TICKER_SPEED * dtSec) % Math.max(1, this.linksSingleWidth);
     this.dom.newsLinks.style.transform = `translate3d(${-this.linksOffsetPx.toFixed(1)}px, 0, 0)`;
   }
 
   _updateStoryTicker(dtSec) {
     if (this.reducedMotion || !this.dom.tickerTrack) return;
+    if (this._isTickerPaused(this.dom.tickerTrack.closest('.chyron-ticker-bar'))) return;
     this.displayStoryPx = (this.displayStoryPx + STORY_TICKER_SPEED * dtSec) % Math.max(1, this.storySingleWidth);
     this.dom.tickerTrack.style.transform = `translate3d(${-this.displayStoryPx.toFixed(1)}px, 0, 0)`;
   }

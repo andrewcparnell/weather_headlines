@@ -241,7 +241,9 @@ def test_broadcast_style_country_lead_2sf_and_no_data_jargon():
     for st in bulletin["stories"]:
         assert st["country"].lower() not in forbidden_continents
         spoken_all = " ".join(c["spoken"] for c in st["cues"])
-        assert st["cues"][0]["spoken"].startswith(f"{st['country']}:")
+        # Headline and first cue open with the place: "State, Country:" for large countries, else "Country:"
+        assert st["headline"].split(":")[0] in (st["country"], st["region"])
+        assert st["cues"][0]["spoken"].startswith(f"{st['region']}:")
         for jargon in ("ECMWF", "ERA5", "grid box", "grid point", "1990-2019", "1991-2020", "1940-1979", "1980-2009"):
             assert jargon.lower() not in spoken_all.lower(), f"Found {jargon!r} in {spoken_all!r}"
         assert "196.3" not in spoken_all and "98.6" not in spoken_all and "37.0" not in spoken_all
@@ -594,10 +596,10 @@ def test_section2_validator_geography_numbers_contradictions_and_urls(monkeypatc
     }
     assert validate_story_numbers_against_candidates("stories[0]", cleaned["stories"][0], [cand]) == []
 
-    bad_story = dict(cleaned["stories"][0], headline="Dublin braced for 190 mm rain, 15 times the seasonal average")
+    bad_story = dict(cleaned["stories"][0], headline="Dublin braced for 190 mm rain, 40 times the seasonal average")
     bad_num_errs = validate_story_numbers_against_candidates("stories[0]", bad_story, [cand])
     assert any("190 mm" in e for e in bad_num_errs)
-    assert any("15x" in e for e in bad_num_errs)
+    assert any("40x" in e for e in bad_num_errs)
 
     attributed_story = dict(
         cleaned["stories"][0],
@@ -642,7 +644,9 @@ def test_section3_writer_prompt_edition_title_and_calm_accuracy():
     # 3.1: Hard-coded neutral edition_title format & zero positive BBC/Sky styling instructions
     dt = datetime(2026, 11, 27, 7, 30, tzinfo=timezone.utc)
     assert format_edition_title(dt) == "World Weather Headlines - 07:30 UTC, 27 November 2026"
-    assert "clear, calm, accurate public-service tone; never exaggerate; when in doubt, understate" in SYSTEM_PROMPT
+    assert "warm, vivid, specific and true" in SYSTEM_PROMPT
+    assert "Vivid is good; hype is not." in SYSTEM_PROMPT
+    assert "headline_prefix" in SYSTEM_PROMPT
     assert "rain_window_start_utc" in SYSTEM_PROMPT
     assert "rain_window_end_utc" in SYSTEM_PROMPT
     assert "news_facts" in SYSTEM_PROMPT

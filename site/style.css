@@ -864,6 +864,15 @@ body.tour-active .layer-rail {
   background: #060f1e;
   border-top: 1px solid rgba(255, 255, 255, 0.16);
   overflow: hidden;
+  transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+/* Story ticker pauses while hovered (see Tour._isTickerPaused) */
+@media (hover: hover) {
+  .chyron-ticker-bar:hover {
+    background: #081326;
+    border-top-color: rgba(253, 224, 71, 0.65);
+  }
 }
 
 .ticker-tag {
