@@ -2,8 +2,10 @@ name: Refresh Weather & Deploy Pages
 
 on:
   schedule:
-    # Runs every 6 hours shortly after ECMWF 00z, 06z, 12z, and 18z Open Data runs publish
-    - cron: "25 1,7,13,19 * * *"
+    # Hourly, because GitHub often delays or drops scheduled runs. A cheap first check skips the run
+    # (no Claude call, no deploy) unless ECMWF has published a newer forecast than the current stories
+    # were written from, so there are still at most ~4 new bulletins a day.
+    - cron: "25 * * * *"
   workflow_dispatch:
   push:
     branches: [main]
@@ -23,6 +25,8 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    outputs:
+      due: ${{ steps.fresh.outputs.due }}
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -52,18 +56,31 @@ jobs:
       - name: Install dependencies
         run: uv sync --frozen
 
+      - name: Check whether a new bulletin is due
+        id: fresh
+        run: |
+          if [ "${{ github.event_name }}" = "schedule" ]; then
+            uv run --frozen python -m pipeline.check_fresh
+          else
+            echo "due=true" >> "$GITHUB_OUTPUT"
+          fi
+
       - name: Refresh live ECMWF weather layers and 5-story bulletin
+        if: steps.fresh.outputs.due == 'true'
         env:
           ANTHROPIC_API_KEY: ${{ github.event_name != 'push' && secrets.ANTHROPIC_API_KEY || '' }}
           ANTHROPIC_MODEL: ${{ vars.ANTHROPIC_MODEL }}
+          WEATHER_WEB_SEARCHES: ${{ vars.WEATHER_WEB_SEARCHES }}
+          WEATHER_WRITER_EFFORT: ${{ vars.WEATHER_WRITER_EFFORT }}
         run: |
           uv run --frozen python -m pipeline.build --keep-existing-headlines-if-no-key
 
       - name: Run pipeline and data integrity tests
+        if: steps.fresh.outputs.due == 'true'
         run: uv run --frozen pytest -v
 
       - name: Snapshot headlines.json to orphan data branch (without touching main)
-        if: github.event_name != 'push'
+        if: steps.fresh.outputs.due == 'true' && github.event_name != 'push'
         run: |
           SNAPSHOT_DIR=$(mktemp -d)
           cp site/data/headlines.json "${SNAPSHOT_DIR}/headlines.json"
@@ -78,12 +95,14 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Upload static site artifact for GitHub Pages
+        if: steps.fresh.outputs.due == 'true'
         uses: actions/upload-pages-artifact@v3
         with:
           path: site
 
   deploy:
     needs: build
+    if: needs.build.outputs.due == 'true'
     runs-on: ubuntu-latest
     environment:
       name: github-pages
