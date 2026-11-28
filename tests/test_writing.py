@@ -552,3 +552,12 @@ def test_news_citation_rule_needs_three_working_links_not_every_lead():
     assert check_story_news([{"news_links": three}, {"news_links": [{"url": "https://b.example/news/1"}]}], payload) == []
     errs = check_story_news([{"news_links": three[:2]}, {"news_links": []}], payload)
     assert len(errs) == 2 and "at least 3" in errs[0] and "at least 1" in errs[1]
+
+
+def test_rain_brief_gives_the_record_year_but_not_the_incomparable_record_total():
+    from pipeline.news_agent import slim_candidate
+
+    cand = _cand(1, "rain", 15.5, 108.5, rank_since_1940=1, rank_available=True, clear_record=False,
+                 previous_record_value=190.0, previous_record_year=1971, units="mm")
+    hist = slim_candidate(cand)["history"]
+    assert hist["previous_record_year"] == 1971 and "previous_record_value" not in hist
