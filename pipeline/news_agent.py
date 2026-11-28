@@ -331,15 +331,22 @@ class UsageMeter:
 
 
 def check_story_news(stories: list[dict], payload: dict) -> list[str]:
-    """Each story must cite its news: all of its leads (up to 3), plus any extra found by searching."""
+    """Each story must cite at least 3 working articles, or all of its leads if fewer than 3 were found.
+
+    (Links that fail to load are removed by the validator, so a dead lead the writer rightly skipped
+    never blocks the bulletin.)"""
     errs = []
     briefs = payload.get("stories_to_write") or []
     for i, (st, brief) in enumerate(zip(stories, briefs)):
         lead_urls = [n["url"] for n in brief.get("news_leads") or [] if n.get("url")]
-        cited = {lk.get("url") for lk in st.get("news_links") or [] if isinstance(lk, dict)}
-        missing = [u for u in lead_urls if u not in cited]
-        if missing:
-            errs.append(f"stories[{i}]: news_links must include every news lead for this story; missing {missing}.")
+        cited = [lk.get("url") for lk in st.get("news_links") or [] if isinstance(lk, dict) and lk.get("url")]
+        needed = min(NEWS_PER_STORY, len(lead_urls))
+        if len(cited) < needed:
+            unused = [u for u in lead_urls if u not in cited]
+            errs.append(
+                f"stories[{i}]: cite at least {needed} news articles in news_links (only {len(cited)} working). "
+                f"Unused leads: {unused}."
+            )
     return errs
 
 

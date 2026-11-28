@@ -345,6 +345,13 @@ def gather_news(cand: dict, max_items: int = 4) -> list[dict]:
             if len(picked) >= max_items:
                 break
 
+    # Only offer articles whose links actually load (the writer is required to cite what it is given)
+    if picked:
+        from .validator import check_url_resolves
+
+        with ThreadPoolExecutor(max_workers=4) as pool:
+            ok = list(pool.map(lambda a: check_url_resolves(a["url"]), picked))
+        picked = [a for a, good in zip(picked, ok) if good]
     # Prefer articles with a summary (more detail for the writer), then the most recent
     picked.sort(key=lambda a: (not a.get("summary"), -(a["published"].timestamp() if a.get("published") else 0)))
     return [

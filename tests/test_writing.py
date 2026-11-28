@@ -536,3 +536,18 @@ def test_build_fails_instead_of_publishing_template_text(monkeypatch, tmp_path):
     with pytest.raises(build.BulletinError):
         build.run_pipeline(out_dir=tmp_path)
     assert not (tmp_path / "headlines.json").exists()
+
+
+def test_news_citation_rule_needs_three_working_links_not_every_lead():
+    """Live failure: the writer rightly skipped a lead whose link did not load, and the old rule
+    ('cite every lead') rejected the whole bulletin three times."""
+    from pipeline.news_agent import check_story_news
+
+    payload = {"stories_to_write": [
+        {"news_leads": [{"url": f"https://a.example/news/{i}"} for i in range(4)]},
+        {"news_leads": [{"url": "https://b.example/news/1"}]},
+    ]}
+    three = [{"url": f"https://a.example/news/{i}"} for i in (0, 1, 3)]
+    assert check_story_news([{"news_links": three}, {"news_links": [{"url": "https://b.example/news/1"}]}], payload) == []
+    errs = check_story_news([{"news_links": three[:2]}, {"news_links": []}], payload)
+    assert len(errs) == 2 and "at least 3" in errs[0] and "at least 1" in errs[1]

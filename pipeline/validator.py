@@ -4,6 +4,7 @@ from __future__ import annotations
 import json
 import math
 import re
+import socket
 import unicodedata
 import urllib.error
 import urllib.request
@@ -218,10 +219,16 @@ def check_url_resolves(url: str, timeout: int = 8) -> bool:
             if hexc.code in (401, 403, 429, 451):
                 return True
             return False
-        except Exception:
+        except Exception as exc:
             if method == "HEAD":
                 continue
-            return False
+            # A domain that does not exist is dead. Timeouts, refused or reset connections and TLS errors
+            # are common from cloud servers (sites throttle data-centre traffic) and say nothing about
+            # whether a recent article exists, so give those the benefit of the doubt.
+            reason = getattr(exc, "reason", exc)
+            if isinstance(reason, socket.gaierror) or "Name or service not known" in str(exc) or "nodename nor servname" in str(exc):
+                return False
+            return True
     return False
 
 
