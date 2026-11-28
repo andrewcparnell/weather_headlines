@@ -7,15 +7,11 @@ import os
 import re
 import sys
 import time
-import urllib.parse
-import urllib.request
-import xml.etree.ElementTree as ET
 from datetime import datetime, timezone
 
-from .config import USER_AGENT
-from .opendata import LiveWeatherFields
 from .fallback_writer import fmt_2sf  # noqa: F401  (re-exported for callers and tests)
-from .validator import is_specific_event_url, validate_and_clean_bulletin
+from .opendata import LiveWeatherFields
+from .validator import validate_and_clean_bulletin
 
 # Tried in order; override with the ANTHROPIC_MODEL environment variable (or repository variable in CI).
 # Sonnet 5.5 at low effort without web search costs roughly $0.05-0.10 per run; Haiku 5.5 about a tenth of that.
@@ -24,14 +20,15 @@ DEFAULT_CLAUDE_MODELS = [
     "claude-haiku-5-5",
 ]
 
-# Optional web searches per request (each costs $0.01 plus the tokens of the results it reads back in,
-# typically $0.02-0.05 more per search). Off by default: Claude works from the free `news_leads` instead.
-WEB_SEARCHES_PER_REQUEST = int(os.environ.get("WEATHER_WEB_SEARCHES", "0") or 0)
+# Web searches are only used to top up stories that the free news lookup found fewer than 3 articles for.
+# Each costs $0.01 plus the tokens of the results it reads (roughly $0.02-0.04 in all). Set 0 to disable.
+WEB_SEARCHES_PER_REQUEST = int(os.environ.get("WEATHER_WEB_SEARCHES", "4") or 0)
+NEWS_PER_STORY = 3
 
 # Effort controls how much the model thinks before writing; "low" keeps output tokens (the main cost) down.
 WRITER_EFFORT = os.environ.get("WEATHER_WRITER_EFFORT", "low").strip() or "low"
 
-MAX_ATTEMPTS = 2  # one retry; stories that still fail are swapped for template stories
+MAX_ATTEMPTS = 3  # retries ask only for the failing stories; if they still fail, the run fails (no template text)
 
 # USD per million tokens: (input, output, cache write, cache read). Used only for the cost estimate in the log.
 MODEL_PRICES = {
@@ -90,29 +87,31 @@ PLACE NAMES IN HEADLINES (important)
 - `headline` and `cues[0].spoken` MUST start with the candidate's `location.headline_prefix` followed by a colon, for example "Oklahoma, USA: ...", "Krasnoyarsk Krai, Russia: ..." or "Vietnam: ...".
 - `country` must be `location.country`.
 
-CHOOSING STORIES
-- Pick 5 geographically varied stories from `candidate_hotspots`, preferring places where people are affected and the news confirms impacts. Skip temperature anomalies over open sea or empty ice. Keep a big ongoing story from `previous_headlines` if it is still active, with fresh angles.
+THE STORIES
+- Write exactly one story for each entry in `stories_to_write`, in the same order (they have already been chosen). If a story continues one in `previous_headlines`, find a fresh angle.
+- Temperatures: compare like with like. Use `history.high_vs_typical_c` (forecast high minus the typical high) or `history.low_vs_typical_c` (forecast low minus the typical low) for any "warmer/colder than usual" claim. Do not compute differences yourself.
 
 OUTPUT: a single compact JSON object `{"stories": [...]}` and nothing else. Each story has ONLY these keys:
 - `id`: short slug, e.g. "2026-11-central-vietnam-floods"
 - `kicker`: 2 to 4 uppercase words naming the hazard and place, e.g. "FLOODS · CENTRAL VIETNAM"
 - `headline`: 45 to 90 characters, starting with `location.headline_prefix` and a colon, specific and engaging (not a bare number)
 - `region`, `country`, `hazard` (heat|cold|rain|cyclone|wind|pressure), `primary_layer` (temperature|anomaly|wind|rain|pressure)
-- `centre`: {"lat", "lon"} copied from the chosen candidate
+- `centre`: {"lat", "lon"} copied from the story's entry
 - `stats`: {"headline_metric", "metric_label", "era5_rank", "persistence"}: very short card text; "" where you have no data
 - `cues`: exactly 5 spoken sentences, each {"layer", "lat", "lon", "label" (short place or theme), "metric" (short stat or ""), "spoken" (16 to 30 words, read aloud word for word, no asterisks), "ticker" (8 to 14 words with key figures in **double asterisks**)}. Put each cue where it is about (within 500 km of `centre`, within 150 km of any city it names) and set its layer to the variable it discusses.
-- `news_facts`: [{"claim", "source_url"}] for every fact taken from the news (the claim must contain any number you quote); [] if none
-- `news_links`: up to 3 of the article URLs you drew on [{"source", "title", "url"}]; [] if none"""
+- `news_facts`: [{"claim", "source_url"}] for every fact taken from the news (the claim must contain any number you quote)
+- `news_links`: 3 articles about this story [{"source", "title", "url"}] (fewer only if fewer exist)"""
 
 NEWS_NOTE_LEADS_ONLY = """
 
-NEWS SOURCES FOR THIS BULLETIN
-`news_leads` lists recent headlines from reputable outlets about each candidate's area. They are your ONLY news source: you may describe what a headline says, attributed to its outlet, and cite its exact `url` in `news_facts` and `news_links`. Do not add news facts, casualty figures or impacts from memory. If a candidate has no leads, write from the weather data alone."""
+NEWS FOR EACH STORY
+`news_leads` lists up to 3 recent articles about each story's area (headline, outlet, date and, where available, a summary). Use them: build at least one or two sentences of each story around what they report (who is affected, what is closed, what officials are saying), attributed to the outlet, and list every lead in `news_links`. They are your ONLY news source: do not add news facts, casualty figures or impacts from memory."""
 
 NEWS_NOTE_WITH_SEARCH = """
 
-NEWS SOURCES FOR THIS BULLETIN
-`news_leads` lists recent headlines from reputable outlets about each candidate's area. You also have a small number of `web_search` calls: use them only for the most promising stories, to confirm impacts or warnings (include the month and year in queries). Cite only articles you actually saw, with direct article URLs (never section fronts or tag pages)."""
+NEWS FOR EACH STORY
+`news_leads` lists recent articles about each story's area (headline, outlet, date and, where available, a summary). Use them: build at least one or two sentences of each story around what they report (who is affected, what is closed, what officials are saying), attributed to the outlet, and list every lead in `news_links`.
+Some stories have `needs_more_news` > 0: for those only, use `web_search` (include the month and year) to find that many more recent articles about this weather in that place, from reputable outlets, and use and cite them too. Cite only articles you actually saw, with direct article URLs (never section fronts or tag pages). Do not search for stories that already have 3 leads."""
 
 
 def _extract_json_object(text: str) -> dict:
@@ -172,7 +171,6 @@ def slim_candidate(cand: dict) -> dict:
         "forecast": {
             "t2m_max_24h_c": _r(cand.get("t2m_max_24h_c")),
             "t2m_min_24h_c": _r(cand.get("t2m_min_24h_c")),
-            "anomaly_c": _r(cand.get("anom_c")),
             "rain_24h_mm": _r(cand.get("rain_24h_mm")),
             "wind_kmh": _r(cand.get("wind_kmh", (cand.get("wind_ms") or 0) * 3.6), 0),
             "gust_kmh": _r(cand.get("gust_kmh", (cand.get("gust_ms") or 0) * 3.6), 0),
@@ -200,7 +198,12 @@ def slim_candidate(cand: dict) -> dict:
         )
     if era.get("ranked_value_note"):
         hist["note"] = era["ranked_value_note"]
-    for key_out, key_in in (("typical_high_c", "wmo_tmax_normal_c"), ("typical_low_c", "wmo_tmin_normal_c")):
+    for key_out, key_in in (
+        ("typical_high_c", "wmo_tmax_normal_c"),
+        ("typical_low_c", "wmo_tmin_normal_c"),
+        ("high_vs_typical_c", "high_vs_typical_c"),
+        ("low_vs_typical_c", "low_vs_typical_c"),
+    ):
         if era.get(key_in) is not None:
             hist[key_out] = era[key_in]
     if kind == "rain" or (cand.get("rain_24h_mm") or 0) >= 20:
@@ -217,44 +220,46 @@ def slim_candidate(cand: dict) -> dict:
     hist["warming_since_mid_century_c"] = shift.get("local_seasonal_warming_c_since_1940_1979")
     hist["frequency_claim_allowed"] = bool(shift.get("frequency_claim_allowed"))
     out["history"] = {k: v for k, v in hist.items() if v is not None}
+    leads = (cand.get("news_leads") or [])[:NEWS_PER_STORY]
     out["news_leads"] = [
-        {"source": n.get("source"), "title": n.get("title"), "url": n.get("url")} for n in (cand.get("news_leads") or [])[:3]
+        {k: n.get(k) for k in ("source", "date", "title", "summary", "url") if n.get(k)} for n in leads
     ]
+    if len(leads) < NEWS_PER_STORY:
+        out["needs_more_news"] = NEWS_PER_STORY - len(leads)
     return out
 
 
 def build_writer_payload(
     weather: LiveWeatherFields,
-    enriched_candidates: list[dict],
+    stories: list[dict],
     warnings: list[dict],
     prev_summary: list[dict],
     fetch_news: bool = True,
-    max_candidates: int = 8,
+    max_candidates: int = 5,
 ) -> dict:
-    """JSON-serialisable brief for the writer: timing, slimmed candidates with place names, and news leads."""
-    candidates = [dict(c) for c in enriched_candidates[:max_candidates]]
-    if fetch_news:
+    """JSON-serialisable brief for the writer: timing, the chosen stories with place names, and their news."""
+    candidates = [dict(c) for c in stories[:max_candidates]]
+    missing = [c for c in candidates if "news_leads" not in c]
+    if fetch_news and missing:
         from concurrent.futures import ThreadPoolExecutor
 
         with ThreadPoolExecutor(max_workers=5) as pool:
-            leads = list(pool.map(_safe_news, candidates))
-        for cand, items in zip(candidates, leads):
-            cand["news_leads"] = items
+            for cand, items in zip(missing, pool.map(_safe_news, missing)):
+                cand["news_leads"] = items
     return {
         "valid_time_utc": _iso(weather.valid_time),
         "rain_window_start_utc": _iso(weather.rain_window_start_utc or weather.run_time),
         "rain_window_end_utc": _iso(weather.rain_window_end_utc or weather.valid_time),
         "previous_headlines": [p.get("headline") for p in prev_summary if p.get("headline")],
-        "active_disaster_alerts": [
-            {k: w.get(k) for k in ("type", "name", "country", "alert_level", "url")} for w in warnings[:6]
-        ],
-        "candidate_hotspots": [slim_candidate(c) for c in candidates],
+        "stories_to_write": [slim_candidate(c) for c in candidates],
     }
 
 
 def _safe_news(cand: dict) -> list[dict]:
+    from .news_leads import gather_news
+
     try:
-        return news_for_candidate(cand, max_links=3)
+        return gather_news(cand)
     except Exception:
         return []
 
@@ -325,14 +330,45 @@ class UsageMeter:
         return "; ".join(parts) + f" = about ${self.cost_usd():.3f}"
 
 
+def check_story_news(stories: list[dict], payload: dict) -> list[str]:
+    """Each story must cite its news: all of its leads (up to 3), plus any extra found by searching."""
+    errs = []
+    briefs = payload.get("stories_to_write") or []
+    for i, (st, brief) in enumerate(zip(stories, briefs)):
+        lead_urls = [n["url"] for n in brief.get("news_leads") or [] if n.get("url")]
+        cited = {lk.get("url") for lk in st.get("news_links") or [] if isinstance(lk, dict)}
+        missing = [u for u in lead_urls if u not in cited]
+        if missing:
+            errs.append(f"stories[{i}]: news_links must include every news lead for this story; missing {missing}.")
+    return errs
+
+
+def _merge_fixed_stories(draft: dict, fix: dict) -> None:
+    """Apply a retry answer: either {"stories": {"<index>": story, ...}} or a full {"stories": [...]} list."""
+    fixed = fix.get("stories")
+    if isinstance(fixed, list) and len(fixed) == len(draft["stories"]):
+        draft["stories"] = fixed
+    elif isinstance(fixed, dict):
+        for key, story in fixed.items():
+            try:
+                idx = int(str(key).strip("[]"))
+            except ValueError:
+                continue
+            if 0 <= idx < len(draft["stories"]) and isinstance(story, dict):
+                draft["stories"][idx] = story
+
+
 def generate_headlines_with_claude(
     weather: LiveWeatherFields,
-    enriched_candidates: list[dict],
+    stories: list[dict],
     warnings: list[dict],
     previous_bulletin: dict | None = None,
 ) -> dict:
-    """Ask Claude to write the 5-story bulletin from the candidates and news leads, validate it, and
-    repair or replace stories that fail. Logs token use and an estimated cost."""
+    """Ask Claude to write the chosen stories, validate them, and ask for fixes to any that fail.
+
+    Raises if the bulletin still fails after MAX_ATTEMPTS: the pipeline then fails loudly instead of
+    publishing template text. Logs token use and an estimated cost.
+    """
     import anthropic
 
     api_key = os.environ.get("ANTHROPIC_API_KEY", "").strip()
@@ -348,15 +384,14 @@ def generate_headlines_with_claude(
         for s in ((previous_bulletin or {}).get("stories") or [])[:5]
         if isinstance(s, dict)
     ]
-    user_payload = build_writer_payload(weather, enriched_candidates, warnings, prev_summary)
-    lead_urls = {
-        n["url"] for c in user_payload["candidate_hotspots"] for n in c.get("news_leads") or [] if n.get("url")
-    } | {w["url"] for w in user_payload["active_disaster_alerts"] if w.get("url")}
+    user_payload = build_writer_payload(weather, stories, warnings, prev_summary)
+    lead_urls = {n["url"] for c in user_payload["stories_to_write"] for n in c.get("news_leads") or [] if n.get("url")}
+    shortfall = sum(c.get("needs_more_news", 0) for c in user_payload["stories_to_write"])
+    searches = min(max(0, WEB_SEARCHES_PER_REQUEST), shortfall)
 
-    searches = max(0, WEB_SEARCHES_PER_REQUEST)
     system_text = SYSTEM_PROMPT + (NEWS_NOTE_WITH_SEARCH if searches else NEWS_NOTE_LEADS_ONLY)
     brief = (
-        "Write today's bulletin from this data. Start every headline and first cue with the place's "
+        "Write the bulletin from this data. Start every headline and first cue with the story's "
         "`headline_prefix`. Output ONLY the JSON object.\n\n"
         f"<data>{json.dumps(user_payload, separators=(',', ':'), default=str, ensure_ascii=False)}</data>"
     )
@@ -367,10 +402,10 @@ def generate_headlines_with_claude(
         for model_name in models_to_try:
             try:
                 print(
-                    f"[news_agent] Calling {model_name} (effort {WRITER_EFFORT}, {searches} web searches)...",
+                    f"[news_agent] Calling {model_name} (effort {WRITER_EFFORT}, up to {searches} web searches)...",
                     file=sys.stderr,
                 )
-                # Cache the instructions and the brief: a retry then reads them at a tenth of the price.
+                # Cache the instructions and the brief: retries then read them at a tenth of the price.
                 system = [{"type": "text", "text": system_text, "cache_control": {"type": "ephemeral"}}]
                 messages: list[dict] = [
                     {"role": "user", "content": [{"type": "text", "text": brief, "cache_control": {"type": "ephemeral"}}]}
@@ -389,8 +424,8 @@ def generate_headlines_with_claude(
                     meter.add(model_name, resp)
                     return resp
 
-                last_cleaned: dict | None = None
-                last_errors: list[str] = []
+                draft: dict | None = None
+                errors: list[str] = []
                 for attempt in range(MAX_ATTEMPTS):
                     resp = _call(messages)
                     pauses = 0
@@ -404,18 +439,17 @@ def generate_headlines_with_claude(
                     text = "\n".join(b.text for b in resp.content if getattr(b, "type", None) == "text")
                     messages = messages + [{"role": "assistant", "content": resp.content}]
                     try:
-                        draft = _extract_json_object(text)
+                        answer = _extract_json_object(text)
                     except (ValueError, json.JSONDecodeError) as parse_exc:
-                        print(
-                            f"[news_agent] JSON parse error on attempt {attempt + 1} "
-                            f"(stop_reason={getattr(resp, 'stop_reason', None)}): {parse_exc}",
-                            file=sys.stderr,
-                        )
-                        messages.append(
-                            {"role": "user", "content": f"That was not complete valid JSON ({parse_exc}). Return ONLY the complete JSON object."}
-                        )
+                        errors = [f"Reply was not complete valid JSON ({parse_exc})."]
+                        print(f"[news_agent] Attempt {attempt + 1}: {errors[0]}", file=sys.stderr)
+                        messages.append({"role": "user", "content": errors[0] + " Return ONLY the complete JSON object."})
                         continue
 
+                    if draft is None or not isinstance(answer.get("stories"), dict):
+                        draft = answer if isinstance(answer.get("stories"), list) else {"stories": []}
+                    else:
+                        _merge_fixed_stories(draft, answer)
                     complete_story_fields(draft)
                     if not searches:
                         _restrict_news_to_leads(draft, lead_urls)
@@ -430,28 +464,28 @@ def generate_headlines_with_claude(
                         }
                     )
                     cleaned, errors = validate_and_clean_bulletin(
-                        draft, candidates=enriched_candidates, verify_urls=True, require_links=False
+                        draft, candidates=stories, verify_urls=True, require_links=False
                     )
+                    if not any(e.startswith("Expected 5 stories") for e in errors):
+                        errors += check_story_news(cleaned.get("stories") or [], user_payload)
                     if not errors:
                         return cleaned
-                    last_cleaned, last_errors = cleaned, errors
                     print(f"[news_agent] Validation issues on attempt {attempt + 1}: {errors}", file=sys.stderr)
-                    if attempt + 1 < MAX_ATTEMPTS:
-                        messages.append(
-                            {
-                                "role": "user",
-                                "content": (
-                                    "Fix every problem below and return ONLY the corrected JSON object "
-                                    "(all five stories):\n" + "\n".join(f"- {e}" for e in errors)
-                                ),
-                            }
+                    bad = sorted({int(m.group(1)) for e in errors if (m := re.match(r"stories\[(\d+)\]", e))})
+                    if bad and all(re.match(r"stories\[\d+\]", e) for e in errors):
+                        # Only the failing stories come back, which keeps retries cheap
+                        request = (
+                            "Fix every problem below. Return ONLY a JSON object of the corrected stories, keyed by "
+                            'their index, for example {"stories": {"2": {...}}}. Include just these stories: '
+                            + ", ".join(str(i) for i in bad)
+                            + ".\n"
                         )
-                if last_cleaned is not None:
-                    salvaged = salvage_bulletin(last_cleaned, last_errors, weather, enriched_candidates)
-                    if salvaged is not None:
-                        return salvaged
+                    else:
+                        request = "Fix every problem below and return ONLY the complete corrected JSON object (all stories).\n"
+                    messages.append({"role": "user", "content": request + "\n".join(f"- {e}" for e in errors)})
                 raise WriterValidationError(
-                    f"Claude output failed validation after {MAX_ATTEMPTS} attempts on {model_name}: {last_errors}"
+                    f"{model_name} could not produce a bulletin that passes the fact check after "
+                    f"{MAX_ATTEMPTS} attempts. Remaining problems: {errors}"
                 )
             except WriterValidationError:
                 raise
@@ -483,299 +517,16 @@ def generate_headlines_with_claude(
 # ---------------------------------------------------------------------------
 
 
-_COUNTRY_RSS_TOKENS: dict[str, tuple[str, ...]] = {
-    "united states": ("united states", "u.s.", "us ", "america", "american"),
-    "united kingdom": ("united kingdom", "u.k.", "uk ", "britain", "british", "scotland", "england", "wales"),
-    "new zealand": ("new zealand", "kiwi"),
-    "south africa": ("south africa", "south african"),
-}
-
-REPUTABLE_PUBLISHER_DOMAINS: tuple[str, ...] = (
-    "bbc.com",
-    "bbc.co.uk",
-    "theguardian.com",
-    "reuters.com",
-    "apnews.com",
-    "aljazeera.com",
-    "cnn.com",
-    "france24.com",
-    "dw.com",
-    "euronews.com",
-    "sky.com",
-    "npr.org",
-    "pbs.org",
-    "nytimes.com",
-    "washingtonpost.com",
-    "independent.co.uk",
-    "ft.com",
-    "bloomberg.com",
-    "time.com",
-    "economist.com",
-    "abc.net.au",
-    "abcnews.go.com",
-    "sbs.com.au",
-    "rnz.co.nz",
-    "nzherald.co.nz",
-    "cbc.ca",
-    "globalnews.ca",
-    "theglobeandmail.com",
-    "rte.ie",
-    "irishtimes.com",
-    "independent.ie",
-    "japantimes.co.jp",
-    "nhk.or.jp",
-    "jiji.com",
-    "efe.com",
-    "aa.com.tr",
-    "mainichi.jp",
-    "kyodonews.net",
-    "asahi.com",
-    "e.vnexpress.net",
-    "vnexpress.net",
-    "vietnamplus.vn",
-    "tuoitrenews.vn",
-    "vietnamnews.vn",
-    "channelnewsasia.com",
-    "straitstimes.com",
-    "scmp.com",
-    "thehindu.com",
-    "indianexpress.com",
-    "hindustantimes.com",
-    "bangkokpost.com",
-    "inquirer.net",
-    "rappler.com",
-    "mexiconewsdaily.com",
-    "batimes.com.ar",
-    "mercopress.com",
-    "icelandmonitor.mbl.is",
-    "icelandreview.com",
-    "ruv.is",
-    "thelocal.com",
-    "africanews.com",
-    "dailymaverick.co.za",
-    "news24.com",
-    "nation.africa",
-    "rfi.fr",
-    "lemonde.fr",
-    "elpais.com",
-    "swissinfo.ch",
-    "reliefweb.int",
-    "wmo.int",
-    "un.org",
-    "who.int",
-    "ifrc.org",
-    "gdacs.org",
-    "metoffice.gov.uk",
-    "met.ie",
-    "noaa.gov",
-    "weather.gov",
-    "climate.gov",
-    "nasa.gov",
-    "copernicus.eu",
-    "ecmwf.int",
-    "phys.org",
-    "carbonbrief.org",
-    "yaleclimateconnections.org",
-    "scientificamerican.com",
-    "nature.com",
-)
-
-
-# Low-quality, aggregator or non-news sites that should never be cited even on a national domain
-_UNRELIABLE_SOURCES = ("nature world news", "ftn news", "oilprice", "audacy", "aol", "msn", "britannica", "wikipedia")
-
-
-def _is_reputable_source(source_url: str, source_name: str, country_domain: str = "") -> bool:
-    """True for reputable international outlets and agencies, and for news sites on the story country's
-    own domain (e.g. `.vn` papers for a Vietnam story), which usually have the best local detail."""
-    s_name_low = (source_name or "").lower()
-    if any(bad in s_name_low for bad in _UNRELIABLE_SOURCES):
-        return False
-    if not source_url:
-        return False
-    try:
-        host = urllib.parse.urlparse(source_url.strip()).netloc.lower().removeprefix("www.")
-    except Exception:
-        return False
-    if not host:
-        return False
-    if host.endswith((".gov", ".gov.uk", ".gob.mx", ".go.jp", ".gov.au", ".int", ".edu", ".ac.uk")):
-        return True
-    if country_domain and len(country_domain) == 2 and host.endswith("." + country_domain):
-        return True
-    return any(host == dom or host.endswith("." + dom) for dom in REPUTABLE_PUBLISHER_DOMAINS)
-
-
-_IDIOM_EXCLUSIONS = (
-    "storm in a",
-    "takes by storm",
-    "took by storm",
-    "take by storm",
-    "hot air",
-    "hot seat",
-    "hot topic",
-    "cold war",
-    "cold shoulder",
-    "cold case",
-    "political storm",
-    "firestorm",
-    "brainstorm",
-)
-
-
-def fetch_google_news_rss_links(
-    country: str,
-    hazard: str,
-    max_links: int = 3,
-    lat: float = 0.0,
-    lon: float = 0.0,
-    state: str = "",
-    country_domain: str = "",
-) -> list[dict]:
-    """Fetch 1-3 live, hazard-coherent news links exclusively from reputable outlets via Google News RSS."""
-    hazard_cfg = {
-        "cyclone": (
-            '"weather warning" OR cyclone OR typhoon OR hurricane OR gales OR "severe weather"',
-            r"\b(cyclone|typhoon|hurricane|gales?|gusts?|wind\w*|storm\w*|weather|flood\w*|rain\w*|blizzard\w*)\b",
-            r"\b(heatwave|scorching)\b",
-        ),
-        "wind": (
-            '"high winds" OR gales OR "weather warning" OR storm',
-            r"\b(gales?|gusts?|winds?|storm\w*|weather\s+warning|severe\s+weather)\b",
-            r"\b(heatwave|scorching)\b",
-        ),
-        "rain": (
-            'flooding OR floods OR "heavy rain" OR downpours OR landslides OR typhoon',
-            r"\b(rain\w*|flood\w*|downpours?|deluge|monsoon|landslides?|typhoon|cyclone|hurricane|mudslides?)\b",
-            r"\b(blizzard|ski\s+resorts?|heatwave)\b",
-        ),
-        "heat": (
-            'heatwave OR "high temperatures" OR "warm weather" OR "mild weather" OR "record temperatures"',
-            r"\b(heatwave|heat|hot|temperatures?|mild|warm\w*|wildfires?)\b",
-            r"\b(cold\s+weather|bitter\s+cold|winter\s+storm|snow\w*|blizzard\w*|ski\s+resorts?|freez\w*|frost|arctic)\b",
-        ),
-        "cold": (
-            '"winter storm" OR "cold weather" OR snowfall OR freeze OR "cold front"',
-            r"\b(cold|chill|freez\w*|frost|snow\w*|winter\s+storm|blizzard\w*|sub-zero|temperatures?)\b",
-            r"\b(heatwave|scorching|record\s+heat|wildfires?)\b",
-        ),
-        "pressure": (
-            '"weather warning" OR "high pressure" OR storm OR forecast',
-            r"\b(weather|forecast|pressure|storm\w*|winds?|rain\w*|temperatures?)\b",
-            r"$^",
-        ),
-    }
-    hazard_query, must_pat_str, forbid_pat_str = hazard_cfg.get(hazard, hazard_cfg["pressure"])
-    must_re = re.compile(must_pat_str, flags=re.I)
-    forbid_re = re.compile(forbid_pat_str, flags=re.I)
-
-    c_low = country.lower().strip()
-    stem = c_low[:-1] if len(c_low) >= 6 else c_low
-    country_tokens = _COUNTRY_RSS_TOKENS.get(c_low, (c_low, stem))
-
-    # Keep queries concise (well under Google News's 32-word operator limit) and filter publisher domains in Python
-    # Only recent, place-specific stories: anything older than about a week is rarely about today's weather
-    queries = []
-    if state:
-        queries.append((f'"{state}" ({hazard_query}) when:7d', (state.lower(),)))
-    queries += [
-        (f'"{country}" ({hazard_query}) when:7d', country_tokens),
-        (f'"{country}" ({hazard_query}) when:14d', country_tokens),
-    ]
-
-    out: list[dict] = []
-    seen_titles: set[str] = set()
-
-    for query_str, geo_tokens in queries:
-        if len(out) >= max_links:
-            break
-        rss_url = (
-            "https://news.google.com/rss/search?"
-            + urllib.parse.urlencode({"q": query_str, "hl": "en-GB", "gl": "GB", "ceid": "GB:en"})
-        )
-        req = urllib.request.Request(
-            rss_url,
-            headers={"User-Agent": USER_AGENT, "Accept": "application/rss+xml,application/xml,text/xml;q=0.9,*/*;q=0.8"},
-        )
-        try:
-            with urllib.request.urlopen(req, timeout=6) as resp:
-                xml_bytes = resp.read()
-            root = ET.fromstring(xml_bytes)
-        except Exception:
-            continue
-
-        for item in root.findall("./channel/item"):
-            raw_title = (item.findtext("title") or "").strip()
-            link = (item.findtext("link") or "").strip()
-            source_el = item.find("source")
-            source = (source_el.text if source_el is not None and source_el.text else "").strip()
-            source_url = (source_el.get("url") if source_el is not None else "") or ""
-
-            if not raw_title or not link or not is_specific_event_url(link):
-                continue
-            if not _is_reputable_source(source_url, source, country_domain):
-                continue
-
-            if source and raw_title.endswith(f" - {source}"):
-                clean_title = raw_title[: -len(f" - {source}")].strip()
-            elif " - " in raw_title:
-                parts = raw_title.rsplit(" - ", 1)
-                clean_title = parts[0].strip()
-                source = source or parts[1].strip()
-            else:
-                clean_title = raw_title
-
-            t_low = clean_title.lower()
-            if any(idiom in t_low for idiom in _IDIOM_EXCLUSIONS):
-                continue
-            if not must_re.search(clean_title):
-                continue
-            if forbid_re.search(clean_title):
-                continue
-            if not any(re.search(r"\b" + re.escape(tok.strip()), t_low) for tok in geo_tokens if tok):
-                continue
-
-            dedup_key = re.sub(r"[^a-z0-9]+", "", t_low)[:45]
-            if dedup_key in seen_titles:
-                continue
-            seen_titles.add(dedup_key)
-            out.append(
-                {
-                    "source": source or "News Report",
-                    "title": clean_title[:115],
-                    "url": link,
-                }
-            )
-            if len(out) >= max_links:
-                break
-
-    return out
-
-
-def news_for_candidate(cand: dict, max_links: int = 3) -> list[dict]:
-    """Recent reputable news headlines about the weather where `cand` is (used as leads and fallback links)."""
-    loc = cand.get("location") or {}
-    country = loc.get("country") or cand.get("country") or ""
-    if not country:
-        return []
-    return fetch_google_news_rss_links(
-        country,
-        cand["kind"],
-        max_links=max_links,
-        lat=float(cand["lat"]),
-        lon=float(cand["lon"]),
-        state=loc.get("state") or "",
-        country_domain=loc.get("country_domain") or "",
-    )
-
-
 def build_deterministic_bulletin(
     weather: LiveWeatherFields,
     enriched_candidates: list[dict],
     warnings: list[dict],
     fetch_live_rss: bool = False,
 ) -> dict:
-    """Template-based bulletin used when Claude is unavailable (see `pipeline.fallback_writer`)."""
+    """Template-based bulletin, for local development and tests only (`--template` flag).
+
+    Production never publishes template text: if Claude fails, the pipeline fails.
+    """
     from .fallback_writer import build_fallback_bulletin
     from .places import describe_location
 
@@ -786,50 +537,5 @@ def build_deterministic_bulletin(
         weather,
         enriched_candidates,
         warnings,
-        news_lookup=news_for_candidate if fetch_live_rss else None,
+        news_lookup=_safe_news if fetch_live_rss else None,
     )
-
-
-def salvage_bulletin(
-    cleaned: dict,
-    errors: list[str],
-    weather: LiveWeatherFields,
-    candidates: list[dict],
-    max_replaced: int = 3,
-) -> dict | None:
-    """Keep the stories that passed validation and replace only the failing ones with template stories.
-
-    Returns None when the draft is unusable (bulletin-level errors or too many failing stories).
-    """
-    from .fallback_writer import PhrasePicker, build_fallback_story
-
-    stories = list(cleaned.get("stories") or [])
-    bad: set[int] = set()
-    for err in errors:
-        m = re.match(r"stories\[(\d+)\]", err)
-        if not m:
-            return None
-        bad.add(int(m.group(1)))
-    if len(stories) < 5 or len(bad) > max_replaced:
-        return None
-
-    good = [st for i, st in enumerate(stories) if i not in bad]
-    from .scanner import haversine_km
-
-    unused = [
-        c
-        for c in candidates
-        if all(haversine_km(float(c["lat"]), float(c["lon"]), st["centre"]["lat"], st["centre"]["lon"]) > 550 for st in good)
-    ]
-    picker = PhrasePicker(seed=f"{weather.valid_time:%Y%m%d%H}-salvage")
-    for i in sorted(bad):
-        if not unused:
-            return None
-        cand = unused.pop(0)
-        stories[i] = build_fallback_story(cand, weather, picker, _safe_news(cand), rank=i + 1)
-    draft = dict(cleaned, stories=stories)
-    fixed, errs = validate_and_clean_bulletin(draft, candidates=candidates, verify_urls=False, require_links=False)
-    if errs:
-        return None
-    print(f"[news_agent] Published Claude bulletin with {len(bad)} template story(ies) replacing failed ones.", file=sys.stderr)
-    return fixed

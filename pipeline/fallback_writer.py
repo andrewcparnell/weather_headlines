@@ -194,9 +194,11 @@ def _story_heat(cand: dict, L: dict, month: str, p: PhrasePicker) -> dict:
     era = cand.get("era5") or {}
     pers = era.get("persistence") or {}
     tmax = float(cand.get("t2m_max_24h_c", cand.get("t2m_c", 0.0)))
-    anom = float(cand.get("anom_c", 0.0))
-    t_s, a_s = fmt_2sf(tmax), fmt_2sf(abs(anom))
     normal = era.get("wmo_tmax_normal_c")
+    # Compare like with like: forecast high vs typical high (never the one-hour anomaly)
+    anom = tmax - float(normal) if normal is not None else float(cand.get("anom_c", 0.0))
+    era.setdefault("high_vs_typical_c", round(anom, 1))
+    t_s, a_s = fmt_2sf(tmax), fmt_2sf(abs(anom))
     mild = tmax < 8.0
     P = L["prefix"]
 
@@ -318,9 +320,11 @@ def _story_cold(cand: dict, L: dict, month: str, p: PhrasePicker) -> dict:
     era = cand.get("era5") or {}
     pers = era.get("persistence") or {}
     tmin = float(cand.get("t2m_min_24h_c", cand.get("t2m_c", 0.0)))
-    anom = float(cand.get("anom_c", 0.0))
-    t_s, a_s = fmt_2sf(tmin), fmt_2sf(abs(anom))
     normal = era.get("wmo_tmin_normal_c")
+    # Compare like with like: forecast low vs typical low (never the one-hour anomaly)
+    anom = tmin - float(normal) if normal is not None else float(cand.get("anom_c", 0.0))
+    era.setdefault("low_vs_typical_c", round(anom, 1))
+    t_s, a_s = fmt_2sf(tmin), fmt_2sf(abs(anom))
     P = L["prefix"]
 
     headline = p.pick(

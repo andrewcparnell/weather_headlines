@@ -699,12 +699,36 @@ def _speed_to_ms(val: float, unit_raw: str) -> float:
     return val
 
 
+_NUMBER_WORDS = {
+    "one": 1, "two": 2, "three": 3, "four": 4, "five": 5, "six": 6, "seven": 7, "eight": 8, "nine": 9,
+    "ten": 10, "eleven": 11, "twelve": 12, "thirteen": 13, "fourteen": 14, "fifteen": 15, "sixteen": 16,
+    "seventeen": 17, "eighteen": 18, "nineteen": 19, "twenty": 20, "thirty": 30, "forty": 40, "fifty": 50,
+}
+_RE_NUMBER_WORD = re.compile(
+    r"\b(" + "|".join(sorted(_NUMBER_WORDS, key=len, reverse=True)) + r")(?:[- ](one|two|three|four|five|six|seven|eight|nine))?\b"
+    r"(?=\s+(?:degrees|°|millimet|mm\b|kilomet|km/h|metres per|m/s|mph))",
+    flags=re.I,
+)
+
+
+def normalise_figures(text: str) -> str:
+    """Turn spoken figures into digits with units: 'seven degrees' -> '7 °C', 'minus 8 degrees' -> '-8 °C'."""
+
+    def _words(m: re.Match) -> str:
+        val = _NUMBER_WORDS[m.group(1).lower()] + (_NUMBER_WORDS[m.group(2).lower()] if m.group(2) else 0)
+        return str(val)
+
+    s = _RE_NUMBER_WORD.sub(_words, (text or "").replace("**", ""))
+    s = re.sub(r"\bminus\s+(\d+(?:\.\d+)?)\s+degrees(?:\s+Celsius)?\b", r"-\1 °C", s, flags=re.I)
+    s = re.sub(r"\bplus\s+(\d+(?:\.\d+)?)\s+degrees(?:\s+Celsius)?\b", r"+\1 °C", s, flags=re.I)
+    # Bare "degrees" means Celsius in this bulletin (never latitude: places are named, not coordinates)
+    s = re.sub(r"\b(\d+(?:\.\d+)?)\s+degrees(?:\s+Celsius)?\b(?!\s+(?:north|south|east|west|fahrenheit))", r"\1 °C", s, flags=re.I)
+    return s
+
+
 def extract_numbers_by_unit(text: str) -> dict[str, list]:
     """Extract all quantitative meteorological figures by unit family from `text`."""
-    s = (text or "").replace("**", "")
-    s_norm = re.sub(r"\bminus\s+(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"-\1 °C", s, flags=re.I)
-    s_norm = re.sub(r"\bplus\s+(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"+\1 °C", s_norm, flags=re.I)
-    s_norm = re.sub(r"\b(\d+(?:\.\d+)?)\s+degrees\s+Celsius\b", r"\1 °C", s_norm, flags=re.I)
+    s_norm = normalise_figures(text)
 
     # Strip standard wet-day persistence threshold qualifiers (e.g. '>=10 mm', 'at least 10 mm') so threshold labels are not mistaken for event totals
     s_rain = re.sub(
@@ -929,12 +953,18 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
 
     temps_signed: list[float] = []
     temps_diffs_abs: list[float] = []
-    for k in ("t2m_c", "t2m_max_24h_c", "t2m_min_24h_c", "anom_c"):
+    # Not anom_c: it is the departure at one hour of the day and must not be quoted next to daily highs/lows
+    for k in ("t2m_c", "t2m_max_24h_c", "t2m_min_24h_c"):
         if cand.get(k) is not None:
-            v = float(cand[k])
-            temps_signed.append(v)
-            if k == "anom_c":
-                temps_diffs_abs.append(abs(v))
+            temps_signed.append(float(cand[k]))
+    if era.get("high_vs_typical_c") is None and era.get("wmo_tmax_normal_c") is not None and cand.get("t2m_max_24h_c") is not None:
+        era = dict(era, high_vs_typical_c=round(float(cand["t2m_max_24h_c"]) - float(era["wmo_tmax_normal_c"]), 1))
+    if era.get("low_vs_typical_c") is None and era.get("wmo_tmin_normal_c") is not None and cand.get("t2m_min_24h_c") is not None:
+        era = dict(era, low_vs_typical_c=round(float(cand["t2m_min_24h_c"]) - float(era["wmo_tmin_normal_c"]), 1))
+    for k in ("high_vs_typical_c", "low_vs_typical_c"):
+        if era.get(k) is not None:
+            temps_signed.append(float(era[k]))
+            temps_diffs_abs.append(abs(float(era[k])))
     for k in ("seasonal_normal_1991_2020", "wmo_tmax_normal_c", "wmo_tmin_normal_c"):
         if (era.get(k) is not None and era.get("units") == "°C") or (k.startswith("wmo_") and era.get(k) is not None):
             temps_signed.append(float(era[k]))
@@ -1058,6 +1088,60 @@ def _unit_family(unit_raw: str) -> str:
     return "speed"
 
 
+_RE_COMPARISON = re.compile(
+    r"(?:\b(more\s+than|over|at\s+least|nearly|almost|about|around|roughly|some|close\s+to)\s+)?"
+    r"([+-]?\d+(?:\.\d+)?)\s*°\s*C\s+(?:warmer|colder|cooler|milder|hotter|higher|lower|"
+    r"above(?!\s+(?:freezing|zero))|below(?!\s+(?:freezing|zero)))\b",
+    flags=re.I,
+)
+_RE_COMPARISON_BY = re.compile(
+    r"\b(?:warmer|colder|cooler|milder|hotter|higher|lower)\s+(?:than\s+(?:normal|usual|average)\s+)?by\s+"
+    r"(?:(more\s+than|over|at\s+least|nearly|almost|about|around|roughly|some|close\s+to)\s+)?([+-]?\d+(?:\.\d+)?)\s*°\s*C",
+    flags=re.I,
+)
+
+
+def validate_temperature_comparisons(prefix: str, text: str, cand: dict, fact_temps: list[float]) -> list[str]:
+    """Every 'N °C warmer/colder/above/below' must match a real difference: forecast high vs typical high,
+    forecast low vs typical low, the long-term warming, the margin over the previous record, or a news fact."""
+    era = dict(cand.get("era5") or {})
+    if era.get("high_vs_typical_c") is None and era.get("wmo_tmax_normal_c") is not None and cand.get("t2m_max_24h_c") is not None:
+        era["high_vs_typical_c"] = round(float(cand["t2m_max_24h_c"]) - float(era["wmo_tmax_normal_c"]), 1)
+    if era.get("low_vs_typical_c") is None and era.get("wmo_tmin_normal_c") is not None and cand.get("t2m_min_24h_c") is not None:
+        era["low_vs_typical_c"] = round(float(cand["t2m_min_24h_c"]) - float(era["wmo_tmin_normal_c"]), 1)
+    shift = era.get("climate_shift") or {}
+    diffs = [
+        abs(float(v))
+        for v in (
+            era.get("high_vs_typical_c"),
+            era.get("low_vs_typical_c"),
+            shift.get("local_seasonal_warming_c_since_1940_1979"),
+            era.get("beats_previous_record_by") if era.get("units") == "°C" else None,
+        )
+        if v is not None
+    ] + [abs(v) for v in fact_temps]
+    s = normalise_figures(text)
+    errs: list[str] = []
+    for pat in (_RE_COMPARISON, _RE_COMPARISON_BY):
+        for m in pat.finditer(s):
+            hedge, val = (m.group(1) or "").lower(), abs(float(m.group(2)))
+            if hedge.startswith(("more", "over", "at least")):
+                ok = any(d >= val - 1e-6 for d in diffs)
+            else:
+                ok = any(abs(d - val) <= max(0.6, 0.15 * d) for d in diffs)
+            if not ok:
+                hv, lv = era.get("high_vs_typical_c"), era.get("low_vs_typical_c")
+                known = ", ".join(
+                    f"{name} {v:+.1f} °C" for name, v in (("forecast high vs typical high", hv), ("forecast low vs typical low", lv)) if v is not None
+                )
+                errs.append(
+                    f"{prefix}: '{m.group(0).strip()}' is not a difference in the data ({known or 'no daily comparison available'}). "
+                    "Compute warmer/colder claims from these, never from the hourly anomaly."
+                )
+                return errs
+    return errs
+
+
 def remove_supported_hedged_figures(text: str, pools: dict[str, list[float]]) -> str:
     """Drop hedged figures that the data supports, so true statements like "more than 10 °C above normal"
     (actual +12 °C) or "nearly 140 km/h" (actual 139) are not rejected for not matching a value exactly.
@@ -1145,6 +1229,11 @@ def validate_story_numbers_against_candidates(
         *(f"{c.get('metric', '')} {c.get('spoken', '')} {c.get('ticker', '')}" for c in (st.get("cues") or [])),
         *(str(b.get("text") or "") for b in (st.get("beats") or [])),
     ]
+    errs.extend(
+        validate_temperature_comparisons(
+            prefix, " \n ".join(story_segments), matched, [v for v, _ in fact_nums["temp_c"]]
+        )
+    )
     story_text = remove_supported_hedged_figures(
         " \n ".join(story_segments).replace("**", ""),
         {

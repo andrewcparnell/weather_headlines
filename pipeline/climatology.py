@@ -894,6 +894,12 @@ def enrich_all_candidates(
                 },
             }
 
+        # Ready-made daily comparisons for the writer: forecast high vs typical high, forecast low vs
+        # typical low. (The map's anomaly is for one hour of the day and must not be mixed with these.)
+        if era_info.get("wmo_tmax_normal_c") is not None and cand.get("t2m_max_24h_c") is not None:
+            era_info["high_vs_typical_c"] = round(float(cand["t2m_max_24h_c"]) - float(era_info["wmo_tmax_normal_c"]), 1)
+        if era_info.get("wmo_tmin_normal_c") is not None and cand.get("t2m_min_24h_c") is not None:
+            era_info["low_vs_typical_c"] = round(float(cand["t2m_min_24h_c"]) - float(era_info["wmo_tmin_normal_c"]), 1)
         out["era5"] = era_info
         enriched.append(out)
     return enriched

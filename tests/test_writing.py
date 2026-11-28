@@ -165,39 +165,6 @@ def test_storm_story_uses_nearby_low_centre_pressure():
     assert "968 hPa" in storm["cues"][0]["spoken"] and "deep" in storm["cues"][0]["spoken"]
 
 
-def test_salvage_replaces_only_failing_claude_stories():
-    from pipeline.news_agent import build_deterministic_bulletin, salvage_bulletin
-    from pipeline.places import attach_location_context
-
-    now = datetime(2026, 11, 28, 3, tzinfo=timezone.utc)
-    weather = _weather(now)
-    cands = attach_location_context(
-        [
-            _cand(1, "heat", 35.5, -97.5),
-            _cand(2, "heat", -25.0, 135.0),
-            _cand(3, "rain", 15.5, 108.5),
-            _cand(4, "rain", 14.0, 121.0),
-            _cand(5, "cold", 61.0, 95.0),
-            _cand(6, "rain", 45.0, 10.0),
-        ],
-        weather,
-    )
-    good = build_deterministic_bulletin(weather, cands[:5], warnings=[], fetch_live_rss=False)
-    good["generator"] = "anthropic:test"
-    for i, st in enumerate(good["stories"]):
-        st["id"] = f"claude-story-{i}"
-        st["news_links"] = [{"source": "Example", "title": "Story", "url": "https://example.org/news/2026/11/28/weather-story"}]
-    fixed = salvage_bulletin(good, ["stories[2]: rainfall figure '999 mm' does not match"], weather, cands)
-    assert fixed is not None
-    assert fixed["stories"][0]["headline"] == good["stories"][0]["headline"]
-    # The failing story is rewritten from template text (here for the same, still-unused hotspot)
-    assert fixed["stories"][2]["id"].startswith("auto-")
-    assert [st["id"] for i, st in enumerate(fixed["stories"]) if i != 2] == [f"claude-story-{i}" for i in (0, 1, 3, 4)]
-
-    # Bulletin-level problems cannot be salvaged
-    assert salvage_bulletin(good, ["Expected 5 stories, got 3."], weather, cands) is None
-
-
 def test_era5_seasonal_windows_cost_one_call_per_location_per_year(monkeypatch, tmp_path):
     """The ranking history is fetched as 14-day windows (1 API call per location per year), all years 1940-2025."""
     from datetime import date
@@ -330,6 +297,7 @@ def test_claude_retry_keeps_same_tools_and_has_room_to_finish(monkeypatch):
     monkeypatch.setattr(news_agent, "WEB_SEARCHES_PER_REQUEST", 0)
     news_agent.generate_headlines_with_claude(weather, cands, [], None)
     assert "tools" not in calls[0]
+    assert calls[0]["max_tokens"] >= 32000
 
 
 def test_cheap_mode_brief_is_small_and_news_is_limited_to_leads():
@@ -343,8 +311,12 @@ def test_cheap_mode_brief_is_small_and_news_is_limited_to_leads():
          ("cold", 61.0, 95.0), ("rain", 45.0, 10.0), ("cyclone", 62.5, -15.5), ("heat", 11.0, 18.5)])], weather)
     payload = news_agent.build_writer_payload(weather, cands, [], [], fetch_news=False)
     text = json.dumps(payload, separators=(",", ":"))
-    assert len(text) < 9000  # roughly 2-3k tokens for 8 hotspots
-    assert payload["candidate_hotspots"][0]["location"]["headline_prefix"] == "Oklahoma, USA"
+    assert len(payload["stories_to_write"]) == 5
+    assert len(text) < 6000  # roughly 2k tokens for 5 stories without news
+    first = payload["stories_to_write"][0]
+    assert first["location"]["headline_prefix"] == "Oklahoma, USA"
+    assert "anomaly_c" not in json.dumps(first)  # the one-hour anomaly is never offered for comparisons
+    assert first["needs_more_news"] == 3
 
     draft = {"stories": [{
         "cues": [{"spoken": f"Sentence {i}.", "ticker": f"**{i}**", "layer": "rain"} for i in range(5)],
@@ -440,23 +412,26 @@ def _five_cands():
     return weather, cands
 
 
-def test_one_failing_story_without_links_is_salvaged_not_rerun_on_another_model(monkeypatch):
+def test_failing_story_is_fixed_by_a_targeted_retry_not_template_text(monkeypatch):
     from pipeline import news_agent
 
     weather, cands = _five_cands()
     stories = news_agent.build_deterministic_bulletin(weather, cands[:5], warnings=[], fetch_live_rss=False)["stories"]
     for i, st in enumerate(stories):
         st["id"] = f"claude-{i}"
-        st["news_links"] = []  # no-search mode: links are optional
+        st["news_links"] = []
+    good_story_4 = json.loads(json.dumps(stories[4]))
     stories[4]["headline"] = stories[4]["headline"] + " and 999 mm of rain"
-    calls = _fake_claude(monkeypatch, [json.dumps({"stories": stories})])
-
-    bulletin = news_agent.generate_headlines_with_claude(weather, cands, [], None)
-    assert {c["model"] for c in calls} == {"claude-sonnet-5-5"}  # never paid for a second model
-    assert bulletin["generator"] == "anthropic:claude-sonnet-5-5"
-    assert bulletin["stories"][4]["id"].startswith("auto-")
-    assert [st["id"] for st in bulletin["stories"][:4]] == [f"claude-{i}" for i in range(4)]
-
+    calls = _fake_claude(
+        monkeypatch,
+        [json.dumps({"stories": stories}), json.dumps({"stories": {"4": good_story_4}})],
+    )
+    bulletin = news_agent.generate_headlines_with_claude(weather, cands[:5], [], None)
+    assert len(calls) == 2 and {c["model"] for c in calls} == {"claude-sonnet-5-5"}
+    retry_request = calls[1]["messages"][-1]["content"]
+    assert "Include just these stories: 4" in retry_request and "999 mm" in retry_request
+    assert [st["id"] for st in bulletin["stories"]] == [f"claude-{i}" for i in range(5)]
+    assert "999" not in bulletin["stories"][4]["headline"]
 
 def test_unusable_bulletin_falls_back_to_template_without_trying_another_model(monkeypatch):
     import pytest
@@ -468,3 +443,96 @@ def test_unusable_bulletin_falls_back_to_template_without_trying_another_model(m
     with pytest.raises(news_agent.WriterValidationError):
         news_agent.generate_headlines_with_claude(weather, cands, [], None)
     assert {c["model"] for c in calls} == {"claude-sonnet-5-5"}
+
+
+def test_temperature_comparisons_use_daily_highs_not_the_hourly_anomaly():
+    """Live bug: Chad 40 °C vs typical high 36 °C was described as 'around seven degrees warmer'."""
+    from pipeline.validator import validate_story_numbers_against_candidates
+
+    cand = _cand(1, "heat", 11.0, 18.5)
+    cand.update({"t2m_max_24h_c": 39.9, "anom_c": 7.9})
+    cand["era5"]["wmo_tmax_normal_c"] = 36.2
+    story = lambda text: {  # noqa: E731
+        "centre": {"lat": 11.0, "lon": 18.5}, "headline": "Chad: hot", "stats": {}, "beats": [], "news_facts": [],
+        "cues": [{"spoken": text}],
+    }
+    bad = validate_story_numbers_against_candidates("s", story("That is around seven degrees warmer than usual for the date."), [cand])
+    assert bad and "+3.7" in bad[0]
+    assert validate_story_numbers_against_candidates("s", story("Highs near 40 °C, about 4 degrees above the usual high."), [cand]) == []
+
+
+def test_choose_stories_prefers_news_land_and_variety():
+    from pipeline.news_leads import choose_stories
+
+    def c(i, kind, lat, lon, leads, country="X", offshore_km=0):
+        return {"id": f"c{i}", "kind": kind, "lat": lat, "lon": lon, "news_leads": [{}] * leads,
+                "location": {"country": country, "offshore_km": offshore_km}}
+
+    cands = [
+        c(1, "heat", 11.0, 18.5, 0, "Chad"),
+        c(2, "heat", 12.0, 36.0, 0, "Ethiopia"),  # near-duplicate of Chad
+        c(3, "rain", 17.5, -104.0, 0, "Mexico", offshore_km=174),  # rain far out at sea
+        c(4, "rain", 15.5, 108.5, 3, "Vietnam"),
+        c(5, "cyclone", 62.5, -15.5, 3, "Iceland", offshore_km=60),
+        c(6, "cold", 50.5, 2.5, 2, "France"),
+        c(7, "heat", 53.5, -94.5, 1, "Canada"),
+        c(8, "rain", -30.0, 150.0, 0, ""),  # open ocean
+    ]
+    names = [x["location"]["country"] for x in choose_stories(cands)]
+    assert names[:2] == ["Vietnam", "Iceland"] and "France" in names
+    assert not {"Chad", "Ethiopia"} <= set(names)  # no near-identical heat stories side by side
+    assert "Mexico" not in names and "" not in names  # rain far out at sea, open ocean
+
+
+def test_gather_news_keeps_recent_relevant_reputable_local_articles(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+
+    from pipeline import news_leads
+
+    now = datetime.now(timezone.utc)
+    articles = [
+        {"title": "Heavy rain floods homes in central Vietnam", "url": "https://news.tuoitre.vn/heavy-rain-floods-homes-123.htm",
+         "summary": "Heavy rain has isolated nearly 1,000 households in Quang Ngai.", "source": "news.tuoitre", "published": now},
+        {"title": "Vietnam floods leave 90 dead", "url": "https://www.theguardian.com/world/2025/nov/20/vietnam-floods-90",
+         "summary": "", "source": "The Guardian", "published": now - timedelta(days=370)},  # too old
+        {"title": "Vietnam floods: what we know", "url": "https://uk.news.yahoo.com/vietnam-floods-what-we-know-1.html",
+         "summary": "", "source": "Yahoo News UK", "published": now},  # unreliable aggregator
+        {"title": "Viettel launches satellite internet in Vietnam", "url": "https://e.vnexpress.net/news/viettel-starlink-1.html",
+         "summary": "", "source": "VnExpress", "published": now},  # not about the weather
+    ]
+    monkeypatch.setattr(news_leads, "search_bing_news", lambda q: articles)
+    monkeypatch.setattr(news_leads, "search_google_news", lambda q: [])
+    cand = {"kind": "rain", "location": {"country": "Vietnam", "country_domain": "vn"}}
+    leads = news_leads.gather_news(cand)
+    assert [n["source"] for n in leads] == ["news.tuoitre"]
+    assert leads[0]["summary"].startswith("Heavy rain has isolated")
+
+
+def test_build_fails_instead_of_publishing_template_text(monkeypatch, tmp_path):
+    from pipeline import build
+
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    assert not build._is_recent_valid_bulletin({"generator": "era5-deterministic", "stories": []})
+    # Writer failure must surface as a build failure, never as template text
+    monkeypatch.setenv("ANTHROPIC_API_KEY", "sk-test")
+
+    def boom(*a, **k):
+        raise RuntimeError("writer exploded")
+
+    monkeypatch.setattr(build, "generate_headlines_with_claude", boom)
+    monkeypatch.setattr(build, "build_deterministic_bulletin", lambda *a, **k: (_ for _ in ()).throw(AssertionError("template used")))
+    now = datetime(2026, 11, 28, 3, tzinfo=timezone.utc)
+    monkeypatch.setattr(build, "fetch_live_weather", lambda: _weather(now))
+    monkeypatch.setattr(build, "load_era5_historical_context", lambda *a, **k: (None, None, "x", None))
+    monkeypatch.setattr(build, "detect_global_candidates", lambda *a, **k: ([], None, None))
+    monkeypatch.setattr(build, "package_globe_layers", lambda *a, **k: {"isobars": [], "pressure_centres": []})
+    monkeypatch.setattr(build, "attach_location_context", lambda c, *a, **k: c)
+    monkeypatch.setattr(build, "attach_news", lambda c: c)
+    monkeypatch.setattr(build, "choose_stories", lambda c, n=5: c)
+    monkeypatch.setattr(build, "enrich_all_candidates", lambda *a, **k: [])
+    monkeypatch.setattr(build, "fetch_global_warnings", lambda **k: [])
+    import pytest
+
+    with pytest.raises(build.BulletinError):
+        build.run_pipeline(out_dir=tmp_path)
+    assert not (tmp_path / "headlines.json").exists()
