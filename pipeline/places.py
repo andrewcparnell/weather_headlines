@@ -289,3 +289,42 @@ def attach_location_context(candidates: list[dict], weather, pressure_centres: l
                 low["near"] = low_loc.get("place_phrase") or ""
                 cand["low_centre"] = low
     return candidates
+
+
+def nearby_cities(points: list[tuple[float, float]], radius_km: float = 600.0, n: int = 6, min_pop: int = 100_000) -> list[dict]:
+    """Largest towns within `radius_km` of any of `points` (story centre and camera stops), for map labels.
+
+    Picks by population but keeps labels spread out (no two within ~60 km), so the map is not cluttered.
+    """
+    if not points:
+        return []
+    lat0 = sum(p[0] for p in points) / len(points)
+    near = []
+    for name, tlat, tlon, pop, _adm1, _country in _towns():
+        if pop < min_pop or abs(tlat - lat0) > radius_km / 111.0 + 6:
+            continue
+        d = min(haversine_km(tlat, tlon, la, lo) for la, lo in points)
+        if d <= radius_km:
+            near.append((pop, name, tlat, tlon))
+    near.sort(reverse=True)
+    picked: list[dict] = []
+    # Always label the nearest sizeable town to the story itself, even if it is not among the largest
+    local = nearest_town(points[0][0], points[0][1], min_pop=30_000)
+    if local is not None and local["distance_km"] <= 150:
+        picked.append({"name": local["name"], "lat": round(local["lat"], 3), "lon": round(local["lon"], 3), "population": local["population"]})
+    for pop, name, tlat, tlon in near:
+        if any(haversine_km(tlat, tlon, c["lat"], c["lon"]) < 60 for c in picked):
+            continue
+        picked.append({"name": name, "lat": round(tlat, 3), "lon": round(tlon, 3), "population": pop})
+        if len(picked) >= n:
+            break
+    return picked
+
+
+def attach_nearby_cities(bulletin: dict) -> dict:
+    """Add `nearby_cities` to every story in a finished bulletin (for city labels on the globe)."""
+    for st in bulletin.get("stories") or []:
+        pts = [(float(st["centre"]["lat"]), float(st["centre"]["lon"]))]
+        pts += [(float(c["lat"]), float(c["lon"])) for c in st.get("cues") or [] if "lat" in c and "lon" in c]
+        st["nearby_cities"] = nearby_cities(pts)
+    return bulletin

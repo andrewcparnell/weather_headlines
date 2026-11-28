@@ -986,6 +986,9 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
     prev_rec = era.get("previous_record_value")
     if prev_rec is not None and era.get("units") == "°C":
         temps_signed.append(float(prev_rec))
+    for ty in era.get("top_years") or []:
+        if ty.get("value") is not None and era.get("units") == "°C":
+            temps_signed.append(float(ty["value"]))
     if prev_rec is not None and era.get("units") == "°C" and era.get("beats_previous_record_by") is not None:
         temps_diffs_abs.append(abs(float(era["beats_previous_record_by"])))
 
@@ -1015,6 +1018,9 @@ def _allowed_candidate_numbers(cand: dict) -> dict[str, list]:
         speeds_ms.append(float(pers["local_gust_p90_kmh"]) / 3.6)
     if era.get("units") == "m/s" and prev_rec is not None:
         speeds_ms.append(float(prev_rec))
+    for ty in era.get("top_years") or []:
+        if ty.get("value") is not None and era.get("units") == "m/s":
+            speeds_ms.append(float(ty["value"]))
     if era.get("units") == "m/s" and era.get("seasonal_normal_1991_2020") is not None:
         speeds_ms.append(float(era["seasonal_normal_1991_2020"]))
 
@@ -1106,6 +1112,27 @@ _RE_COMPARISON_BY = re.compile(
     r"(?:(more\s+than|over|at\s+least|nearly|almost|about|around|roughly|some|close\s+to)\s+)?([+-]?\d+(?:\.\d+)?)\s*°\s*C",
     flags=re.I,
 )
+
+
+_RE_HIST_YEAR = re.compile(r"\b(19[4-9]\d|20[0-2]\d)\b")
+
+
+def validate_history_years(prefix: str, text: str, cand: dict, fact_text: str) -> list[str]:
+    """Any year between 1940 and 2029 in the prose must come from the history data or a cited news fact,
+    so rankings like "the windiest since 1976" can't be invented."""
+    era = cand.get("era5") or {}
+    allowed = {1940}
+    for y in (era.get("previous_record_year"), era.get("last_exceeded_year")):
+        if y:
+            allowed.add(int(y))
+    allowed |= {int(t["year"]) for t in era.get("top_years") or [] if t.get("year")}
+    allowed |= {int(y) for y in _RE_HIST_YEAR.findall(fact_text or "")}
+    allowed |= {2026, 2027, 2028, 2029}  # current dates
+    bad = sorted({int(y) for y in _RE_HIST_YEAR.findall(text or "")} - allowed)
+    if bad:
+        known = sorted(allowed - {1940, 2026, 2027, 2028, 2029})
+        return [f"{prefix}: year(s) {bad} are not in this story's history data or news (years you can use: {known or 'none'})."]
+    return []
 
 
 def validate_temperature_comparisons(prefix: str, text: str, cand: dict, fact_temps: list[float]) -> list[str]:
@@ -1236,6 +1263,7 @@ def validate_story_numbers_against_candidates(
         *(f"{c.get('metric', '')} {c.get('spoken', '')} {c.get('ticker', '')}" for c in (st.get("cues") or [])),
         *(str(b.get("text") or "") for b in (st.get("beats") or [])),
     ]
+    errs.extend(validate_history_years(prefix, " \n ".join(story_segments), matched, fact_text))
     errs.extend(
         validate_temperature_comparisons(
             prefix, " \n ".join(story_segments), matched, [v for v, _ in fact_nums["temp_c"]]

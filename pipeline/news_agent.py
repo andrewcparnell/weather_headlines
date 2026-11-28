@@ -77,7 +77,8 @@ ACCURACY RULES (a validator checks these; failing stories are replaced with plai
 1. Model numbers are FORECASTS valid at `valid_time_utc`; the 24 h rain total covers `rain_window_start_utc` to `rain_window_end_utc`. Use forecast wording ("up to 140 mm is forecast", "gusts could reach 120 km/h"). Never "fell", "has recorded" or "measured" for model values.
 2. Every number with a unit (°C, mm, hPa, km/h, %, "N of M days", "#N", "N times the average") must either match the candidate's data (rounded to 2 significant figures; percentages to whole numbers) or appear in that story's `news_facts` with its `source_url`. Numbers from the news must be quoted as reported, with attribution, and never stretched (a figure about another place, another week or another country is not about this event). Call early estimates "preliminary", and when sources disagree give the range or leave the figure out.
 3. Candidate statistics describe ONLY the point at `lat`/`lon`. `location` gives the country, state/province, nearest town and distance. Never transfer a local normal or rank to a city more than 150 km away.
-4. `history.rank_since_1940` (when present) is the rank of that 24 h value for this time of year since 1940 at that point. Only when it is 1 AND `history.clear_record` is true say "the highest/wettest/strongest for this time of year since 1940" (you may add the previous high, `previous_record_value` in `previous_record_year`). When it is 1 but `clear_record` is false, say "among the highest for this time of year since 1940", and never "beating" or "a new high". With no rank, make no ranking claim. Never say "ever recorded" or "record" (unless quoting an official station record from the news).
+4. `history.rank_since_1940` (when present) is the rank of that 24 h value for this time of year since 1940 at that point. Only when it is 1 AND `history.clear_record` is true say "the highest/wettest/strongest for this time of year since 1940" (you may add the previous high, `previous_record_value` in `previous_record_year`). When it is 1 but `clear_record` is false, say "among the highest for this time of year since 1940", and never "beating" or "a new high". With no rank, make no ranking claim. Never say "ever recorded", "since records began" or "record" (unless quoting an official station record from the news): the history only starts in 1940.
+   Make each ranking specific and different, rather than repeating "the highest since 1940" (use that exact phrase at most once per bulletin). Draw on: the previous high and its year ("beating the 38 °C of 1978"); `last_year_beating_forecast` ("the windiest late-November day here since 1976"); `top_years` ("only 1950 and 1976 have been windier at this time of year"); `years_beating_forecast` out of `years_on_record` ("matched or beaten in only 3 of the last 86 years"). Values in `top_years` use the same units as `previous_record_units`. Only mention years that appear in the data or the news.
 5. Rain normals: use only the normals in `history`. Wet days mean days with at least 10 mm. 65 km/h gusts are not "storm force".
 6. Climate trend: `warming_since_mid_century_c` may be null; then say nothing about the local trend. Only claim a change in how often such events happen when `frequency_claim_allowed` is true.
 7. Never use: "unprecedented", "ever recorded", "heat dome", "baking", "historic", "climate emergency", "shatters". Below 5 °C a warm anomaly is "exceptionally mild", not "heat" or "heatwave".
@@ -195,13 +196,19 @@ def slim_candidate(cand: dict) -> dict:
                 "previous_record_value": era.get("previous_record_value"),
                 "previous_record_units": era.get("units"),
                 "previous_record_year": era.get("previous_record_year"),
+                "years_on_record": era.get("years_compared"),
+                "years_beating_forecast": era.get("years_beating_forecast"),
+                "last_year_beating_forecast": era.get("last_exceeded_year"),
+                "top_years": era.get("top_years"),
             }
         )
     if kind == "rain":
-        # Rain is ranked on an ~80 km area average, so the old total is not comparable with the headline
-        # peak: give the year only, never the number.
+        # Rain is ranked on an ~80 km area average, so the old totals are not comparable with the headline
+        # peak: give the years only, never the numbers.
         hist.pop("previous_record_value", None)
         hist.pop("previous_record_units", None)
+        if hist.get("top_years"):
+            hist["top_years"] = [{"year": t["year"]} for t in hist["top_years"]]
     if era.get("ranked_value_note"):
         hist["note"] = era["ranked_value_note"]
     for key_out, key_in in (

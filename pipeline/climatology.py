@@ -697,6 +697,20 @@ def enrich_all_candidates(
                 clear_record = bool(rank == 1 and margin >= needed)
             else:
                 prev_rec_val, prev_rec_year, margin, clear_record = None, None, None, False
+
+            # More context for varied, informative wording: each year's most extreme day in the window,
+            # the top three years, and the most recent year that beat today's forecast
+            # ("the windiest late-November day here since 1976").
+            year_extremes: dict[int, float] = {}
+            for yv, vv in zip(pool_years.tolist(), pool.tolist()):
+                if tail == "low":
+                    year_extremes[int(yv)] = min(vv, year_extremes.get(int(yv), vv))
+                else:
+                    year_extremes[int(yv)] = max(vv, year_extremes.get(int(yv), vv))
+            ordered = sorted(year_extremes.items(), key=lambda kv: kv[1], reverse=(tail != "low"))
+            top_years = [{"year": y, "value": round(v, 1)} for y, v in ordered[:3]]
+            beaten_by = [y for y, v in year_extremes.items() if (v < live_val if tail == "low" else v > live_val)]
+            last_exceeded_year = max(beaten_by) if beaten_by else None
             pct = round(100.0 * (1.0 - (rank - 0.5) / n_samples), 1)
 
             early_t = tmean_s[win_mask & (years >= 1940) & (years <= 1979)]
@@ -767,6 +781,9 @@ def enrich_all_candidates(
                 "percentile": pct,
                 "is_highest_for_time_of_year_since_1940": rank == 1,
                 "clear_record": clear_record,
+                "top_years": top_years,
+                "last_exceeded_year": last_exceeded_year,
+                "years_beating_forecast": len(beaten_by),
                 "previous_record_value": round(prev_rec_val, 1) if prev_rec_val is not None else None,
                 "previous_record_year": prev_rec_year,
                 "beats_previous_record_by": round(margin, 1) if margin is not None and margin > 0 else None,

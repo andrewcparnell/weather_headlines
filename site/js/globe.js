@@ -142,6 +142,7 @@ export class WeatherGlobe {
 
     this.hlElements = [];
     this.storyPinElements = [];
+    this.cityElements = [];
 
     // Pre-allocated scratch structs to eliminate per-particle / per-frame GC churn
     this._windScratch = { u: 0, v: 0, speed: 0 };
@@ -638,6 +639,20 @@ export class WeatherGlobe {
       el.style.visibility = 'hidden';
       this.overlayEl.appendChild(el);
       return { ...c, el, vec: latLonToVec3(c.lat, c.lon, 1.006) };
+    });
+  }
+
+  /** Label major cities near the current story (dot + name), or clear them with an empty list. */
+  setCityLabels(cities) {
+    for (const c of this.cityElements) c.el.remove();
+    this.cityElements = (cities || []).slice(0, 7).map(c => {
+      const el = document.createElement('div');
+      el.className = 'city-label';
+      el.textContent = c.name;
+      el.hidden = true;
+      el.style.visibility = 'hidden';
+      this.overlayEl.appendChild(el);
+      return { el, vec: latLonToVec3(c.lat, c.lon, 1.004) };
     });
   }
 
@@ -1180,6 +1195,7 @@ export class WeatherGlobe {
       pin.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-50%, -50%)`;
     }
 
+    let calloutBox = null;
     if (this.focusCallout?.active) {
       const fv = this.focusCallout.currentVec;
       const dot = (fv.x * camDir.x + fv.y * camDir.y + fv.z * camDir.z) / Math.max(1e-6, fv.length());
@@ -1194,8 +1210,44 @@ export class WeatherGlobe {
         this.focusCallout.el.hidden = false;
         this.focusCallout.el.style.visibility = 'visible';
         this.focusCallout.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) ${offsetTransform}`;
+        // Screen box of the callout (plus padding), so city labels never sit on top of it
+        const cw = this.focusCallout.el.offsetWidth || 260;
+        const ch = this.focusCallout.el.offsetHeight || 48;
+        calloutBox = isMobile
+          ? { x0: x - cw / 2 - 12, x1: x + cw / 2 + 12, y0: y - ch * 1.32 - 12, y1: y + 12 }
+          : { x0: x - 12, x1: x + 16 + cw + 12, y0: y - ch / 2 - 10, y1: y + ch / 2 + 10 };
       }
     }
+
+    // City labels: only on the visible hemisphere, and skip any that would overlap a label already
+    // placed (cities are listed largest first, so the biggest names win)
+    const placed = [];
+    for (const city of this.cityElements) {
+      let show = city.vec.dot(camDir) >= 0.3;
+      let x = 0;
+      let y = 0;
+      if (show) {
+        proj.copy(city.vec).project(this.camera);
+        x = (proj.x * 0.5 + 0.5) * w;
+        y = (-proj.y * 0.5 + 0.5) * h;
+        const labelW = 12 + city.el.textContent.length * 8;
+        const overlapsCallout =
+          calloutBox && x + labelW > calloutBox.x0 && x < calloutBox.x1 && y + 10 > calloutBox.y0 && y - 10 < calloutBox.y1;
+        show =
+          x > 8 && x < w - 8 && y > 8 && y < h - 8 && !overlapsCallout &&
+          !placed.some(p => Math.abs(p.x - x) < 110 && Math.abs(p.y - y) < 22);
+      }
+      if (!show) {
+        city.el.hidden = true;
+        city.el.style.visibility = 'hidden';
+        continue;
+      }
+      placed.push({ x, y });
+      city.el.hidden = false;
+      city.el.style.visibility = 'visible';
+      city.el.style.transform = `translate3d(${x.toFixed(1)}px, ${y.toFixed(1)}px, 0) translate(-4px, -50%)`;
+    }
+
 
     if (this.searchMarker?.active && !this.tourControlled) {
       if (this.searchMarker.vec.dot(camDir) < 0.18) {

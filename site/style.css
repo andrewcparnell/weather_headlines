@@ -147,6 +147,34 @@ body.tour-active .layer-rail {
   pointer-events: none;
 }
 
+/* Major cities near the current story (tour only) */
+.city-label {
+  position: absolute;
+  left: 0;
+  top: 0;
+  will-change: transform;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  font-weight: 700;
+  color: #ffffff;
+  white-space: nowrap;
+  text-shadow: 0 0 3px #000, 0 1px 2px #000, 0 0 6px rgba(0, 0, 0, 0.8);
+}
+
+.city-label::before {
+  content: "";
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: #ffffff;
+  border: 1.5px solid #0b1424;
+  box-shadow: 0 0 0 1px rgba(255, 255, 255, 0.6);
+  flex-shrink: 0;
+}
+
 .hl-badge.low {
   color: #7dd3fc;
   border-color: rgba(125, 211, 252, 0.58);

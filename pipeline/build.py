@@ -19,7 +19,7 @@ from .news_agent import build_deterministic_bulletin, generate_headlines_with_cl
 from .news_leads import attach_news, choose_stories
 from .opendata import fetch_live_weather
 from .pack_globe import package_globe_layers
-from .places import attach_location_context
+from .places import attach_location_context, attach_nearby_cities
 from .scanner import detect_global_candidates
 from .stamp_assets import stamp_frontend_assets
 from .tts import build_bulletin_audio
@@ -159,6 +159,9 @@ def run_pipeline(
         )
         _annotate_error("No bulletin", msg)
         raise BulletinError(msg)
+
+    # Major cities near each story, labelled on the globe during the tour
+    bulletin = attach_nearby_cities(bulletin)
 
     # 7. Neural British newsreader MP3s for newly written stories
     if need_audio_synth:

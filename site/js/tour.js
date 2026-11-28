@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { latLonToVec3, vec3ToLatLon } from './globe.js?v=97f2d01a';
+import { latLonToVec3, vec3ToLatLon } from './globe.js?v=abec8c13';
 
 const STORY_FLIGHT_MS = 1850;
 const FALLBACK_STORY_SEC = 47;
@@ -389,6 +389,7 @@ export class BroadcastTour {
     }
 
     this.globe.setTourMode(false);
+    this.globe.setCityLabels([]);
     this.globe.highlightStoryPin(-1);
     this.dom.playTourBtn?.focus();
   }
@@ -489,6 +490,7 @@ export class BroadcastTour {
     }
 
     this._renderChyron(story);
+    this.globe.setCityLabels(story.nearby_cities || []);
     this._activateCue(0);
 
     const startKnot = this.cameraKnots[0];

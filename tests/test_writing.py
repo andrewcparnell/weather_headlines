@@ -600,3 +600,27 @@ def test_implausible_elevation_field_is_never_used_for_the_lapse_rate():
     good = era5 + np.random.default_rng(0).normal(0, 80, era5.shape).astype(np.float32)
     assert orography_is_plausible(good, era5)
     assert not orography_is_plausible(era5 + 9100.0, era5)  # a 300 hPa height field
+
+
+def test_ranking_years_must_come_from_the_data():
+    from pipeline.validator import validate_history_years
+
+    cand = {"era5": {"previous_record_year": 1978, "last_exceeded_year": 1976,
+                     "top_years": [{"year": 1950, "value": 38.4}, {"year": 1976, "value": 38.0}]}}
+    ok = "The windiest late-November day here since 1976; only 1950 has been windier. Records go back to 1940."
+    assert validate_history_years("s", ok, cand, "") == []
+    errs = validate_history_years("s", "The strongest since 1962.", cand, "")
+    assert errs and "1962" in errs[0] and "1976" in errs[0]
+    # A year quoted from a cited news fact is fine
+    assert validate_history_years("s", "The worst floods since 1999.", cand, "Worst floods since 1999, officials say") == []
+
+
+def test_nearby_cities_for_map_labels():
+    from pipeline.places import attach_nearby_cities, nearby_cities
+
+    names = [c["name"] for c in nearby_cities([(39.3, 22.9)])]  # Volos, Greece
+    assert names[0] == "Volos"  # the nearest sizeable town always comes first
+    assert "Athens" in names and len(names) <= 6
+    b = attach_nearby_cities({"stories": [{"centre": {"lat": 39.3, "lon": 22.9}, "cues": [{"lat": 38.0, "lon": 23.7}]}]})
+    assert b["stories"][0]["nearby_cities"][0]["name"] == "Volos"
+    assert nearby_cities([(0.0, -140.0)]) == []  # open ocean: nothing to label
